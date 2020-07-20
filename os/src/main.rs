@@ -3,25 +3,23 @@
 
 extern crate rlibc;
 
+mod vga_buffer;
+
 use core::panic::PanicInfo;
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop{}
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+
+    loop {}
 }
 
 static HELLO: &[u8] = b"Hello World!";
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    let vgaBuffer = 0xb8000 as *mut u8;
-
-    for(i, &byte) in HELLO.iter().enumerate() {
-        unsafe {
-            *vgaBuffer.offset(i as isize * 2) = byte;
-            *vgaBuffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
+    println!("Hello World!");
+    panic!("Some panic message!");
 
     loop{}
 }
