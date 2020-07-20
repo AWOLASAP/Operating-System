@@ -21,3 +21,7 @@ git checkout <branchname>
 **Run this to push from a branch**
 
 git push --set-upstream origin <branchname>
+
+**create a branch and check it out**
+
+git checkout -b <branchname>
