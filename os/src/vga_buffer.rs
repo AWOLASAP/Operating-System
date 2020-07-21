@@ -86,6 +86,10 @@ impl Writer {
         }
     }
 
+    fn change_color(&mut self){
+        self.color_code = ColorCode::new(Color::Blue, Color::Black);
+    }
+
     fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
@@ -160,6 +164,11 @@ pub fn _print(args: fmt::Arguments) {
 #[test_case]
 fn test_println_simple() {
     println!("test_println_simple output");
+}
+
+#[test_case]
+fn test_color() {
+    WRITER.change_color();
 }
 
 #[test_case]
