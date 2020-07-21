@@ -1,4 +1,10 @@
 #[allow(dead_code)]
+
+use core::fmt;
+use volatile::Volatile;
+use spin::Mutex;
+use lazy_static::lazy_static;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Color {
@@ -39,8 +45,6 @@ struct ScreenChar {
 
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
-
-use volatile::Volatile;
 
 #[repr(transparent)]
 struct Buffer {
@@ -111,7 +115,6 @@ impl Writer {
     }
 }
 
-use core::fmt;
 
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -119,9 +122,6 @@ impl fmt::Write for Writer {
         Ok(())
     }
 }
-
-use spin::Mutex;
-use lazy_static::lazy_static;
 
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
