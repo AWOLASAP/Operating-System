@@ -1,10 +1,10 @@
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
+use crate::print;
 use crate::println;
 use lazy_static::lazy_static;
 use crate::gdt;
 use pic8259_simple::ChainedPics;
 use spin;
-use crate::print;
 use x86_64::structures::idt::PageFaultErrorCode;
 use crate::hlt_loop;
 
@@ -98,7 +98,7 @@ extern "x86-interrupt" fn double_fault_handler(
 extern "x86-interrupt" fn breakpoint_handler(
     stack_frame: &mut InterruptStackFrame)
 {
-    println!("EXEPTION: BREAKPOINT\n{:#?}", stack_frame);
+    println!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
 }
 
 #[derive(Debug, Clone, Copy)]
