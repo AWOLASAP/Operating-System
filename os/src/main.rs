@@ -6,6 +6,7 @@
 
 use core::panic::PanicInfo;
 use os::println;
+use os::task::{Task, simple_executor::SimpleExecutor};
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -31,4 +32,23 @@ pub extern "C" fn _start() -> ! {
 
     println!("It did not crash!");
     os::hlt_loop();
+}
+
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    // […] initialization routines, including `init_heap`
+
+    let mut executor = SimpleExecutor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.run();
+
+    // […] test_main, "it did not crash" message, hlt_loop
+}
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
 }
