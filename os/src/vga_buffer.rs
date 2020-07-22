@@ -21,7 +21,7 @@ impl ColorCode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-struct ScreenChar {
+pub struct ScreenChar {
     ascii_character: u8,
     color_code: ColorCode,
 }
@@ -117,7 +117,7 @@ impl AdvancedWriter {
 
     // For use with the writer - draws characters
     // If this stops working, try replacing &self with &mut self
-    fn draw_character(&self, x: usize, y: usize, character: ScreenChar) {
+    pub fn draw_character(&self, x: usize, y: usize, character: ScreenChar) {
         let color = character.color_code.0;
         let ascii_character = character.ascii_character;
         let front_color = Color16::try_from((color << 4) >> 4);
@@ -135,6 +135,31 @@ impl AdvancedWriter {
 
 
         self.mode.draw_character(x, y, ascii_character as char, front_color, back_color);
+    }
+
+    pub fn draw_different_character(&self, x: usize, y: usize, old_character: ScreenChar, new_character: ScreenChar) {
+        if (new_character.color_code != old_character.color_code) {
+            self.draw_character(x, y, new_character);
+        }
+        else {
+            let color = new_character.color_code.0;
+            let ascii_character = old_character.ascii_character;
+            let front_color = Color16::try_from((color << 4) >> 4);
+            let back_color = Color16::try_from(color >> 4);
+    
+            let front_color = match front_color {
+                Ok(front_color) => front_color,
+                Err(why) => panic!("{:?}", why),
+            };
+    
+            let back_color = match back_color {
+                Ok(back_color) => back_color,
+                Err(why) => panic!("{:?}", why),
+            };
+            let ascii_character_new = new_character.ascii_character;
+
+            self.mode.draw_different_character(x, y, ascii_character as char, ascii_character_new as char, front_color, back_color);
+        }
     }
 
     pub fn draw_char(&self, x: usize, y: usize, character: char, front_color: Color16, back_color: Color16) {
@@ -160,8 +185,8 @@ impl AdvancedWriter {
         //self.clear_screen(Color16::Black);
         for (index1, (row_new, row_old)) in self.buffer.chars.iter().zip(self.old_buffer.chars.iter()).enumerate() {
             for (index2, (character_new, character_old)) in row_new.iter().zip(row_old.iter()).enumerate() {
-                if character_new.ascii_character != 0 && character_new.ascii_character != character_old.ascii_character{
-                    self.draw_character(index2 * 8, index1 * 8, *character_new)
+                if character_new.ascii_character != 0 && (character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code){
+                    self.draw_different_character(index2 * 8, index1 * 8, *character_old, *character_new)
                 }
             }
         }
@@ -215,9 +240,18 @@ impl AdvancedWriter {
             match byte {
                 // printable ASCII byte or newline
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
+                // backspace
+                0x08 => self.backspace(),
                 // not part of printable ASCII range
                 _ => self.write_byte(0xfe),
             }
+        }
+    }
+    fn backspace(&mut self) {
+        if self.column_position != 0 {
+            self.column_position -= 1;
+            self.write_byte(b' ');
+            self.column_position -= 1;
         }
     }
 }
@@ -225,6 +259,7 @@ impl AdvancedWriter {
 impl fmt::Write for AdvancedWriter {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
+        self.draw_buffer();
         Ok(())
     }
 }

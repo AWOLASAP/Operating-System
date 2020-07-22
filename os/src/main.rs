@@ -31,7 +31,6 @@ pub extern "C" fn _start() -> ! {
     for i in 0..60 {
         println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
     }
-    ADVANCED_WRITER.lock().draw_buffer();
 
     //println!("Hello, Workd!");
     //MODE.lock().graphics_init();
