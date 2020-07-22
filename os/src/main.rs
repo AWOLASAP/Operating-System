@@ -28,16 +28,17 @@ pub extern "C" fn _start() -> ! {
     //for i in 0..60 {
     //    println!("{}", i);
     //};
+    let test_string = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab";
     for i in 0..60 {
         println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
     }
 
-    //println!("Hello, Workd!");
+    //println!("Hello, World!");
     //MODE.lock().graphics_init();
-    //println!("Hello, Workd!");
-    //println!("Hello, Workd!");
-    //println!("Hello, Workd!");
-    //println!("Hello, Workd!");
+    //println!("Hello, World!");
+    //println!("Hello, World!");
+    //println!("Hello, World!");
+    //println!("Hello, World!");
     //MODE.lock().text_init();
     //WRITER.lock().set_back_color(Color16::White);
     //WRITER.lock().set_front_color(Color16::Black);

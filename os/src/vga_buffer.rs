@@ -1,4 +1,4 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
 
 use core::fmt;
 use volatile::Volatile;
@@ -138,7 +138,7 @@ impl AdvancedWriter {
     }
 
     pub fn draw_different_character(&self, x: usize, y: usize, old_character: ScreenChar, new_character: ScreenChar) {
-        if (new_character.color_code != old_character.color_code) {
+        if new_character.color_code != old_character.color_code {
             self.draw_character(x, y, new_character);
         }
         else {
@@ -183,6 +183,7 @@ impl AdvancedWriter {
     pub fn draw_buffer(&mut self) {
         // This also sets write mode 2
         //self.clear_screen(Color16::Black);
+        self.mode.set_write_mode_2();
         for (index1, (row_new, row_old)) in self.buffer.chars.iter().zip(self.old_buffer.chars.iter()).enumerate() {
             for (index2, (character_new, character_old)) in row_new.iter().zip(row_old.iter()).enumerate() {
                 if character_new.ascii_character != 0 && (character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code){
