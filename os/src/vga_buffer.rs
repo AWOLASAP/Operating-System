@@ -86,6 +86,7 @@ impl AdvancedWriter {
     }
 
     pub fn draw_char(&self, x: usize, y: usize, character: char, front_color: Color16, back_color: Color16) {
+        self.mode.set_write_mode_2();
         self.mode.draw_character(x, y, character, front_color, back_color);
     }
 
@@ -98,13 +99,18 @@ impl AdvancedWriter {
     }
 
     pub fn set_pixel(&self, x: usize, y: usize, color: Color16) {
+        self.mode.set_write_mode_2();
         self.mode.set_pixel(x, y, color);
     }
 
     pub fn draw_buffer(&self, buffer: Buffer) {
+        // This also sets write mode 2
+        //self.clear_screen(Color16::Black);
         for (index1, row) in (buffer).chars.iter().enumerate() {
             for (index2, character) in row.iter().enumerate() {
-                self.draw_character(index2 * 8, index1 * 8, *character)
+                if (character.ascii_character != 0) {
+                    self.draw_character(index2 * 8, index1 * 8, *character)
+                }
             }
         }
     }
@@ -209,4 +215,5 @@ macro_rules! println {
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
     WRITER.lock().write_fmt(args).unwrap();
+    //ADVANCED_WRITER.lock().draw_buffer(WRITER.lock().buffer);
 }
