@@ -16,7 +16,6 @@ use os::vga_buffer::ADVANCED_WRITER;
 use vga::colors::Color16;
 use os::print;
 use os::println;
-use os::println;
 use os::memory::{self, BootInfoFrameAllocator};
 use os::allocator;
 use bootloader::{BootInfo, entry_point};
