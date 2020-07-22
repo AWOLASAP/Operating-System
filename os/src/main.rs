@@ -3,17 +3,18 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
-use crate::vga_buffer::MODE;
-use crate::vga_buffer::WRITER;
-use crate::vga_buffer::ADVANCED_WRITER;
+use os::vga_buffer::MODE;
+use os::vga_buffer::WRITER;
+use os::vga_buffer::ADVANCED_WRITER;
 use vga::colors::Color16;
+use os::print;
+use os::println;
 
 extern crate rlibc;
 
-mod vga_buffer;
+mod serial;
 
 use core::panic::PanicInfo;
-use os::println;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -31,6 +32,7 @@ fn panic(info: &PanicInfo) -> ! {
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     MODE.lock().init();
+    //MODE.lock().graphics_init();
     println!("Hello World!");
 
     os::init();
@@ -38,19 +40,22 @@ pub extern "C" fn _start() -> ! {
     #[cfg(test)]
     test_main();
 
+    MODE.lock().graphics_init();
+    for i in 0..60 {
+        println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
+    }
+    print!("This is a test");
     println!("It did not crash!");
+
     os::hlt_loop();
 
-    //MODE.lock().graphics_init();
 
     //for i in 0..60 {
     //    println!("{}", i);
     //};
     //let test_string = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab";
-    //for i in 0..60 {
-    //    println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
-    //}
 
+    loop {}
     //println!("Hello, World!");
     //MODE.lock().graphics_init();
     //println!("Hello, World!");

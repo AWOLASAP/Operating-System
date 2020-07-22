@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![macro_use]
+
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
@@ -6,8 +9,6 @@ use vga::colors::Color16;
 use vga::writers::{Graphics640x480x16, GraphicsWriter, Text80x25, TextWriter};
 use vga::drawing::Point;
 use core::convert::TryFrom;
-
-#![allow(dead_code)]
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -193,6 +194,7 @@ impl AdvancedWriter {
             }
         }
         self.old_buffer = self.buffer;
+        //WRITER.lock().write_string("Draw Buffer Called");
     }
 
     pub fn write_byte(&mut self, byte: u8) {
@@ -262,6 +264,7 @@ impl fmt::Write for AdvancedWriter {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
         self.draw_buffer();
+        //WRITER.lock().write_string("Write String Called");
         Ok(())
     }
 }
@@ -378,19 +381,6 @@ impl Writer {
         }
     }
 
-    fn write_string(&mut self, s: &str) {
-        for byte in s.bytes() {
-            match byte {
-                // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte(byte),
-                // backspace
-                0x08 => self.backspace(),
-                // not part of printable ASCII range
-                _ => self.write_byte(0xfe),
-            }
-        }
-    }
-
     fn backspace(&mut self) {
         if self.column_position != 0 {
             self.column_position -= 1;
@@ -413,7 +403,7 @@ lazy_static! {
 }
 
 pub struct ModeController {
-    text: bool,
+    pub text: bool,
 }
 
 impl ModeController {
@@ -433,11 +423,13 @@ impl ModeController {
     pub fn text_init(&mut self) {
         self.text = true;
         WRITER.lock().init();
+        WRITER.lock().write_string("Text enabled");
     }
 
     pub fn graphics_init(&mut self) {
         self.text = false;
         ADVANCED_WRITER.lock().init();
+        WRITER.lock().write_string("Text disabled");
     }
 }
 
@@ -465,13 +457,38 @@ pub fn _print(args: fmt::Arguments) {
     use x86_64::instructions::interrupts;
 
     interrupts::without_interrupts(|| {
-      if MODE.lock().text == true {
+      if MODE.lock().text {
           WRITER.lock().write_fmt(args).unwrap();
+          WRITER.lock().write_string("true");
       }
       else {
           ADVANCED_WRITER.lock().write_fmt(args).unwrap();
+          WRITER.lock().write_string("false");
       }
     });
+
+}
+
+#[macro_export]
+macro_rules! print_g {
+    ($($arg:tt)*) => ($crate::vga_buffer::_print_g(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! println_g {
+    () => ($crate::print_g!("\n"));
+    ($($arg:tt)*) => ($crate::print_g!("{}\n", format_args!($($arg)*)));
+}
+
+#[doc(hidden)]
+pub fn _print_g(args: fmt::Arguments) {
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
+
+    interrupts::without_interrupts(|| {
+        ADVANCED_WRITER.lock().write_fmt(args).unwrap();
+    });
+
 }
 
 #[test_case]
@@ -500,5 +517,4 @@ fn test_println_output() {
             assert_eq!(char::from(screen_char.ascii_character), c);
         }
     });
-
 }
