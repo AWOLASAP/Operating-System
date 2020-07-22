@@ -8,6 +8,9 @@ use spin;
 use x86_64::structures::idt::PageFaultErrorCode;
 use crate::hlt_loop;
 
+// Shell command stuff
+use crate::addCommandBuffer;
+use alloc::string::String;
 #[path = "commands.rs"]
 mod commands;
 
@@ -15,6 +18,11 @@ pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 
 pub static PICS: spin::Mutex<ChainedPics> = spin::Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
+
+// Shell command stuff
+lazy_static! {
+    pub static ref COMMANDRUNNER: commands::CommandRunner = commands::CommandRunner::new(String::from(" "));
+}
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
@@ -67,7 +75,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {
             match key {
-                DecodedKey::Unicode(character) => print!("{}", character),
+                DecodedKey::Unicode(character) => COMMANDRUNNER.addToBuffer(character),//print!("{}", character),
                 DecodedKey::RawKey(key) => print!("{:?}", key),
             }
         }

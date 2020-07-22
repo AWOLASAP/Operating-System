@@ -12,7 +12,7 @@ pub struct CommandRunner{
 }
 
 impl CommandRunner {
-    fn new(string: String) -> CommandRunner {
+    pub fn new(string: String) -> CommandRunner {
         CommandRunner{
             command_buffer: String::new(),
         }
@@ -30,5 +30,5 @@ impl CommandRunner {
 
 #[macro_export]
 macro_rules! addCommandBuffer {
-    ($c: expr) => {(COMMANDRUNNER.addToBuffer(c))};
+    ($c: expr) => {(COMMANDRUNNER.addToBuffer($c))};
 }
