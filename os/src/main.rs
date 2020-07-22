@@ -22,6 +22,7 @@ use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr, structures::paging::MapperAllSizes, structures::paging::Page};
 use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
 use core::panic::PanicInfo;
+use os::task::{Task, simple_executor::SimpleExecutor};
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -95,7 +96,22 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //WRITER.lock().set_back_color(Color16::White);
     //WRITER.lock().set_front_color(Color16::Black);
 }
-//2.5
-//33.5
 
-//55.5
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    // […] initialization routines, including `init_heap`
+
+    let mut executor = SimpleExecutor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.run();
+
+    // […] test_main, "it did not crash" message, hlt_loop
+}
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
+}
