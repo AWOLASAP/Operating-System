@@ -1,23 +1,26 @@
 use crate::println;
+use lazy_static::lazy_static;
+use alloc::string::String;
 
+
+lazy_static! {
+    pub static ref COMMANDRUNNER: CommandRunner = CommandRunner::new(String::from(" "));
+}
 
 pub struct CommandRunner{
-    command_buffer: str,
+    command_buffer: String,
 }
 
 impl CommandRunner {
-    fn new() -> CommandRunner {
+    fn new(string: String) -> CommandRunner {
         CommandRunner{
-            command_buffer: "",
+            command_buffer: String::new(),
         }
 
     }
 
     pub fn add_to_buffer(&mut self, c: char){
-        self.command_buffer = self.command_buffer.to_owned();
-        let borrowed_string: &str = c.to_string();
-
-        self.command_buffer.push_str(borrowed_string);
+        self.command_buffer.push(c)
     }
 
     pub fn echo(&mut self, string: &str) {
