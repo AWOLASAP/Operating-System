@@ -6,7 +6,7 @@ use volatile::Volatile;
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
-        color_code: ColorCode::new(Color::Yellow, Color::Black),
+        color_code: ColorCode::new(Color::Green, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
 }
@@ -89,6 +89,8 @@ impl Writer {
     fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
+                //delete
+                0x7f => self.delete(),
                 // printable ASCII byte or newline
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
                 // backspace
@@ -125,6 +127,13 @@ impl Writer {
             self.column_position -= 1;
             self.write_byte(b' ');
             self.column_position -= 1;
+        }
+    }
+    fn delete(&mut self){
+        if self.column_position != BUFFER_WIDTH-1{
+            self.column_position+=1;
+            self.write_byte(b' ');
+            self.column_position -= 2;
         }
     }
 }
