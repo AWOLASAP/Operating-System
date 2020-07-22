@@ -256,6 +256,7 @@ impl AdvancedWriter {
         for row in 1..BUFFER_HEIGHT_ADVANCED {
             self.new_line();
         }
+        self.mode.clear_screen(Color16::Black);
         self.draw_buffer();
     }
 
