@@ -1,9 +1,10 @@
 #![allow(dead_code)]
+#![macro_use]
 
 use core::fmt;
-use volatile::Volatile;
-use spin::Mutex;
 use lazy_static::lazy_static;
+use spin::Mutex;
+use volatile::Volatile;
 use vga::colors::Color16;
 use vga::writers::{Graphics640x480x16, GraphicsWriter, Text80x25, TextWriter};
 use vga::drawing::Point;
@@ -37,12 +38,14 @@ impl ScreenChar {
 
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
-const BUFFER_HEIGHT_ADVANCED: usize = 60;
-const BUFFER_WIDTH_ADVANCED: usize = 80;
 
 #[repr(transparent)]
 struct Buffer {
-    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],}
+    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
+}
+
+const BUFFER_HEIGHT_ADVANCED: usize = 60;
+const BUFFER_WIDTH_ADVANCED: usize = 80;
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]
@@ -113,8 +116,6 @@ impl AdvancedWriter {
         self.set_color_code(ColorCode::new(self.front_color, color));
     }
 
-    
-
     // For use with the writer - draws characters
     // If this stops working, try replacing &self with &mut self
     pub fn draw_character(&self, x: usize, y: usize, character: ScreenChar) {
@@ -133,10 +134,10 @@ impl AdvancedWriter {
             Err(why) => panic!("{:?}", why),
         };
 
-
         self.mode.draw_character(x, y, ascii_character as char, front_color, back_color);
     }
 
+    // This draws a character but assumes that you know which character was already drawn there - this is an optimization because it doesn't update already drawn pixels.
     pub fn draw_different_character(&self, x: usize, y: usize, old_character: ScreenChar, new_character: ScreenChar) {
         if new_character.color_code != old_character.color_code {
             self.draw_character(x, y, new_character);
@@ -162,9 +163,16 @@ impl AdvancedWriter {
         }
     }
 
+    //Draws a character at specified coordinates - you need to specify both the background and foreground color 
     pub fn draw_char(&self, x: usize, y: usize, character: char, front_color: Color16, back_color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.draw_character(x, y, character, front_color, back_color);
+    }
+
+    //Draws a character at specified coordinates - you need to specify foreground color - it will not overwrite any other pixels  
+    pub fn draw_char_fast(&self, x: usize, y: usize, character: char, front_color: Color16) {
+        self.mode.set_write_mode_2();
+        self.mode.draw_character_fast(x, y, character, front_color);
     }
 
     pub fn clear_screen(&self, color: Color16) {
@@ -192,6 +200,13 @@ impl AdvancedWriter {
             }
         }
         self.old_buffer = self.buffer;
+    }
+
+    pub fn clear_buffer(&mut self) {
+        for row in 1..BUFFER_HEIGHT_ADVANCED {
+            self.new_line();
+        }
+        self.draw_buffer();
     }
 
     pub fn write_byte(&mut self, byte: u8) {
@@ -264,6 +279,7 @@ impl fmt::Write for AdvancedWriter {
         Ok(())
     }
 }
+
 lazy_static! {
     pub static ref ADVANCED_WRITER: Mutex<AdvancedWriter> = Mutex::new(AdvancedWriter::new());
 }
@@ -343,6 +359,19 @@ impl Writer {
         }
     }
 
+    fn write_string(&mut self, s: &str) {
+        for byte in s.bytes() {
+            match byte {
+                // printable ASCII byte or newline
+                0x20..=0x7e | b'\n' => self.write_byte(byte),
+                // backspace
+                0x08 => self.backspace(),
+                // not part of printable ASCII range
+                _ => self.write_byte(0xfe),
+            }
+        }
+    }
+
     fn new_line(&mut self) {
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
@@ -364,19 +393,6 @@ impl Writer {
         }
     }
 
-    fn write_string(&mut self, s: &str) {
-        for byte in s.bytes() {
-            match byte {
-                // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte(byte),
-                // backspace
-                0x08 => self.backspace(),
-                // not part of printable ASCII range
-                _ => self.write_byte(0xfe),
-            }
-        }
-    }
-
     fn backspace(&mut self) {
         if self.column_position != 0 {
             self.column_position -= 1;
@@ -385,8 +401,6 @@ impl Writer {
         }
     }
 }
-
-
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
@@ -401,7 +415,7 @@ lazy_static! {
 }
 
 pub struct ModeController {
-    text: bool,
+    pub text: bool,
 }
 
 impl ModeController {
@@ -419,13 +433,17 @@ impl ModeController {
     }
 
     pub fn text_init(&mut self) {
-        self.text = true;
-        WRITER.lock().init();
+        if !self.text {
+            self.text = true;
+            WRITER.lock().init();
+        }
     }
 
     pub fn graphics_init(&mut self) {
-        self.text = false;
-        ADVANCED_WRITER.lock().init();
+        if self.text {
+            self.text = false;
+            ADVANCED_WRITER.lock().init();
+        }
     }
 }
 
@@ -434,6 +452,7 @@ lazy_static! {
         Mutex::new(ModeController::new())
     };
 }
+
 
 #[macro_export]
 macro_rules! print {
@@ -449,11 +468,43 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    if MODE.lock().text == true {
-        WRITER.lock().write_fmt(args).unwrap();
+    use x86_64::instructions::interrupts;
+
+    interrupts::without_interrupts(|| {
+      if MODE.lock().text {
+          WRITER.lock().write_fmt(args).unwrap();
+      }
+      else {
+          ADVANCED_WRITER.lock().write_fmt(args).unwrap();
+      }
+    });
+
+}
+
+#[test_case]
+fn test_println_simple() {
+    println!("test_println_simple output");
+}
+
+#[test_case]
+fn test_println_many() {
+    for _ in 0..200 {
+        println!("test_println_many output");
     }
-    else {
-        ADVANCED_WRITER.lock().write_fmt(args).unwrap();
-    }
-    //ADVANCED_WRITER.lock().draw_buffer(WRITER.lock().buffer);
+}
+
+#[test_case]
+fn test_println_output() {
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
+
+    let s = "Some test string that fits on a single line";
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        writeln!(writer, "\n{}", s).expect("writeln failed");
+        for (i, c) in s.chars().enumerate() {
+            let screen_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.ascii_character), c);
+        }
+    });
 }

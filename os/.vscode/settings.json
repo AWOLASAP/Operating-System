@@ -1,9 +1,15 @@
 {
     "cSpell.words": [
         "Modecontroller",
+        "Qemu",
+        "Scancode",
         "autocfg",
         "bootloader",
-        "repr"
+        "concat",
+        "keyevent",
+        "repr",
+        "rlibc",
+        "uart"
     ],
     "cSpell.ignorePaths": [
         "**/package-lock.json",
