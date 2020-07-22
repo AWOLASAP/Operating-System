@@ -1,0 +1,23 @@
+{
+    "cSpell.words": [
+        "Modecontroller",
+        "Qemu",
+        "Scancode",
+        "autocfg",
+        "bootloader",
+        "concat",
+        "keyevent",
+        "repr",
+        "rlibc",
+        "uart"
+    ],
+    "cSpell.ignorePaths": [
+        "**/package-lock.json",
+        "**/node_modules/**",
+        "**/vscode-extension/**",
+        "**/.git/objects/**",
+        ".vscode",
+        "Cargo.lock",
+        "Cargo.toml",
+    ]
+}

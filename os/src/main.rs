@@ -5,14 +5,24 @@
 #![reexport_test_harness_main = "test_main"]
 
 extern crate alloc;
+extern crate rlibc;
 
-use core::panic::PanicInfo;
+mod serial;
+
+// Use these for things like buffer access
+use os::vga_buffer::MODE;
+use os::vga_buffer::WRITER;
+use os::vga_buffer::ADVANCED_WRITER;
+use vga::colors::Color16;
+use os::print;
+use os::println;
 use os::println;
 use os::memory::{self, BootInfoFrameAllocator};
 use os::allocator;
 use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr, structures::paging::MapperAllSizes, structures::paging::Page};
 use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
+use core::panic::PanicInfo;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -30,6 +40,11 @@ fn panic(info: &PanicInfo) -> ! {
 
 entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    MODE.lock().init();
+    // Use this to activate graphics mode - graphics mode implements all of the APIs that text mode implements, 
+    // but it is  slower than text mode because it doesn't operate off of direct memory access. 
+    // Activating graphics mode also enables graphics things like line drawing
+    MODE.lock().graphics_init();
     println!("Hello World!");
 
     os::init();
@@ -61,6 +76,27 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
+    for i in 0..60 {
+        println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
+    }
+    ADVANCED_WRITER.lock().clear_buffer();
+    print!("This is a test");
     println!("It did not crash!");
+    x86_64::instructions::interrupts::int3();
+
     os::hlt_loop();
+
+
+    //for i in 0..60 {
+    //    println!("{}", i);
+    //};
+    // This is an example on how to reactivate text mode and deactivate graphics mode.
+    // This then changes the background and foreground color.
+    //MODE.lock().text_init();
+    //WRITER.lock().set_back_color(Color16::White);
+    //WRITER.lock().set_front_color(Color16::Black);
 }
+//2.5
+//33.5
+
+//55.5
