@@ -1,0 +1,17 @@
+{
+    "cSpell.words": [
+        "Modecontroller",
+        "autocfg",
+        "bootloader",
+        "repr"
+    ],
+    "cSpell.ignorePaths": [
+        "**/package-lock.json",
+        "**/node_modules/**",
+        "**/vscode-extension/**",
+        "**/.git/objects/**",
+        ".vscode",
+        "Cargo.lock",
+        "Cargo.toml",
+    ]
+}
