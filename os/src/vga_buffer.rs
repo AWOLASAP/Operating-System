@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![macro_use]
 
 use core::fmt;
 use lazy_static::lazy_static;
@@ -39,12 +40,13 @@ impl ScreenChar {
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
-const BUFFER_HEIGHT_ADVANCED: usize = 60;
-const BUFFER_WIDTH_ADVANCED: usize = 80;
-
 #[repr(transparent)]
 struct Buffer {
-    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],}
+    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
+}
+
+const BUFFER_HEIGHT_ADVANCED: usize = 60;
+const BUFFER_WIDTH_ADVANCED: usize = 80;
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]
@@ -115,8 +117,6 @@ impl AdvancedWriter {
         self.set_color_code(ColorCode::new(self.front_color, color));
     }
 
-    
-
     // For use with the writer - draws characters
     // If this stops working, try replacing &self with &mut self
     pub fn draw_character(&self, x: usize, y: usize, character: ScreenChar) {
@@ -135,10 +135,10 @@ impl AdvancedWriter {
             Err(why) => panic!("{:?}", why),
         };
 
-
         self.mode.draw_character(x, y, ascii_character as char, front_color, back_color);
     }
 
+    // This draws a character but assumes that you know which character was already drawn there - this is an optimization because it doesn't update already drawn pixels.
     pub fn draw_different_character(&self, x: usize, y: usize, old_character: ScreenChar, new_character: ScreenChar) {
         if new_character.color_code != old_character.color_code {
             self.draw_character(x, y, new_character);
@@ -164,9 +164,16 @@ impl AdvancedWriter {
         }
     }
 
+    //Draws a character at specified coordinates - you need to specify both the background and foreground color 
     pub fn draw_char(&self, x: usize, y: usize, character: char, front_color: Color16, back_color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.draw_character(x, y, character, front_color, back_color);
+    }
+
+    //Draws a character at specified coordinates - you need to specify foreground color - it will not overwrite any other pixels  
+    pub fn draw_char_fast(&self, x: usize, y: usize, character: char, front_color: Color16) {
+        self.mode.set_write_mode_2();
+        self.mode.draw_character_fast(x, y, character, front_color);
     }
 
     pub fn clear_screen(&self, color: Color16) {
@@ -194,6 +201,13 @@ impl AdvancedWriter {
             }
         }
         self.old_buffer = self.buffer;
+    }
+
+    pub fn clear_buffer(&mut self) {
+        for row in 1..BUFFER_HEIGHT_ADVANCED {
+            self.new_line();
+        }
+        self.draw_buffer();
     }
 
     pub fn write_byte(&mut self, byte: u8) {
@@ -266,6 +280,7 @@ impl fmt::Write for AdvancedWriter {
         Ok(())
     }
 }
+
 lazy_static! {
     pub static ref ADVANCED_WRITER: Mutex<AdvancedWriter> = Mutex::new(AdvancedWriter::new());
 }
@@ -401,7 +416,7 @@ lazy_static! {
 }
 
 pub struct ModeController {
-    text: bool,
+    pub text: bool,
 }
 
 impl ModeController {
@@ -419,13 +434,17 @@ impl ModeController {
     }
 
     pub fn text_init(&mut self) {
-        self.text = true;
-        WRITER.lock().init();
+        if !self.text {
+            self.text = true;
+            WRITER.lock().init();
+        }
     }
 
     pub fn graphics_init(&mut self) {
-        self.text = false;
-        ADVANCED_WRITER.lock().init();
+        if self.text {
+            self.text = false;
+            ADVANCED_WRITER.lock().init();
+        }
     }
 }
 
@@ -453,13 +472,14 @@ pub fn _print(args: fmt::Arguments) {
     use x86_64::instructions::interrupts;
 
     interrupts::without_interrupts(|| {
-      if MODE.lock().text == true {
+      if MODE.lock().text {
           WRITER.lock().write_fmt(args).unwrap();
       }
       else {
           ADVANCED_WRITER.lock().write_fmt(args).unwrap();
       }
     });
+
 }
 
 #[test_case]
@@ -488,5 +508,4 @@ fn test_println_output() {
             assert_eq!(char::from(screen_char.ascii_character), c);
         }
     });
-
 }
