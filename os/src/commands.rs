@@ -19,11 +19,16 @@ impl CommandRunner {
 
     }
 
-    pub fn add_to_buffer(&mut self, c: char){
+    pub fn addToBuffer(&mut self, c: char) {
         self.command_buffer.push(c)
     }
 
     pub fn echo(&mut self, string: &str) {
         println!("\n{}", string);
     }
+}
+
+#[macro_export]
+macro_rules! addCommandBuffer {
+    ($c: expr) => {(COMMANDRUNNER.addToBuffer(c))};
 }
