@@ -137,6 +137,7 @@ impl AdvancedWriter {
         self.mode.draw_character(x, y, ascii_character as char, front_color, back_color);
     }
 
+    // This draws a character but assumes that you know which character was already drawn there - this is an optimization because it doesn't update already drawn pixels.
     pub fn draw_different_character(&self, x: usize, y: usize, old_character: ScreenChar, new_character: ScreenChar) {
         if new_character.color_code != old_character.color_code {
             self.draw_character(x, y, new_character);
@@ -162,9 +163,16 @@ impl AdvancedWriter {
         }
     }
 
+    //Draws a character at specified coordinates - you need to specify both the background and foreground color 
     pub fn draw_char(&self, x: usize, y: usize, character: char, front_color: Color16, back_color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.draw_character(x, y, character, front_color, back_color);
+    }
+
+    //Draws a character at specified coordinates - you need to specify foreground color - it will not overwrite any other pixels  
+    pub fn draw_char_fast(&self, x: usize, y: usize, character: char, front_color: Color16) {
+        self.mode.set_write_mode_2();
+        self.mode.draw_character_fast(x, y, character, front_color);
     }
 
     pub fn clear_screen(&self, color: Color16) {
@@ -192,7 +200,13 @@ impl AdvancedWriter {
             }
         }
         self.old_buffer = self.buffer;
-        //WRITER.lock().write_string("Draw Buffer Called");
+    }
+
+    pub fn clear_buffer(&mut self) {
+        for row in 1..BUFFER_HEIGHT_ADVANCED {
+            self.new_line();
+        }
+        self.draw_buffer();
     }
 
     pub fn write_byte(&mut self, byte: u8) {

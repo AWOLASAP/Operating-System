@@ -3,7 +3,7 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
-
+// Use these for things like buffer access
 use os::vga_buffer::MODE;
 use os::vga_buffer::WRITER;
 use os::vga_buffer::ADVANCED_WRITER;
@@ -36,7 +36,7 @@ pub extern "C" fn _start() -> ! {
     // Use this to activate graphics mode - graphics mode implements all of the APIs that text mode implements, 
     // but it is  slower than text mode because it doesn't operate off of direct memory access. 
     // Activating graphics mode also enables graphics things like line drawing
-    //MODE.lock().graphics_init();
+    MODE.lock().graphics_init();
     println!("Hello World!");
 
     os::init();
@@ -47,8 +47,10 @@ pub extern "C" fn _start() -> ! {
     for i in 0..60 {
         println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
     }
+    ADVANCED_WRITER.lock().clear_buffer();
     print!("This is a test");
     println!("It did not crash!");
+    x86_64::instructions::interrupts::int3();
 
     os::hlt_loop();
 
@@ -56,18 +58,11 @@ pub extern "C" fn _start() -> ! {
     //for i in 0..60 {
     //    println!("{}", i);
     //};
-    //let test_string = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab";
-
-    //println!("Hello, World!");
-    //MODE.lock().graphics_init();
-    //println!("Hello, World!");
-    //println!("Hello, World!");
-    //println!("Hello, World!");
-    //println!("Hello, World!");
+    // This is an example on how to reactivate text mode and deactivate graphics mode.
+    // This then changes the background and foreground color.
     //MODE.lock().text_init();
     //WRITER.lock().set_back_color(Color16::White);
     //WRITER.lock().set_front_color(Color16::Black);
-    panic!("Some panic message!");
 }
 //2.5
 //33.5
