@@ -88,7 +88,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         ADVANCED_WRITER.lock().draw_logo(320, 240, i);
         ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
     }
-
+    ADVANCED_WRITER.lock().clear_buffer();
 
     os::hlt_loop();
 
