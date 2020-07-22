@@ -1,17 +1,8 @@
 use crate::println;
-use lazy_static::lazy_static;
-use spin::Mutex;
-
-
-lazy_static! {
-    pub static ref COMMANDRUNNER: Mutex<CommandRunner> = {
-        Mutex::new(CommandRunner::new())
-    };
-}
 
 
 pub struct CommandRunner{
-    command_buffer: &str,
+    command_buffer: str,
 }
 
 impl CommandRunner {
@@ -32,9 +23,4 @@ impl CommandRunner {
     pub fn echo(&mut self, string: &str) {
         println!("\n{}", string);
     }
-}
-
-#[macro_export]
-macro_rules! addCommandBuffer {
-    ($e:expr) => (COMMANDRUNNER.addToBuffer(e));
 }

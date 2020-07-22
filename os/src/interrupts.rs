@@ -5,7 +5,6 @@ use crate::gdt;
 use pic8259_simple::ChainedPics;
 use spin;
 use crate::print;
-use crate::addCommandBuffer;
 
 #[path = "commands.rs"]
 mod commands;
@@ -52,7 +51,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {
             match key {
-                DecodedKey::Unicode(character) => addCommandBuffer!(character), //print!("{}", character),
+                DecodedKey::Unicode(character) => print!("{}", character),
                 DecodedKey::RawKey(key) => print!("{:?}", key),
             }
         }
