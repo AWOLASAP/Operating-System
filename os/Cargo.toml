@@ -15,9 +15,9 @@ x86_64 = "0.11.0"
 uart_16550 = "0.2.0"
 pic8259_simple = "0.2.0"
 pc-keyboard = "0.5.0"
-linked_list_allocator = "0.8.0"
 vga = { git = "https://github.com/otisdog8/vga" }
 libm = "0.2.1"
+linked_list_allocator = "0.8.0"
 
 [dependencies.lazy_static]
 version = "1.0"

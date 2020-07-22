@@ -36,7 +36,6 @@ fn panic(info: &PanicInfo) -> ! {
     os::test_panic_handler(info)
 }
 
-
 entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     MODE.lock().init();

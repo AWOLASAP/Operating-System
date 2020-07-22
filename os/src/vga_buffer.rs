@@ -14,6 +14,7 @@ use alloc::vec::Vec;
 use libm::sqrt;
 use num_traits::float::FloatCore;
 
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct ColorCode(u8);
