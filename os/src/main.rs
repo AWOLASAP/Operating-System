@@ -82,6 +82,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //print!("This is a test");
     //println!("It did not crash!");
     //x86_64::instructions::interrupts::int3();
+    ADVANCED_WRITER.lock().draw_rect((220, 140), (420, 340), Color16::LightBlue);
+    ADVANCED_WRITER.lock().draw_circle((320, 240), 200, Color16::LightRed);
+    for i in (0..30).rev() {
+        ADVANCED_WRITER.lock().draw_logo(320, 240, i);
+        ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+    }
+
 
     os::hlt_loop();
 
