@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
@@ -7,7 +9,6 @@ use vga::writers::{Graphics640x480x16, GraphicsWriter, Text80x25, TextWriter};
 use vga::drawing::Point;
 use core::convert::TryFrom;
 
-#![allow(dead_code)]
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -375,19 +376,6 @@ impl Writer {
         };
         for col in 0..BUFFER_WIDTH {
             self.buffer.chars[row][col].write(blank);
-        }
-    }
-
-    fn write_string(&mut self, s: &str) {
-        for byte in s.bytes() {
-            match byte {
-                // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte(byte),
-                // backspace
-                0x08 => self.backspace(),
-                // not part of printable ASCII range
-                _ => self.write_byte(0xfe),
-            }
         }
     }
 

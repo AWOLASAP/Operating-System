@@ -13,7 +13,7 @@ extern crate rlibc;
 mod vga_buffer;
 
 use core::panic::PanicInfo;
-use os::println;
+///use os::println;
 
 #[cfg(not(test))]
 #[panic_handler]
