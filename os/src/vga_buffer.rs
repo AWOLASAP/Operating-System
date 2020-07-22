@@ -7,7 +7,6 @@ use lazy_static::lazy_static;
 use vga::colors::Color16;
 use vga::writers::{Graphics640x480x16, GraphicsWriter, Text80x25, TextWriter};
 use vga::drawing::Point;
-use num_enum::TryFromPrimitive;
 use core::convert::TryFrom;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,11 +40,9 @@ const BUFFER_WIDTH: usize = 80;
 const BUFFER_HEIGHT_ADVANCED: usize = 60;
 const BUFFER_WIDTH_ADVANCED: usize = 80;
 
-#[derive(Copy, Clone)]
 #[repr(transparent)]
 struct Buffer {
-    chars: [[ScreenChar; BUFFER_WIDTH]; BUFFER_HEIGHT],
-}
+    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],}
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]
@@ -129,7 +126,7 @@ impl AdvancedWriter {
         //self.clear_screen(Color16::Black);
         for (index1, row) in self.buffer.chars.iter().enumerate() {
             for (index2, character) in row.iter().enumerate() {
-                if (character.ascii_character != 0) {
+                if character.ascii_character != 0 {
                     self.draw_character(index2 * 8, index1 * 8, *character)
                 }
             }
@@ -193,6 +190,7 @@ impl AdvancedWriter {
 impl fmt::Write for AdvancedWriter {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
+        self.draw_buffer();
         Ok(())
     }
 }
@@ -234,10 +232,10 @@ impl Writer {
                 let col = self.column_position;
 
                 let color_code = self.color_code;
-                self.buffer.chars[row][col] = ScreenChar {
+                self.buffer.chars[row][col].write(ScreenChar {
                     ascii_character: byte,
-                    color_code: color_code,
-                };
+                    color_code,
+                });
                 self.column_position += 1;
             }
         }
@@ -246,8 +244,8 @@ impl Writer {
     fn new_line(&mut self) {
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
-                let character = self.buffer.chars[row][col];
-                self.buffer.chars[row - 1][col] = character;
+                let character = self.buffer.chars[row][col].read();
+                self.buffer.chars[row - 1][col].write(character);
             }
         }
         self.clear_row(BUFFER_HEIGHT - 1);
@@ -260,18 +258,28 @@ impl Writer {
             color_code: self.color_code,
         };
         for col in 0..BUFFER_WIDTH {
-            self.buffer.chars[row][col] = blank;
+            self.buffer.chars[row][col].write(blank);
         }
     }
 
-    pub fn write_string(&mut self, s: &str) {
+    fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
                 // printable ASCII byte or newline
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
+                // backspace
+                0x08 => self.backspace(),
                 // not part of printable ASCII range
                 _ => self.write_byte(0xfe),
             }
+        }
+    }
+
+    fn backspace(&mut self) {
+        if self.column_position != 0 {
+            self.column_position -= 1;
+            self.write_byte(b' ');
+            self.column_position -= 1;
         }
     }
 }
@@ -290,6 +298,41 @@ lazy_static! {
     };
 }
 
+pub struct ModeController {
+    text: bool,
+}
+
+impl ModeController {
+    fn new() -> ModeController {
+        ModeController { text: true }
+    }
+
+    pub fn init(&mut self) {
+        if self.text {
+            self.text_init();
+        }
+        else {
+            self.graphics_init();
+        }
+    }
+
+    pub fn text_init(&mut self) {
+        self.text = true;
+        WRITER.lock().init();
+    }
+
+    pub fn graphics_init(&mut self) {
+        self.text = false;
+        ADVANCED_WRITER.lock().init();
+    }
+}
+
+lazy_static! {
+    pub static ref MODE: Mutex<ModeController> = {
+        Mutex::new(ModeController::new())
+    };
+}
+
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
@@ -304,6 +347,11 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    if MODE.lock().text == true {
+        WRITER.lock().write_fmt(args).unwrap();
+    }
+    else {
+        ADVANCED_WRITER.lock().write_fmt(args).unwrap();
+    }
     //ADVANCED_WRITER.lock().draw_buffer(WRITER.lock().buffer);
 }
