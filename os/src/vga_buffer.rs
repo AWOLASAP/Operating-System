@@ -11,7 +11,7 @@ use core::convert::TryFrom;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-struct ColorCode(u8);
+pub struct ColorCode(u8);
 
 impl ColorCode {
     fn new(foreground: Color16, background: Color16) -> ColorCode {
@@ -62,6 +62,8 @@ pub struct AdvancedWriter {
     buffer: AdvancedBuffer,
     old_buffer: AdvancedBuffer,
     mode: Graphics640x480x16,
+    back_color: Color16, 
+    front_color: Color16,
 }
 
 impl AdvancedWriter {
@@ -73,6 +75,8 @@ impl AdvancedWriter {
             color_code: ColorCode::new(Color16::Yellow, Color16::Black),
             buffer: AdvancedBuffer::new(),
             old_buffer: AdvancedBuffer::new(),
+            back_color: Color16::Black,
+            front_color: Color16::Yellow,
         }
     }
 
@@ -80,6 +84,36 @@ impl AdvancedWriter {
         self.mode.set_mode();
         self.mode.clear_screen(Color16::Black);
     }
+
+    pub fn set_color_code(&mut self, color_code: ColorCode) {
+        self.color_code = color_code;
+        let color = color_code.0;
+        let front_color = Color16::try_from((color << 4) >> 4);
+        let back_color = Color16::try_from(color >> 4);
+
+        let front_color = match front_color {
+            Ok(front_color) => front_color,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        let back_color = match back_color {
+            Ok(back_color) => back_color,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        self.front_color = front_color;
+        self.back_color = back_color;
+    }
+
+    pub fn set_front_color(&mut self, color: Color16) {
+        self.set_color_code(ColorCode::new(color, self.back_color));
+    }
+
+    pub fn set_back_color(&mut self, color: Color16) {
+        self.set_color_code(ColorCode::new(self.front_color, color));
+    }
+
+    
 
     // For use with the writer - draws characters
     // If this stops working, try replacing &self with &mut self
@@ -203,6 +237,8 @@ pub struct Writer {
     color_code: ColorCode,
     buffer: &'static mut Buffer,
     mode: Text80x25,
+    back_color: Color16, 
+    front_color: Color16,
 }
 
 impl Writer {
@@ -213,6 +249,8 @@ impl Writer {
             color_code: ColorCode::new(Color16::Yellow, Color16::Black),
             buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
             mode: mode,
+            back_color: Color16::Black,
+            front_color: Color16::Yellow,
         }
     }
 
@@ -220,6 +258,34 @@ impl Writer {
         self.mode.set_mode();
     }
 
+    pub fn set_color_code(&mut self, color_code: ColorCode) {
+        self.color_code = color_code;
+        let color = color_code.0;
+        let front_color = Color16::try_from((color << 4) >> 4);
+        let back_color = Color16::try_from(color >> 4);
+
+        let front_color = match front_color {
+            Ok(front_color) => front_color,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        let back_color = match back_color {
+            Ok(back_color) => back_color,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        self.front_color = front_color;
+        self.back_color = back_color;
+    }
+
+    pub fn set_front_color(&mut self, color: Color16) {
+        self.set_color_code(ColorCode::new(color, self.back_color));
+    }
+
+    pub fn set_back_color(&mut self, color: Color16) {
+        self.set_color_code(ColorCode::new(self.front_color, color));
+    }
+    
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),

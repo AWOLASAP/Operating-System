@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 use crate::vga_buffer::MODE;
+use crate::vga_buffer::WRITER;
+use vga::colors::Color16;
 
 extern crate rlibc;
 
@@ -33,7 +35,7 @@ pub extern "C" fn _start() -> ! {
     println!("Hello, Workd!");
     println!("Hello, Workd!");
     MODE.lock().text_init();
-
+    WRITER.lock().set_back_color(Color16::White);
     panic!("Some panic message!");
 }
 //2.5
