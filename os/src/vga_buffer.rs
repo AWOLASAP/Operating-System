@@ -155,16 +155,17 @@ impl AdvancedWriter {
         self.mode.set_pixel(x, y, color);
     }
 
-    pub fn draw_buffer(&self) {
+    pub fn draw_buffer(&mut self) {
         // This also sets write mode 2
         //self.clear_screen(Color16::Black);
-        for (index1, row) in self.buffer.chars.iter().enumerate() {
-            for (index2, character) in row.iter().enumerate() {
-                if character.ascii_character != 0 {
-                    self.draw_character(index2 * 8, index1 * 8, *character)
+        for (index1, (row_new, row_old)) in self.buffer.chars.iter().zip(self.old_buffer.chars.iter()).enumerate() {
+            for (index2, (character_new, character_old)) in row_new.iter().zip(row_old.iter()).enumerate() {
+                if character_new.ascii_character != 0 && character_new.ascii_character != character_old.ascii_character{
+                    self.draw_character(index2 * 8, index1 * 8, *character_new)
                 }
             }
         }
+        self.old_buffer = self.buffer;
     }
 
     pub fn write_byte(&mut self, byte: u8) {
@@ -224,7 +225,6 @@ impl AdvancedWriter {
 impl fmt::Write for AdvancedWriter {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
-        self.draw_buffer();
         Ok(())
     }
 }
