@@ -13,6 +13,7 @@ pub struct CommandRunner{
 }
 
 impl CommandRunner {
+
     pub fn new(string: String) -> CommandRunner {
         CommandRunner{
             command_buffer: String::new(),
@@ -21,10 +22,12 @@ impl CommandRunner {
     }
 
     pub fn addToBuffer(&mut self, c: char) {
-        self.command_buffer.push(c);
-        if (c == 'p') {
-            self.printBuffer();
+        if (c == '\n'){
+            self.evalBuffer();
+        } else{
+            self.command_buffer.push(c);
         }
+        
     }
 
     pub fn echo(&mut self, string: &str) {
@@ -32,7 +35,16 @@ impl CommandRunner {
     }
 
     pub fn printBuffer(&mut self) {
-        println!("The command buffer includes: {}", self.command_buffer);
+        println!("\nThe command buffer includes: {}", self.command_buffer);
+    }
+
+    pub fn evalBuffer(&mut self) {
+        if ("print" == self.command_buffer){
+            self.printBuffer();
+        } else {
+            println!("\nInvalid Command!");
+        }
+        self.command_buffer = String::from("");
     }
 }
 
@@ -45,6 +57,6 @@ macro_rules! addCommandBuffer {
     ($c: expr) => {commands::addCommandBufferFN($c)};
 }
 
-pub fn printCommandBuffer() {
+pub fn printCommandBufferFN() {
     COMMANDRUNNER.lock().printBuffer();
 }
