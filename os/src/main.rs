@@ -3,6 +3,7 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
+
 use os::vga_buffer::MODE;
 use os::vga_buffer::WRITER;
 use os::vga_buffer::ADVANCED_WRITER;
@@ -32,6 +33,9 @@ fn panic(info: &PanicInfo) -> ! {
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     MODE.lock().init();
+    // Use this to activate graphics mode - graphics mode implements all of the APIs that text mode implements, 
+    // but it is  slower than text mode because it doesn't operate off of direct memory access. 
+    // Activating graphics mode also enables graphics things like line drawing
     //MODE.lock().graphics_init();
     println!("Hello World!");
 
@@ -40,7 +44,6 @@ pub extern "C" fn _start() -> ! {
     #[cfg(test)]
     test_main();
 
-    MODE.lock().graphics_init();
     for i in 0..60 {
         println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
     }
@@ -55,7 +58,6 @@ pub extern "C" fn _start() -> ! {
     //};
     //let test_string = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab";
 
-    loop {}
     //println!("Hello, World!");
     //MODE.lock().graphics_init();
     //println!("Hello, World!");

@@ -39,12 +39,13 @@ impl ScreenChar {
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
-const BUFFER_HEIGHT_ADVANCED: usize = 60;
-const BUFFER_WIDTH_ADVANCED: usize = 80;
-
 #[repr(transparent)]
 struct Buffer {
-    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],}
+    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
+}
+
+const BUFFER_HEIGHT_ADVANCED: usize = 60;
+const BUFFER_WIDTH_ADVANCED: usize = 80;
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]
@@ -115,8 +116,6 @@ impl AdvancedWriter {
         self.set_color_code(ColorCode::new(self.front_color, color));
     }
 
-    
-
     // For use with the writer - draws characters
     // If this stops working, try replacing &self with &mut self
     pub fn draw_character(&self, x: usize, y: usize, character: ScreenChar) {
@@ -134,7 +133,6 @@ impl AdvancedWriter {
             Ok(back_color) => back_color,
             Err(why) => panic!("{:?}", why),
         };
-
 
         self.mode.draw_character(x, y, ascii_character as char, front_color, back_color);
     }
@@ -264,10 +262,10 @@ impl fmt::Write for AdvancedWriter {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
         self.draw_buffer();
-        //WRITER.lock().write_string("Write String Called");
         Ok(())
     }
 }
+
 lazy_static! {
     pub static ref ADVANCED_WRITER: Mutex<AdvancedWriter> = Mutex::new(AdvancedWriter::new());
 }
@@ -421,15 +419,17 @@ impl ModeController {
     }
 
     pub fn text_init(&mut self) {
-        self.text = true;
-        WRITER.lock().init();
-        WRITER.lock().write_string("Text enabled");
+        if !self.text {
+            self.text = true;
+            WRITER.lock().init();
+        }
     }
 
     pub fn graphics_init(&mut self) {
-        self.text = false;
-        ADVANCED_WRITER.lock().init();
-        WRITER.lock().write_string("Text disabled");
+        if self.text {
+            self.text = false;
+            ADVANCED_WRITER.lock().init();
+        }
     }
 }
 
@@ -459,34 +459,10 @@ pub fn _print(args: fmt::Arguments) {
     interrupts::without_interrupts(|| {
       if MODE.lock().text {
           WRITER.lock().write_fmt(args).unwrap();
-          WRITER.lock().write_string("true");
       }
       else {
           ADVANCED_WRITER.lock().write_fmt(args).unwrap();
-          WRITER.lock().write_string("false");
       }
-    });
-
-}
-
-#[macro_export]
-macro_rules! print_g {
-    ($($arg:tt)*) => ($crate::vga_buffer::_print_g(format_args!($($arg)*)));
-}
-
-#[macro_export]
-macro_rules! println_g {
-    () => ($crate::print_g!("\n"));
-    ($($arg:tt)*) => ($crate::print_g!("{}\n", format_args!($($arg)*)));
-}
-
-#[doc(hidden)]
-pub fn _print_g(args: fmt::Arguments) {
-    use core::fmt::Write;
-    use x86_64::instructions::interrupts;
-
-    interrupts::without_interrupts(|| {
-        ADVANCED_WRITER.lock().write_fmt(args).unwrap();
     });
 
 }

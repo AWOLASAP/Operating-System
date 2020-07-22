@@ -5,10 +5,6 @@ use lazy_static::lazy_static;
 use crate::gdt;
 use pic8259_simple::ChainedPics;
 use spin;
-use crate::vga_buffer::WRITER;
-use crate::vga_buffer::ADVANCED_WRITER;
-use crate::vga_buffer::MODE;
-
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -51,22 +47,10 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
 
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {
-            //if MODE.lock().text {
-                match key {
-                    //DecodedKey::Unicode(character) => print_g!("{}", character),
-                    DecodedKey::Unicode(character) => print!("{}", character),
-                    DecodedKey::RawKey(key) => print!("{:?}", key),
-                }
-            //    print!("this")
-            //}
-            //else {
-            //    match key {
-                    //DecodedKey::Unicode(character) => print_g!("{}", character),
-            //        DecodedKey::Unicode(character) => print_g!("{}", character),
-            //        DecodedKey::RawKey(key) => print_g!("{:?}", key),
-            //    }  
-            //}
-
+            match key {
+                DecodedKey::Unicode(character) => print!("{}", character),
+                DecodedKey::RawKey(key) => print!("{:?}", key),
+            }
         }
     }
 
