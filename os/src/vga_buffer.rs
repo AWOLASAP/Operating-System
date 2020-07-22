@@ -9,6 +9,10 @@ use vga::colors::Color16;
 use vga::writers::{Graphics640x480x16, GraphicsWriter, Text80x25, TextWriter};
 use vga::drawing::Point;
 use core::convert::TryFrom;
+use core::cmp::{min, max};
+use alloc::vec::Vec;
+use libm::sqrt;
+use num_traits::float::FloatCore;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -184,6 +188,52 @@ impl AdvancedWriter {
         self.mode.draw_line(start, end, color);
     }
 
+    pub fn draw_rect(&self, start: Point<isize>, end: Point<isize>, color: Color16) {
+        let y1 = start.1;
+        let y2 = end.1;
+        let x1 = start.0;
+        let x2 = end.0;
+
+        for i in min(x1, x2)..max(x1, x2) {
+            self.mode.draw_line((i, y1), (i, y2), color);
+        }
+    }
+
+    pub fn draw_circle(&mut self, center: Point<isize>, radius: isize, color: Color16) {
+        let mut x: isize = 0;
+        let mut y = radius;
+        let mut d : isize = 3 - 2 * radius;
+
+        while y >= x {
+            self.mode.draw_line((x + center.0, y + center.1), (x + center.0, -y + center.1), color);
+            self.mode.draw_line((-x + center.0, y + center.1), (-x + center.0, -y + center.1), color);
+            self.mode.draw_line((-y + center.0, x + center.1), (y + center.0, x + center.1), color);
+            self.mode.draw_line((-y + center.0, -x + center.1), (y + center.0, -x + center.1), color);
+            x = x + 1;
+            if d > 0 {
+                y = y - 1;
+                d = d + 4 * (x - y) + 10;
+            }
+            else {
+                d = d + 4*x + 6;
+            }
+        }
+    }
+
+    // NOTE: draws this at the center
+    pub fn draw_logo(&mut self, x: isize, y: isize, scale: isize) {
+        // 25
+        self.draw_circle((x, y), 8 * scale as isize, Color16::Pink);
+        self.draw_circle((x - 4*scale, y - 4*scale), 1 * scale as isize, Color16::LightCyan);
+        self.draw_circle((x + 4*scale, y - 4*scale), 1 * scale as isize, Color16::LightCyan);
+        self.draw_circle((x, y), 2 * scale as isize, Color16::LightGreen);
+
+        for i in 0..scale {
+            self.draw_line((x - 5 * scale + i, y + 3 * scale), (x - scale + i, y + 6 * scale), Color16::LightRed);
+            self.draw_line((x + 5 * scale - i, y + 3 * scale), (x + scale - i, y + 6 * scale), Color16::LightRed);
+        }
+    }
+
     pub fn set_pixel(&self, x: usize, y: usize, color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.set_pixel(x, y, color);
@@ -207,6 +257,7 @@ impl AdvancedWriter {
         for row in 1..BUFFER_HEIGHT_ADVANCED {
             self.new_line();
         }
+        self.mode.clear_screen(Color16::Black);
         self.draw_buffer();
     }
 
