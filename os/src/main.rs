@@ -75,13 +75,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
-    for i in 0..60 {
-        println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
-    }
-    ADVANCED_WRITER.lock().clear_buffer();
-    print!("This is a test");
-    println!("It did not crash!");
-    x86_64::instructions::interrupts::int3();
+    //for i in 0..60 {
+    //    println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
+    //}
+    //ADVANCED_WRITER.lock().clear_buffer();
+    //print!("This is a test");
+    //println!("It did not crash!");
+    //x86_64::instructions::interrupts::int3();
 
     os::hlt_loop();
 
