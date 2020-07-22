@@ -6,6 +6,7 @@ use volatile::Volatile;
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
+        color_num: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
@@ -58,13 +59,35 @@ struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
+fn get_color(color_num: i32) -> Color {
+    let mut returnColor = Color::LightRed;
+    match color_num {
+        ///0 => returnColor = Color::Black,
+        1 => returnColor = Color::Blue,
+        2 => returnColor = Color::Green,
+        3 => returnColor = Color::Cyan,
+        4 => returnColor = Color::Red,
+        5 => returnColor = Color::Magenta,
+        6 => returnColor = Color::Brown,
+        7 => returnColor = Color::LightGray,
+        8 => returnColor = Color::DarkGray,
+        9 => returnColor = Color::LightBlue,
+        10 => returnColor = Color::LightGreen,
+        11 => returnColor = Color::LightCyan,
+        12 => returnColor = Color::LightRed,
+        13 => returnColor = Color::Pink,
+        14 => returnColor = Color::Yellow,
+        15 => returnColor = Color::White,
+        _ => returnColor = Color::White,
+    }
+    returnColor
+}
+
 pub struct Writer {
     column_position: usize,
     color_code: ColorCode,
-    buffer: &'static mut Buffer,
-}
-
-impl Writer {
+    color_num: i32,
+    buffer: &'static mut Buffer, } impl Writer {
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
@@ -86,15 +109,23 @@ impl Writer {
         }
     }
 
+    pub fn write_byte_change_color(&mut self, byte: u8){
+        self.change_color();
+        self.write_byte(byte);
+    }
+
     fn change_color(&mut self){
-        self.color_code = ColorCode::new(Color::Blue, Color::Black);
+        self.color_num += 1;
+        self.color_num %= 15;
+        let foreground = get_color(self.color_num);
+        self.color_code = ColorCode::new(foreground, Color::Black);
     }
 
     fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
                 // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte(byte),
+                0x20..=0xFF | b'\n' => self.write_byte_change_color(byte),
                 // backspace
                 0x08 => self.backspace(),
                 // not part of printable ASCII range
