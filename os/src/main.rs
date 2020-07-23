@@ -10,9 +10,7 @@ extern crate rlibc;
 mod serial;
 
 // Use these for things like buffer access
-use os::vga_buffer::MODE;
-use os::vga_buffer::WRITER;
-use os::vga_buffer::ADVANCED_WRITER;
+use os::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
 use vga::colors::Color16;
 use os::print;
 use os::println;
@@ -92,10 +90,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //    }
     //    ADVANCED_WRITER.lock().clear_buffer();
         MODE.lock().text_init();
+        WRITER.lock().disable_blink();
+        WRITER.lock().set_back_color(Color16::White);
+        WRITER.lock().set_front_color(Color16::Black);
     });
 
     os::hlt_loop();
-
+    println!("This is a test of color stuff");
 
     //for i in 0..60 {
     //    println!("{}", i);

@@ -65,6 +65,47 @@ impl AdvancedBuffer {
     }
 }
 
+pub trait PrintWriter {
+    // Getters and setters
+    fn get_front_color(&self) -> Color16;
+    fn set_front_color_attr(&mut self, color: Color16);
+
+    fn get_back_color(&self) -> Color16;
+    fn set_back_color_attr(&mut self, color: Color16);
+
+    fn get_color_code(&self) -> ColorCode;
+    fn set_color_code_attr(&mut self, color_code: ColorCode);
+
+    // Color functionality
+    fn set_color_code(&mut self, color_code: ColorCode) {
+        self.set_color_code_attr(color_code);
+        let color = color_code.0;
+        let front_color = Color16::try_from((color << 4) >> 4);
+        let back_color = Color16::try_from(color >> 4);
+
+        let front_color = match front_color {
+            Ok(front_color) => front_color,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        let back_color = match back_color {
+            Ok(back_color) => back_color,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        self.set_front_color_attr(front_color);
+        self.set_back_color_attr(back_color);
+    }
+
+    fn set_front_color(&mut self, color: Color16) {
+        self.set_color_code(ColorCode::new(color, self.get_back_color()));
+    }
+
+    fn set_back_color(&mut self, color: Color16) {
+        self.set_color_code(ColorCode::new(self.get_front_color(), color));
+    }
+}
+
 pub struct AdvancedWriter {
     column_position: usize,
     color_code: ColorCode,
@@ -101,7 +142,7 @@ impl AdvancedWriter {
         self.mode.set_mode();
         self.mode.clear_screen(Color16::Black);
     }
-
+    /*
     // Color functionality
     pub fn set_color_code(&mut self, color_code: ColorCode) {
         self.color_code = color_code;
@@ -130,7 +171,7 @@ impl AdvancedWriter {
     pub fn set_back_color(&mut self, color: Color16) {
         self.set_color_code(ColorCode::new(self.front_color, color));
     }
-
+    */
     // For use with the writer - draws characters
     // If this stops working, try replacing &self with &mut self
     pub fn draw_character(&self, x: usize, y: usize, character: ScreenChar) {
@@ -418,6 +459,29 @@ impl AdvancedWriter {
     }
 }
 
+impl PrintWriter for AdvancedWriter {
+    fn get_front_color(&self) -> Color16 {
+        self.front_color
+    }
+    fn set_front_color_attr(&mut self, color: Color16) {
+        self.front_color = color;
+    }
+
+    fn get_back_color(&self) -> Color16  {
+        self.back_color
+    }
+    fn set_back_color_attr(&mut self, color: Color16) {
+        self.back_color = color;
+    }
+
+    fn get_color_code(&self) -> ColorCode {
+        ColorCode::new(self.front_color, self.back_color)
+    }
+    fn set_color_code_attr(&mut self, color_code: ColorCode) {
+        self.color_code = color_code;
+    }
+}
+
 impl fmt::Write for AdvancedWriter {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
@@ -461,7 +525,7 @@ impl Writer {
     pub fn init(&mut self) {
         self.mode.set_mode();
     }
-
+    /*
     // Color functionality
     pub fn set_color_code(&mut self, color_code: ColorCode) {
         self.color_code = color_code;
@@ -490,7 +554,7 @@ impl Writer {
     pub fn set_back_color(&mut self, color: Color16) {
         self.set_color_code(ColorCode::new(self.front_color, color));
     }
-    
+    */
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
@@ -615,6 +679,29 @@ impl Writer {
         self.blink_on = false;
     }
 
+}
+
+impl PrintWriter for Writer {
+    fn get_front_color(&self) -> Color16 {
+        self.front_color
+    }
+    fn set_front_color_attr(&mut self, color: Color16) {
+        self.front_color = color;
+    }
+
+    fn get_back_color(&self) -> Color16  {
+        self.back_color
+    }
+    fn set_back_color_attr(&mut self, color: Color16) {
+        self.back_color = color;
+    }
+
+    fn get_color_code(&self) -> ColorCode {
+        ColorCode::new(self.front_color, self.back_color)
+    }
+    fn set_color_code_attr(&mut self, color_code: ColorCode) {
+        self.color_code = color_code;
+    }
 }
 
 impl fmt::Write for Writer {
