@@ -31,18 +31,18 @@ impl CommandRunner {
                  } else {
             self.command_buffer.push(c);
         }
-        
+
     }
 
     pub fn addToBuffer(&mut self, c: char) {
         if (c == '\n'){
-            self.evalBuffer();
+            self.eval_buffer();
         } else if (c == char::from(8)) {
             self.deleteLastInBuffer();
         } else {
             self.command_buffer.push(c);
         }
-        
+
     }
 
     pub fn remove_from_buffer(&mut self) {

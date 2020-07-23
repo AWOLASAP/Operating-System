@@ -8,6 +8,7 @@ use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
 use crate::print;
 use crate::println;
 use crate::vga_buffer::WRITER;
+use crate::vga_buffer::PrintWriter;
 
 static WAKER: AtomicWaker = AtomicWaker::new();
 static SCANCODE_QUEUE: OnceCell<ArrayQueue<u8>> = OnceCell::uninit();
@@ -19,8 +20,8 @@ pub async fn print_keypresses() {
 
     while let Some(scancode) = scancodes.next().await {
         match scancode{
-            75=>WRITER.lock().cursor_right(1),
-            77=>WRITER.lock().cursor_left(1),
+            75=>WRITER.lock().move_cursor_left(1),
+            77=>WRITER.lock().move_cursor_right(1),
             _=>if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
                 if let Some(key) = keyboard.process_keyevent(key_event) {
                     match key {
