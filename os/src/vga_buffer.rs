@@ -142,22 +142,22 @@ pub trait PrintWriter {
         if self.get_blink_on() {
             let character = self.read_buffer(self.get_height() - 1, self.get_column_position());
             let ascii_character = character.ascii_character;
-            
+
             let (front_color, back_color) = character.color_code.decompose();
 
             if self.get_blinked() {
-                self.write_buffer(self.get_height() - 1, 
-                self.get_column_position(), 
+                self.write_buffer(self.get_height() - 1,
+                self.get_column_position(),
                 ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(
-                    front_color, 
+                    front_color,
                     self.get_blink_color()
                 )});
             }
             else {
-                self.write_buffer(self.get_height() - 1, 
-                self.get_column_position(), 
+                self.write_buffer(self.get_height() - 1,
+                self.get_column_position(),
                 ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(
-                    front_color, 
+                    front_color,
                     front_color
                 )});
                 self.set_blink_color(back_color);
@@ -188,7 +188,7 @@ pub trait PrintWriter {
         }
         else {
             self.set_column_position(self.get_column_position() + dist)
-        }    
+        }
     }
 
     // Actual print stuff
@@ -265,9 +265,8 @@ pub trait PrintWriter {
 
     fn delete(&mut self){
         if self.get_column_position() != self.get_width()-1{
-            self.move_cursor_right(1);
             self.write_byte(b' ');
-            self.move_cursor_left(2);
+            self.move_cursor_left(1);
         }
     }
 
@@ -287,7 +286,7 @@ pub struct AdvancedWriter {
     buffer: AdvancedBuffer,
     old_buffer: AdvancedBuffer,
     color_code: ColorCode,
-    back_color: Color16, 
+    back_color: Color16,
     front_color: Color16,
     blinked_color: Color16,
 
@@ -296,8 +295,8 @@ pub struct AdvancedWriter {
 impl AdvancedWriter {
     fn new() -> AdvancedWriter {
         let mode = Graphics640x480x16::new();
-        AdvancedWriter { 
-            mode: mode,             
+        AdvancedWriter {
+            mode: mode,
             column_position: 0,
             color_code: ColorCode::new(Color16::Yellow, Color16::Black),
             buffer: AdvancedBuffer::new(),
@@ -333,7 +332,7 @@ impl AdvancedWriter {
             self.draw_character(x, y, new_character);
         }
         else {
-            let ascii_character = old_character.ascii_character;    
+            let ascii_character = old_character.ascii_character;
             let (front_color, back_color) = new_character.color_code.decompose();
             let ascii_character_new = new_character.ascii_character;
 
@@ -341,13 +340,13 @@ impl AdvancedWriter {
         }
     }
 
-    //Draws a character at specified coordinates - you need to specify both the background and foreground color 
+    //Draws a character at specified coordinates - you need to specify both the background and foreground color
     pub fn draw_char(&self, x: usize, y: usize, character: char, front_color: Color16, back_color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.draw_character(x, y, character, front_color, back_color);
     }
 
-    //Draws a character at specified coordinates - you need to specify foreground color - it will not overwrite any other pixels  
+    //Draws a character at specified coordinates - you need to specify foreground color - it will not overwrite any other pixels
     pub fn draw_char_fast(&self, x: usize, y: usize, character: char, front_color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.draw_character_fast(x, y, character, front_color);
@@ -403,12 +402,12 @@ impl AdvancedWriter {
 
         for i in 0..scale {
             self.draw_line(
-                (x - 5 * scale + i, y + 3 * scale), 
-                (x - scale + i, y + 6 * scale), 
+                (x - 5 * scale + i, y + 3 * scale),
+                (x - scale + i, y + 6 * scale),
                 Color16::LightRed);
             self.draw_line(
-                (x + 5 * scale - i, y + 3 * scale), 
-                (x + scale - i, y + 6 * scale), 
+                (x + 5 * scale - i, y + 3 * scale),
+                (x + scale - i, y + 6 * scale),
                 Color16::LightRed);
         }
     }
@@ -566,7 +565,7 @@ pub struct Writer {
     color_code: ColorCode,
     buffer: &'static mut Buffer,
     mode: Text80x25,
-    back_color: Color16, 
+    back_color: Color16,
     front_color: Color16,
     blinked_color: Color16,
     blink_on: bool,
@@ -709,7 +708,7 @@ impl ModeController {
     }
 
     pub fn text_init(&mut self) {
-        
+
         if !self.text {
             self.text = true;
             interrupts::without_interrupts(|| {

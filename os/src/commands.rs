@@ -31,7 +31,7 @@ impl CommandRunner {
                  } else {
             self.command_buffer.push(c);
         }
-        
+
     }
 
     pub fn addToBuffer(&mut self, c: char) {
@@ -42,7 +42,7 @@ impl CommandRunner {
         } else {
             self.command_buffer.push(c);
         }
-        
+
     }
 
     pub fn remove_from_buffer(&mut self) {
