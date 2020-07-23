@@ -65,15 +65,15 @@ pub struct AdvancedWriter {
     buffer: AdvancedBuffer,
     old_buffer: AdvancedBuffer,
     mode: Graphics640x480x16,
-    back_color: Color16, 
+    back_color: Color16,
     front_color: Color16,
 }
 
 impl AdvancedWriter {
     fn new() -> AdvancedWriter {
         let mode = Graphics640x480x16::new();
-        AdvancedWriter { 
-            mode: mode,             
+        AdvancedWriter {
+            mode: mode,
             column_position: 0,
             color_code: ColorCode::new(Color16::Yellow, Color16::Black),
             buffer: AdvancedBuffer::new(),
@@ -147,12 +147,12 @@ impl AdvancedWriter {
             let ascii_character = old_character.ascii_character;
             let front_color = Color16::try_from((color << 4) >> 4);
             let back_color = Color16::try_from(color >> 4);
-    
+
             let front_color = match front_color {
                 Ok(front_color) => front_color,
                 Err(why) => panic!("{:?}", why),
             };
-    
+
             let back_color = match back_color {
                 Ok(back_color) => back_color,
                 Err(why) => panic!("{:?}", why),
@@ -163,13 +163,13 @@ impl AdvancedWriter {
         }
     }
 
-    //Draws a character at specified coordinates - you need to specify both the background and foreground color 
+    //Draws a character at specified coordinates - you need to specify both the background and foreground color
     pub fn draw_char(&self, x: usize, y: usize, character: char, front_color: Color16, back_color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.draw_character(x, y, character, front_color, back_color);
     }
 
-    //Draws a character at specified coordinates - you need to specify foreground color - it will not overwrite any other pixels  
+    //Draws a character at specified coordinates - you need to specify foreground color - it will not overwrite any other pixels
     pub fn draw_char_fast(&self, x: usize, y: usize, character: char, front_color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.draw_character_fast(x, y, character, front_color);
@@ -289,7 +289,7 @@ pub struct Writer {
     color_code: ColorCode,
     buffer: &'static mut Buffer,
     mode: Text80x25,
-    back_color: Color16, 
+    back_color: Color16,
     front_color: Color16,
 }
 
@@ -304,6 +304,14 @@ impl Writer {
             back_color: Color16::Black,
             front_color: Color16::Yellow,
         }
+    }
+
+    pub fn cursor_left(&mut self,shift:usize){
+        self.column_position += shift;
+    }
+
+    pub fn cursor_right(&mut self,shift:usize){
+        self.column_position -= shift;
     }
 
     pub fn init(&mut self) {
@@ -337,7 +345,7 @@ impl Writer {
     pub fn set_back_color(&mut self, color: Color16) {
         self.set_color_code(ColorCode::new(self.front_color, color));
     }
-    
+
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
@@ -404,9 +412,8 @@ impl Writer {
     }
     fn delete(&mut self){
         if self.column_position != BUFFER_WIDTH-1{
-            self.column_position+=1;
             self.write_byte(b' ');
-            self.column_position -= 2;
+            self.column_position -= 1;
         }
     }
 }
