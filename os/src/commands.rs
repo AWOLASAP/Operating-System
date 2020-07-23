@@ -22,10 +22,9 @@ impl CommandRunner {
     }
 
     pub fn addToBuffer(&mut self, c: char) {
-        let delete_char: char = char::from(8);
         if (c == '\n'){
             self.evalBuffer();
-        } else if (c == delete_char) {
+        } else if (c == char::from(8)) {
             self.deleteLastInBuffer();
         } else {
             self.command_buffer.push(c);
