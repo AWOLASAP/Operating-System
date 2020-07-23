@@ -1,4 +1,4 @@
-use x86_64::{PhysAddr, VirtAddr, structures::paging::{Page, PhysFrame, Mapper, Size4KiB, FrameAllocator, PageTable, OffsetPageTable}};
+use x86_64::{PhysAddr, VirtAddr, structures::paging::{ PhysFrame, Size4KiB, FrameAllocator, PageTable, OffsetPageTable}};
 use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 
 pub struct BootInfoFrameAllocator {
