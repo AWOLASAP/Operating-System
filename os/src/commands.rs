@@ -81,9 +81,12 @@ impl CommandRunner {
 }
 
 pub fn add_command_buffer_FN(c: char) {
-    COMMANDRUNNER.lock().add_to_buffer(c);
+    interrupts::without_interrupts(|| {
+        COMMANDRUNNER.lock().add_to_buffer(c);
+    });
 }
-pub fn remove_command_buffer_FN() { COMMANDRUNNER.lock().remove_from_buffer(); }
+pub fn remove_command_buffer_FN() {     interrupts::without_interrupts(|| {
+    COMMANDRUNNER.lock().remove_from_buffer();}); }
 
 #[macro_export]
 macro_rules! add_command_buffer {
@@ -96,5 +99,7 @@ macro_rules! remove_command_buffer {
 }
 
 pub fn print_command_buffer_FN() {
+    interrupts::without_interrupts(|| {
     COMMANDRUNNER.lock().print_buffer();
+    });
 }

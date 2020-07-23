@@ -84,7 +84,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         for _i in 0..30 {
             ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
         }
-        ADVANCED_WRITER.lock().clear_buffer();
+        //ADVANCED_WRITER.lock().clear_buffer();
         MODE.lock().text_init();
         println!("");
     });
