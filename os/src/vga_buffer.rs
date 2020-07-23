@@ -73,6 +73,8 @@ pub struct AdvancedWriter {
     mode: Graphics640x480x16,
     back_color: Color16, 
     front_color: Color16,
+    blinked_color: Color16,
+    blinked: bool,
 }
 
 impl AdvancedWriter {
@@ -86,6 +88,8 @@ impl AdvancedWriter {
             old_buffer: AdvancedBuffer::new(),
             back_color: Color16::Black,
             front_color: Color16::Yellow,
+            blinked_color: Color16::Black,
+            blinked: false,
         }
     }
 
@@ -94,6 +98,7 @@ impl AdvancedWriter {
         self.mode.clear_screen(Color16::Black);
     }
 
+    // Color functionality
     pub fn set_color_code(&mut self, color_code: ColorCode) {
         self.color_code = color_code;
         let color = color_code.0;
@@ -254,6 +259,7 @@ impl AdvancedWriter {
         self.old_buffer = self.buffer;
     }
 
+    // For when you know what's on the pixels
     pub fn clear_buffer(&mut self) {
         for row in 1..BUFFER_HEIGHT_ADVANCED {
             self.new_line();
@@ -278,12 +284,15 @@ impl AdvancedWriter {
                     ascii_character: byte,
                     color_code: color_code,
                 };
-                self.column_position += 1;
+                self.move_cursor_right(1);
             }
         }
     }
 
     fn new_line(&mut self) {
+        if self.blinked {
+            self.blink();
+        }
         for row in 1..BUFFER_HEIGHT_ADVANCED {
             for col in 0..BUFFER_WIDTH_ADVANCED {
                 let character = self.buffer.chars[row][col];
@@ -291,7 +300,7 @@ impl AdvancedWriter {
             }
         }
         self.clear_row(BUFFER_HEIGHT_ADVANCED - 1);
-        self.column_position = 0;
+        self.move_cursor_left(BUFFER_WIDTH_ADVANCED);
     }
 
     fn clear_row(&mut self, row: usize) {
@@ -318,10 +327,61 @@ impl AdvancedWriter {
     }
     fn backspace(&mut self) {
         if self.column_position != 0 {
-            self.column_position -= 1;
+            self.move_cursor_left(1);
             self.write_byte(b' ');
-            self.column_position -= 1;
+            self.move_cursor_left(1);
         }
+    }
+    // Cursor logic
+    pub fn move_cursor_left(&mut self, dist: usize) {
+        if self.blinked {
+            self.blink();
+        }
+        if self.column_position < dist {
+            self.column_position = 0;
+        }
+        else {
+            self.column_position -= dist;
+        }
+    }
+
+    pub fn move_cursor_right(&mut self, dist: usize) {
+        if self.blinked {
+            self.blink();
+        }
+        if self.column_position + dist > BUFFER_WIDTH_ADVANCED - 1 {
+            self.new_line();
+        }
+        else {
+            self.column_position += dist;
+        }    
+    }
+
+    pub fn blink(&mut self) {
+        let character = self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position];
+        let color = character.color_code.0;
+        let ascii_character = character.ascii_character;
+        let front_color = Color16::try_from((color << 4) >> 4);
+        let back_color = Color16::try_from(color >> 4);
+
+        let front_color = match front_color {
+            Ok(front_color) => front_color,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        let back_color = match back_color {
+            Ok(back_color) => back_color,
+            Err(why) => panic!("{:?}", why),
+        };
+        if self.blinked {
+            self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position] = ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, self.blinked_color)};
+        }
+        else {
+            self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position] = ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, front_color)};
+            self.blinked_color = back_color;
+        }
+        self.blinked = !self.blinked;
+        self.draw_buffer();
     }
 }
 
@@ -344,6 +404,8 @@ pub struct Writer {
     mode: Text80x25,
     back_color: Color16, 
     front_color: Color16,
+    blinked_color: Color16,
+    blinked: bool,
 }
 
 impl Writer {
@@ -356,6 +418,8 @@ impl Writer {
             mode: mode,
             back_color: Color16::Black,
             front_color: Color16::Yellow,
+            blinked_color: Color16::Black,
+            blinked: false,
         }
     }
 
@@ -363,6 +427,7 @@ impl Writer {
         self.mode.set_mode();
     }
 
+    // Color functionality
     pub fn set_color_code(&mut self, color_code: ColorCode) {
         self.color_code = color_code;
         let color = color_code.0;
@@ -407,7 +472,7 @@ impl Writer {
                     ascii_character: byte,
                     color_code,
                 });
-                self.column_position += 1;
+                self.move_cursor_right(1);
             }
         }
     }
@@ -448,10 +513,60 @@ impl Writer {
 
     fn backspace(&mut self) {
         if self.column_position != 0 {
-            self.column_position -= 1;
+            self.move_cursor_left(1);
             self.write_byte(b' ');
-            self.column_position -= 1;
+            self.move_cursor_left(1);
         }
+    }
+    // Cursor logic
+    pub fn move_cursor_left(&mut self, dist: usize) {
+        if self.blinked {
+            self.blink();
+        }
+        if self.column_position < dist {
+            self.column_position = 0;
+        }
+        else {
+            self.column_position -= dist;
+        }
+    }
+
+    pub fn move_cursor_right(&mut self, dist: usize) {
+        if self.blinked {
+            self.blink();
+        }
+        if self.column_position + dist > BUFFER_WIDTH - 1 {
+           self.new_line();
+        }
+        else {
+            self.column_position += dist;
+        }    
+    }
+
+    pub fn blink(&mut self) {
+        let character = self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].read();
+        let color = character.color_code.0;
+        let ascii_character = character.ascii_character;
+        let front_color = Color16::try_from((color << 4) >> 4);
+        let back_color = Color16::try_from(color >> 4);
+
+        let front_color = match front_color {
+            Ok(front_color) => front_color,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        let back_color = match back_color {
+            Ok(back_color) => back_color,
+            Err(why) => panic!("{:?}", why),
+        };
+        if self.blinked {
+            self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].write(ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, self.blinked_color)});
+        }
+        else {
+            self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].write(ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, front_color)});
+            self.blinked_color = back_color;
+        }
+        self.blinked = !self.blinked;
     }
 }
 impl fmt::Write for Writer {
@@ -503,7 +618,17 @@ impl ModeController {
             });
         }
     }
-}
+
+    pub fn blink_current(&mut self) {
+        if self.text {
+            WRITER.lock().blink();
+        }
+        else {
+            ADVANCED_WRITER.lock().blink();
+        }
+        //WRITER.lock().write_string("blunk");
+    }
+ }
 
 lazy_static! {
     pub static ref MODE: Mutex<ModeController> = {
