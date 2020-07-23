@@ -14,6 +14,7 @@ use alloc::vec::Vec;
 use libm::sqrt;
 use num_traits::float::FloatCore;
 use x86_64::instructions::interrupts;
+use crate::remove_command_buffer;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -326,7 +327,10 @@ impl AdvancedWriter {
 
     pub fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
+            self.write_byte(byte);
             match byte {
+                0x1B => self.move_cursor_left(1),
+                0x1A => self.move_cursor_right(1),
                 // printable ASCII byte or newline
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
                 // backspace
@@ -341,6 +345,7 @@ impl AdvancedWriter {
             self.move_cursor_left(1);
             self.write_byte(b' ');
             self.move_cursor_left(1);
+            remove_command_buffer!();
         }
     }
     // Cursor logic
@@ -526,6 +531,9 @@ impl Writer {
     }
 
     fn new_line(&mut self) {
+        if self.blinked {
+            self.blink();
+        }
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
                 let character = self.buffer.chars[row][col].read();

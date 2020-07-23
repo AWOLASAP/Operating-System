@@ -21,32 +21,40 @@ impl CommandRunner {
 
     }
 
-    pub fn addToBuffer(&mut self, c: char) {
-        if (c == '\n'){
-            self.evalBuffer();
+    pub fn add_to_buffer(&mut self, c: char) {
+        if c == '\n' {
+            self.eval_buffer();
         } else{
             self.command_buffer.push(c);
         }
         
     }
 
-    pub fn echo(&mut self, string: &str) {
+    pub fn remove_from_buffer(&mut self) {
+        self.command_buffer.pop();
+    }
+
+    pub fn echo(&self, string: &str) {
         println!("\n{}", string);
     }
 
-    pub fn printBuffer(&mut self) {
+    pub fn print_buffer(&mut self) {
         println!("\nThe command buffer includes: {}", self.command_buffer);
     }
 
-    pub fn evalBuffer(&mut self) {
-        if ("print" == self.command_buffer){
-            self.printBuffer();
+    pub fn eval_buffer(&mut self) {
+        let (command, args) = self.split_buffer();
+        if "print" == command {
+            self.print_buffer();
         }
-        else if "gterm" == self.command_buffer {
+        else if "echo" == command {
+            self.echo(args);
+        }
+        else if "gterm" == command {
             MODE.lock().graphics_init();
             println!("Graphical mode activated");
         }
-        else if "tterm" == self.command_buffer {
+        else if "tterm" == command {
             MODE.lock().text_init();
             println!("Text mode activated");
         }
@@ -55,17 +63,33 @@ impl CommandRunner {
         }
         self.command_buffer = String::from("");
     }
+
+    pub fn split_buffer(&self) -> (&str, &str) {
+        for index in 0..self.command_buffer.len() {
+            if &self.command_buffer.as_str()[index..index+1] == String::from(' ').as_str() {
+                return (&self.command_buffer.as_str()[0..index], &self.command_buffer.as_str()[index + 1..self.command_buffer.len()])
+            }
+        }
+
+        (&self.command_buffer.as_str(), "")
+    }
 }
 
-pub fn addCommandBufferFN(c: char) {
-    COMMANDRUNNER.lock().addToBuffer(c);
+pub fn add_command_buffer_FN(c: char) {
+    COMMANDRUNNER.lock().add_to_buffer(c);
+}
+pub fn remove_command_buffer_FN() { COMMANDRUNNER.lock().remove_from_buffer(); }
+
+#[macro_export]
+macro_rules! add_command_buffer {
+    ($c: expr) => {crate::commands::add_command_buffer_FN($c)};
 }
 
 #[macro_export]
-macro_rules! addCommandBuffer {
-    ($c: expr) => {commands::addCommandBufferFN($c)};
+macro_rules! remove_command_buffer {
+    () => {crate::commands::remove_command_buffer_FN()};
 }
 
-pub fn printCommandBufferFN() {
-    COMMANDRUNNER.lock().printBuffer();
+pub fn print_command_buffer_FN() {
+    COMMANDRUNNER.lock().print_buffer();
 }
