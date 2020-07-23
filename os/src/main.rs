@@ -85,6 +85,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         }
         ADVANCED_WRITER.lock().clear_buffer();
         MODE.lock().text_init();
+        println!("");
     });
 
     os::hlt_loop();
