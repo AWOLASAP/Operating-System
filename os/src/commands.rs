@@ -2,7 +2,7 @@ use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
 use spin::Mutex;
-
+use crate::vga_buffer::MODE;
 
 lazy_static! {
     pub static ref COMMANDRUNNER: Mutex<CommandRunner> = Mutex::new(CommandRunner::new(String::from(" ")));
@@ -41,7 +41,16 @@ impl CommandRunner {
     pub fn evalBuffer(&mut self) {
         if ("print" == self.command_buffer){
             self.printBuffer();
-        } else {
+        }
+        else if "gterm" == self.command_buffer {
+            MODE.lock().graphics_init();
+            println!("Graphical mode activated");
+        }
+        else if "tterm" == self.command_buffer {
+            MODE.lock().text_init();
+            println!("Text mode activated");
+        }
+        else {
             println!("\nInvalid Command!");
         }
         self.command_buffer = String::from("");
