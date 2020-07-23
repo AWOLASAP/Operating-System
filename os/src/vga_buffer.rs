@@ -67,6 +67,7 @@ impl AdvancedBuffer {
 
 pub trait PrintWriter {
     // Getters and setters
+
     fn get_front_color(&self) -> Color16;
     fn set_front_color_attr(&mut self, color: Color16);
 
@@ -75,6 +76,9 @@ pub trait PrintWriter {
 
     fn get_color_code(&self) -> ColorCode;
     fn set_color_code_attr(&mut self, color_code: ColorCode);
+
+    fn get_blink_on(&self) -> bool;
+    fn set_blink_on(&mut self, blink_on: bool);
 
     // Color functionality
     fn set_color_code(&mut self, color_code: ColorCode) {
@@ -104,6 +108,16 @@ pub trait PrintWriter {
     fn set_back_color(&mut self, color: Color16) {
         self.set_color_code(ColorCode::new(self.get_front_color(), color));
     }
+
+    // Blink stuff
+    fn enable_blink(&mut self) {
+        self.set_blink_on(true);
+    }
+
+    fn disable_blink(&mut self) {
+        self.set_blink_on(false);
+    }
+
 }
 
 pub struct AdvancedWriter {
@@ -143,6 +157,7 @@ impl AdvancedWriter {
         self.mode.clear_screen(Color16::Black);
     }
 
+    // Graphics specific stuff - don't move into trait
     // For use with the writer - draws characters
     // If this stops working, try replacing &self with &mut self
     pub fn draw_character(&self, x: usize, y: usize, character: ScreenChar) {
@@ -412,13 +427,6 @@ impl AdvancedWriter {
         }
     }
 
-    pub fn enable_blink(&mut self) {
-        self.blink_on = true;
-    }
-
-    pub fn disable_blink(&mut self) {
-        self.blink_on = false;
-    }
 
     // Terminal Border stuff
     pub fn enable_border(&mut self) {
@@ -450,6 +458,13 @@ impl PrintWriter for AdvancedWriter {
     }
     fn set_color_code_attr(&mut self, color_code: ColorCode) {
         self.color_code = color_code;
+    }
+
+    fn get_blink_on(&self) -> bool {
+        self.blink_on
+    }
+    fn set_blink_on(&mut self, blink_on: bool) {
+        self.blink_on = blink_on;
     }
 }
 
@@ -613,14 +628,6 @@ impl Writer {
 
     }
 
-    pub fn enable_blink(&mut self) {
-        self.blink_on = true;
-    }
-
-    pub fn disable_blink(&mut self) {
-        self.blink_on = false;
-    }
-
 }
 
 impl PrintWriter for Writer {
@@ -643,6 +650,13 @@ impl PrintWriter for Writer {
     }
     fn set_color_code_attr(&mut self, color_code: ColorCode) {
         self.color_code = color_code;
+    }
+
+    fn get_blink_on(&self) -> bool {
+        self.blink_on
+    }
+    fn set_blink_on(&mut self, blink_on: bool) {
+        self.blink_on = blink_on;
     }
 }
 
