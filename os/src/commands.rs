@@ -5,6 +5,7 @@ use spin::Mutex;
 use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
 
+
 lazy_static! {
     pub static ref COMMANDRUNNER: Mutex<CommandRunner> = Mutex::new(CommandRunner::new(String::from(" ")));
 }

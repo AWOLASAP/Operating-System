@@ -10,6 +10,7 @@ use crate::hlt_loop;
 use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
 use crate::add_command_buffer;
+use crate::rng::RNGSEED;
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -66,6 +67,7 @@ extern "x86-interrupt" fn timer_interrupt_handler(
 {
     interrupts::without_interrupts(|| {
         MODE.lock().blink_current();
+        RNGSEED.lock().inc();
     });
     unsafe {
         PICS.lock()

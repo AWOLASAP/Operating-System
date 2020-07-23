@@ -20,6 +20,7 @@ pub mod memory;
 pub mod allocator;
 pub mod task;
 pub mod commands;
+pub mod rng;
 
 pub trait Testable {
     fn run(&self) -> ();
