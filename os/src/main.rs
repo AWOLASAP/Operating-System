@@ -22,6 +22,7 @@ use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr, structures::paging::MapperAllSizes, structures::paging::Page};
 use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
 use core::panic::PanicInfo;
+use x86_64::instructions::interrupts;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -81,13 +82,16 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //print!("This is a test");
     //println!("It did not crash!");
     //x86_64::instructions::interrupts::int3();
-    ADVANCED_WRITER.lock().draw_rect((220, 140), (420, 340), Color16::LightBlue);
-    ADVANCED_WRITER.lock().draw_circle((320, 240), 200, Color16::LightRed);
-    for i in (0..30).rev() {
-        ADVANCED_WRITER.lock().draw_logo(320, 240, i);
-        ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
-    }
-    ADVANCED_WRITER.lock().clear_buffer();
+    interrupts::without_interrupts(|| {
+        ADVANCED_WRITER.lock().draw_rect((220, 140), (420, 340), Color16::LightBlue);
+        ADVANCED_WRITER.lock().draw_circle((320, 240), 200, Color16::LightRed);
+        for i in (0..30).rev() {
+            ADVANCED_WRITER.lock().draw_logo(320, 240, i);
+            ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+        }
+        ADVANCED_WRITER.lock().clear_buffer();
+    });
+    MODE.lock().text_init();
 
     os::hlt_loop();
 
@@ -97,7 +101,6 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //};
     // This is an example on how to reactivate text mode and deactivate graphics mode.
     // This then changes the background and foreground color.
-    //MODE.lock().text_init();
     //WRITER.lock().set_back_color(Color16::White);
     //WRITER.lock().set_front_color(Color16::Black);
 }
