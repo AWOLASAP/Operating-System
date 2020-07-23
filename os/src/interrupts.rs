@@ -8,6 +8,7 @@ use spin;
 use x86_64::structures::idt::PageFaultErrorCode;
 use crate::hlt_loop;
 use crate::vga_buffer::MODE;
+use x86_64::instructions::interrupts;
 
 // Shell command stuff
 use crate::addCommandBuffer;
@@ -90,7 +91,9 @@ fn printAndLog(c: char) {
 extern "x86-interrupt" fn timer_interrupt_handler(
     _stack_frame: &mut InterruptStackFrame)
 {
-    MODE.lock().blink_current();
+    interrupts::without_interrupts(|| {
+        MODE.lock().blink_current();
+    });
     unsafe {
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
