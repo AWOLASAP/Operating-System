@@ -75,6 +75,7 @@ pub struct AdvancedWriter {
     front_color: Color16,
     blinked_color: Color16,
     blinked: bool,
+    terminal_border: bool,
 }
 
 impl AdvancedWriter {
@@ -90,6 +91,7 @@ impl AdvancedWriter {
             front_color: Color16::Yellow,
             blinked_color: Color16::Black,
             blinked: false,
+            terminal_border: false,
         }
     }
 
@@ -249,10 +251,17 @@ impl AdvancedWriter {
         // This also sets write mode 2
         //self.clear_screen(Color16::Black);
         self.mode.set_write_mode_2();
+        let mut offset = 0;
+        if self.terminal_border {
+            offset = 1;
+        }
         for (index1, (row_new, row_old)) in self.buffer.chars.iter().zip(self.old_buffer.chars.iter()).enumerate() {
+            if index1 == 0 && self.terminal_border {
+                continue;
+            }
             for (index2, (character_new, character_old)) in row_new.iter().zip(row_old.iter()).enumerate() {
                 if character_new.ascii_character != 0 && (character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code){
-                    self.draw_different_character(index2 * 8, index1 * 8, *character_old, *character_new)
+                    self.draw_different_character(index2 * 8, (index1 + offset) * 8, *character_old, *character_new)
                 }
             }
         }
@@ -352,6 +361,9 @@ impl AdvancedWriter {
         if self.column_position + dist > BUFFER_WIDTH_ADVANCED - 1 {
             self.new_line();
         }
+        else if self.column_position + dist > BUFFER_HEIGHT_ADVANCED - 3 && self.terminal_border {
+            self.new_line();
+        }
         else {
             self.column_position += dist;
         }    
@@ -382,6 +394,15 @@ impl AdvancedWriter {
         }
         self.blinked = !self.blinked;
         self.draw_buffer();
+    }
+
+    // Terminal Border stuff
+    pub fn enable_border(&mut self) {
+        self.terminal_border = true;
+    }
+
+    pub fn disable_border(&mut self) {
+        self.terminal_border = false;
     }
 }
 
@@ -568,7 +589,9 @@ impl Writer {
         }
         self.blinked = !self.blinked;
     }
+
 }
+
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
