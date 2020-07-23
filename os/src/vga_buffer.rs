@@ -10,9 +10,6 @@ use vga::writers::{Graphics640x480x16, GraphicsWriter, Text80x25, TextWriter};
 use vga::drawing::Point;
 use core::convert::TryFrom;
 use core::cmp::{min, max};
-use alloc::vec::Vec;
-use libm::sqrt;
-use num_traits::float::FloatCore;
 use x86_64::instructions::interrupts;
 
 
@@ -439,106 +436,13 @@ impl AdvancedWriter {
 
     // For when you know what's on the pixels
     pub fn clear_buffer(&mut self) {
-        for row in 1..BUFFER_HEIGHT_ADVANCED {
+        for _row in 1..BUFFER_HEIGHT_ADVANCED {
             self.new_line();
         }
         self.mode.clear_screen(Color16::Black);
         self.draw_buffer();
     }
 
-    /*
-    pub fn write_byte(&mut self, byte: u8) {
-        match byte {
-            b'\n' => self.new_line(),
-            byte => {
-                if self.column_position >= BUFFER_WIDTH_ADVANCED {
-                    self.new_line();
-                }
-
-                let row = BUFFER_HEIGHT_ADVANCED - 1;
-                let col = self.column_position;
-
-                let color_code = self.color_code;
-                self.buffer.chars[row][col] = ScreenChar {
-                    ascii_character: byte,
-                    color_code: color_code,
-                };
-                self.move_cursor_right(1);
-            }
-        }
-    }
-
-    fn new_line(&mut self) {
-        if self.blinked {
-            self.blink();
-        }
-        for row in 1..BUFFER_HEIGHT_ADVANCED {
-            for col in 0..BUFFER_WIDTH_ADVANCED {
-                let character = self.buffer.chars[row][col];
-                self.buffer.chars[row - 1][col] = character;
-            }
-        }
-        self.clear_row(BUFFER_HEIGHT_ADVANCED - 1);
-        self.move_cursor_left(BUFFER_WIDTH_ADVANCED);
-    }
-
-    fn clear_row(&mut self, row: usize) {
-        let blank = ScreenChar {
-            ascii_character: b' ',
-            color_code: self.color_code,
-        };
-        for col in 0..BUFFER_WIDTH_ADVANCED {
-            self.buffer.chars[row][col] = blank;
-        }
-    }
-
-    pub fn write_string(&mut self, s: &str) {
-        for byte in s.bytes() {
-            match byte {
-                // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte(byte),
-                // backspace
-                0x08 => self.backspace(),
-                // not part of printable ASCII range
-                _ => self.write_byte(0xfe),
-            }
-        }
-    }
-    fn backspace(&mut self) {
-        if self.column_position != 0 {
-            self.move_cursor_left(1);
-            self.write_byte(b' ');
-            self.move_cursor_left(1);
-        }
-    }
-    // Cursor logic
-    pub fn move_cursor_left(&mut self, dist: usize) {
-        if self.blinked {
-            self.blink();
-        }
-        if self.column_position < dist {
-            self.column_position = 0;
-        }
-        else {
-            self.column_position -= dist;
-        }
-    }
-
-    pub fn move_cursor_right(&mut self, dist: usize) {
-        if self.blinked {
-            self.blink();
-        }
-        if self.column_position + dist > BUFFER_WIDTH_ADVANCED - 1 {
-            self.new_line();
-        }
-        else if self.column_position + dist > BUFFER_HEIGHT_ADVANCED - 3 && self.terminal_border {
-            self.new_line();
-        }
-        else {
-            self.column_position += dist;
-        }    
-    }
-    */
     // Terminal Border stuff
     pub fn enable_border(&mut self) {
         self.terminal_border = true;
@@ -659,94 +563,6 @@ impl Writer {
     pub fn init(&mut self) {
         self.mode.set_mode();
     }
-    /*
-    pub fn write_byte(&mut self, byte: u8) {
-        match byte {
-            b'\n' => self.new_line(),
-            byte => {
-                if self.column_position >= BUFFER_WIDTH {
-                    self.new_line();
-                }
-
-                let row = BUFFER_HEIGHT - 1;
-                let col = self.column_position;
-
-                let color_code = self.color_code;
-                self.buffer.chars[row][col].write(ScreenChar {
-                    ascii_character: byte,
-                    color_code,
-                });
-                self.move_cursor_right(1);
-            }
-        }
-    }
-
-    fn write_string(&mut self, s: &str) {
-        for byte in s.bytes() {
-            match byte {
-                // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte(byte),
-                // backspace
-                0x08 => self.backspace(),
-                // not part of printable ASCII range
-                _ => self.write_byte(0xfe),
-            }
-        }
-    }
-
-    fn new_line(&mut self) {
-        for row in 1..BUFFER_HEIGHT {
-            for col in 0..BUFFER_WIDTH {
-                let character = self.buffer.chars[row][col].read();
-                self.buffer.chars[row - 1][col].write(character);
-            }
-        }
-        self.clear_row(BUFFER_HEIGHT - 1);
-        self.column_position = 0;
-    }
-
-    fn clear_row(&mut self, row: usize) {
-        let blank = ScreenChar {
-            ascii_character: b' ',
-            color_code: self.color_code,
-        };
-        for col in 0..BUFFER_WIDTH {
-            self.buffer.chars[row][col].write(blank);
-        }
-    }
-
-    fn backspace(&mut self) {
-        if self.column_position != 0 {
-            self.move_cursor_left(1);
-            self.write_byte(b' ');
-            self.move_cursor_left(1);
-        }
-    }
-    // Cursor logic
-    pub fn move_cursor_left(&mut self, dist: usize) {
-        if self.blinked {
-            self.blink();
-        }
-        if self.column_position < dist {
-            self.column_position = 0;
-        }
-        else {
-            self.column_position -= dist;
-        }
-    }
-
-    pub fn move_cursor_right(&mut self, dist: usize) {
-        if self.blinked {
-            self.blink();
-        }
-        if self.column_position + dist > BUFFER_WIDTH - 1 {
-           self.new_line();
-        }
-        else {
-            self.column_position += dist;
-        }    
-    }
-    */
 }
 
 impl PrintWriter for Writer {
@@ -874,7 +690,6 @@ impl ModeController {
             ADVANCED_WRITER.lock().blink();
             ADVANCED_WRITER.lock().draw_buffer();
         }
-        //WRITER.lock().write_string("blunk");
     }
  }
 
