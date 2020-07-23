@@ -75,6 +75,7 @@ pub struct AdvancedWriter {
     front_color: Color16,
     blinked_color: Color16,
     blinked: bool,
+    blink_on: bool,
     terminal_border: bool,
 }
 
@@ -91,6 +92,7 @@ impl AdvancedWriter {
             front_color: Color16::Yellow,
             blinked_color: Color16::Black,
             blinked: false,
+            blink_on: true,
             terminal_border: false,
         }
     }
@@ -370,30 +372,40 @@ impl AdvancedWriter {
     }
 
     pub fn blink(&mut self) {
-        let character = self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position];
-        let color = character.color_code.0;
-        let ascii_character = character.ascii_character;
-        let front_color = Color16::try_from((color << 4) >> 4);
-        let back_color = Color16::try_from(color >> 4);
-
-        let front_color = match front_color {
-            Ok(front_color) => front_color,
-            Err(why) => panic!("{:?}", why),
-        };
-
-        let back_color = match back_color {
-            Ok(back_color) => back_color,
-            Err(why) => panic!("{:?}", why),
-        };
-        if self.blinked {
-            self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position] = ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, self.blinked_color)};
+        if self.blink_on {
+            let character = self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position];
+            let color = character.color_code.0;
+            let ascii_character = character.ascii_character;
+            let front_color = Color16::try_from((color << 4) >> 4);
+            let back_color = Color16::try_from(color >> 4);
+    
+            let front_color = match front_color {
+                Ok(front_color) => front_color,
+                Err(why) => panic!("{:?}", why),
+            };
+    
+            let back_color = match back_color {
+                Ok(back_color) => back_color,
+                Err(why) => panic!("{:?}", why),
+            };
+            if self.blinked {
+                self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position] = ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, self.blinked_color)};
+            }
+            else {
+                self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position] = ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, front_color)};
+                self.blinked_color = back_color;
+            }
+            self.blinked = !self.blinked;
+            self.draw_buffer();
         }
-        else {
-            self.buffer.chars[BUFFER_HEIGHT_ADVANCED - 1][self.column_position] = ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, front_color)};
-            self.blinked_color = back_color;
-        }
-        self.blinked = !self.blinked;
-        self.draw_buffer();
+    }
+
+    pub fn enable_blink(&mut self) {
+        self.blink_on = true;
+    }
+
+    pub fn disable_blink(&mut self) {
+        self.blink_on = false;
     }
 
     // Terminal Border stuff
@@ -426,6 +438,7 @@ pub struct Writer {
     back_color: Color16, 
     front_color: Color16,
     blinked_color: Color16,
+    blink_on: bool,
     blinked: bool,
 }
 
@@ -440,6 +453,7 @@ impl Writer {
             back_color: Color16::Black,
             front_color: Color16::Yellow,
             blinked_color: Color16::Black,
+            blink_on: true,
             blinked: false,
         }
     }
@@ -565,29 +579,40 @@ impl Writer {
     }
 
     pub fn blink(&mut self) {
-        let character = self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].read();
-        let color = character.color_code.0;
-        let ascii_character = character.ascii_character;
-        let front_color = Color16::try_from((color << 4) >> 4);
-        let back_color = Color16::try_from(color >> 4);
-
-        let front_color = match front_color {
-            Ok(front_color) => front_color,
-            Err(why) => panic!("{:?}", why),
-        };
-
-        let back_color = match back_color {
-            Ok(back_color) => back_color,
-            Err(why) => panic!("{:?}", why),
-        };
-        if self.blinked {
-            self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].write(ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, self.blinked_color)});
+        if self.blink_on {
+            let character = self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].read();
+            let color = character.color_code.0;
+            let ascii_character = character.ascii_character;
+            let front_color = Color16::try_from((color << 4) >> 4);
+            let back_color = Color16::try_from(color >> 4);
+    
+            let front_color = match front_color {
+                Ok(front_color) => front_color,
+                Err(why) => panic!("{:?}", why),
+            };
+    
+            let back_color = match back_color {
+                Ok(back_color) => back_color,
+                Err(why) => panic!("{:?}", why),
+            };
+            if self.blinked {
+                self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].write(ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, self.blinked_color)});
+            }
+            else {
+                self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].write(ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, front_color)});
+                self.blinked_color = back_color;
+            }
+            self.blinked = !self.blinked;
         }
-        else {
-            self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].write(ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, front_color)});
-            self.blinked_color = back_color;
-        }
-        self.blinked = !self.blinked;
+
+    }
+
+    pub fn enable_blink(&mut self) {
+        self.blink_on = true;
+    }
+
+    pub fn disable_blink(&mut self) {
+        self.blink_on = false;
     }
 
 }
