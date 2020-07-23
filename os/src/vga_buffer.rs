@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 #![macro_use]
 
 use core::fmt;
@@ -11,7 +10,6 @@ use vga::drawing::Point;
 use core::convert::TryFrom;
 use core::cmp::{min, max};
 use x86_64::instructions::interrupts;
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -260,12 +258,20 @@ pub trait PrintWriter {
             self.write_byte(b' ');
             self.move_cursor_left(1);
         }
+        for character in self.get_column_position()+1..self.get_width()-1{
+            let temp = self.read_buffer(self.get_height()-1, character);
+            self.write_buffer(self.get_height()-1, character-1, temp);
+        }
     }
 
     fn delete(&mut self){
         if self.get_column_position() != self.get_width()-1{
             self.write_byte(b' ');
             self.move_cursor_left(1);
+        }
+        for character in self.get_column_position()+1..self.get_width()-1{
+            let temp = self.read_buffer(self.get_height()-1, character);
+            self.write_buffer(self.get_height()-1, character-1, temp);
         }
     }
 
@@ -466,6 +472,30 @@ impl AdvancedWriter {
 
     pub fn disable_border(&mut self) {
         self.terminal_border = false;
+    }
+
+    fn move_cursor_left(&mut self, dist: usize) {
+        if self.get_blinked() {
+            self.blink();
+        }
+        if self.get_column_position() < dist {
+            self.set_column_position(0);
+        }
+        else {
+            self.set_column_position(self.get_column_position() - dist)
+        }
+    }
+
+    fn move_cursor_right(&mut self, dist: usize) {
+        if self.get_blinked() {
+            self.blink();
+        }
+        if self.get_column_position() + dist > self.get_width() - 1 {
+           self.new_line();
+        }
+        else {
+            self.set_column_position(self.get_column_position() + dist)
+        }
     }
 }
 
@@ -743,38 +773,36 @@ impl ModeController {
     }
  }
 
-lazy_static! {
-    pub static ref MODE: Mutex<ModeController> = {
-        Mutex::new(ModeController::new())
-    };
-}
+ lazy_static! {
+     pub static ref MODE: Mutex<ModeController> = {
+         Mutex::new(ModeController::new())
+     };
+ }
 
+ #[macro_export]
+ macro_rules! print {
+     ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
+ }
 
-#[macro_export]
-macro_rules! print {
-    ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
-}
+ #[macro_export]
+ macro_rules! println {
+     () => ($crate::print!("\n"));
+     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+ }
 
-#[macro_export]
-macro_rules! println {
-    () => ($crate::print!("\n"));
-    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
-}
+ #[doc(hidden)]
+ pub fn _print(args: fmt::Arguments) {
+     use core::fmt::Write;
 
-#[doc(hidden)]
-pub fn _print(args: fmt::Arguments) {
-    use core::fmt::Write;
-
-    interrupts::without_interrupts(|| {
-      if MODE.lock().text {
-          WRITER.lock().write_fmt(args).unwrap();
-      }
-      else {
-          ADVANCED_WRITER.lock().write_fmt(args).unwrap();
-      }
-    });
-
-}
+     interrupts::without_interrupts(|| {
+       if MODE.lock().text {
+           WRITER.lock().write_fmt(args).unwrap();
+       }
+       else {
+           ADVANCED_WRITER.lock().write_fmt(args).unwrap();
+       }
+     });
+ }
 
 #[test_case]
 fn test_println_simple() {

@@ -8,6 +8,8 @@ use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
 use crate::print;
 use crate::println;
 use crate::vga_buffer::WRITER;
+use crate::vga_buffer::ADVANCED_WRITER;
+use crate::vga_buffer::MODE;
 use crate::vga_buffer::PrintWriter;
 use crate::add_command_buffer;
 
@@ -21,8 +23,8 @@ pub async fn print_keypresses() {
 
     while let Some(scancode) = scancodes.next().await {
         match scancode{
-            75=>WRITER.lock().move_cursor_left(1),
-            77=>WRITER.lock().move_cursor_right(1),
+            75=>left(1),
+            77=>right(1),
             _=>if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
                 if let Some(key) = keyboard.process_keyevent(key_event) {
                     match key {
@@ -35,7 +37,24 @@ pub async fn print_keypresses() {
                 }
             }
         }
+    }
+}
 
+pub fn left(dist:usize){
+    if MODE.lock().text {
+        WRITER.lock().move_cursor_left(1);
+    }
+    else {
+        ADVANCED_WRITER.lock().move_cursor_left(1);
+    }
+}
+
+pub fn right(dist:usize){
+    if MODE.lock().text {
+        WRITER.lock().move_cursor_right(1);
+    }
+    else {
+        ADVANCED_WRITER.lock().move_cursor_right(1);
     }
 }
 
