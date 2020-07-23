@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
@@ -34,21 +36,7 @@ impl CommandRunner {
 
     }
 
-    pub fn addToBuffer(&mut self, c: char) {
-        if (c == '\n'){
-            self.eval_buffer();
-        } else if (c == char::from(8)) {
-            self.deleteLastInBuffer();
-        } else {
-            self.command_buffer.push(c);
-        }
-
-    }
-
     pub fn remove_from_buffer(&mut self) {
-        self.command_buffer.pop();
-    }
-    pub fn deleteLastInBuffer(&mut self) {
         self.command_buffer.pop();
     }
     pub fn echo(&self, string: &str) {
@@ -96,20 +84,20 @@ impl CommandRunner {
     }
 }
 
-pub fn add_command_buffer_FN(c: char) {
+pub fn add_command_buffer_fn(c: char) {
     interrupts::without_interrupts(|| {
         COMMANDRUNNER.lock().add_to_buffer(c);
     });
 }
-pub fn remove_command_buffer_FN() {     interrupts::without_interrupts(|| {
+pub fn remove_command_buffer_fn() {     interrupts::without_interrupts(|| {
     COMMANDRUNNER.lock().remove_from_buffer();}); }
 
 #[macro_export]
 macro_rules! add_command_buffer {
-    ($c: expr) => {crate::commands::add_command_buffer_FN($c)};
+    ($c: expr) => {crate::commands::add_command_buffer_fn($c)};
 }
 
-pub fn print_command_buffer_FN() {
+pub fn print_command_buffer_fn() {
     interrupts::without_interrupts(|| {
     COMMANDRUNNER.lock().print_buffer();
     });

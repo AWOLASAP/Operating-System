@@ -20,7 +20,7 @@ use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr, structures::paging::MapperAllSizes, structures::paging::Page};
 use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
 use core::panic::PanicInfo;
-use os::task::{Task, simple_executor::SimpleExecutor};
+use os::task::{Task};
 use os::task::executor::Executor;
 use os::task::keyboard;
 use x86_64::instructions::interrupts;
@@ -89,8 +89,9 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
+
     interrupts::without_interrupts(|| {
-        
+
         MODE.lock().graphics_init();
         ADVANCED_WRITER.lock().enable_border();
         ADVANCED_WRITER.lock().clear_buffer();
