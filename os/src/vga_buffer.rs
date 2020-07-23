@@ -21,6 +21,24 @@ impl ColorCode {
     fn new(foreground: Color16, background: Color16) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
+
+    fn decompose(&self) -> (Color16, Color16) {
+        let color = self.0;
+        let foreground = Color16::try_from((color << 4) >> 4);
+        let background = Color16::try_from(color >> 4);
+
+        let foreground = match foreground {
+            Ok(foreground) => foreground,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        let background = match background {
+            Ok(background) => background,
+            Err(why) => panic!("{:?}", why),
+        };
+
+        (foreground, background)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,6 +80,7 @@ impl AdvancedBuffer {
     }
 }
 
+// If we had five weeks or something, this could be useful in rendering custom terminals
 pub trait PrintWriter {
     // Getters
 
@@ -95,19 +114,8 @@ pub trait PrintWriter {
     // Color functionality
     fn set_color_code(&mut self, color_code: ColorCode) {
         self.set_color_code_attr(color_code);
-        let color = color_code.0;
-        let front_color = Color16::try_from((color << 4) >> 4);
-        let back_color = Color16::try_from(color >> 4);
 
-        let front_color = match front_color {
-            Ok(front_color) => front_color,
-            Err(why) => panic!("{:?}", why),
-        };
-
-        let back_color = match back_color {
-            Ok(back_color) => back_color,
-            Err(why) => panic!("{:?}", why),
-        };
+        let (front_color, back_color) = color_code.decompose();
 
         self.set_front_color_attr(front_color);
         self.set_back_color_attr(back_color);
@@ -133,20 +141,10 @@ pub trait PrintWriter {
     fn blink(&mut self) {
         if self.get_blink_on() {
             let character = self.read_buffer(self.get_height() - 1, self.get_column_position());
-            let color = character.color_code.0;
             let ascii_character = character.ascii_character;
-            let front_color = Color16::try_from((color << 4) >> 4);
-            let back_color = Color16::try_from(color >> 4);
-    
-            let front_color = match front_color {
-                Ok(front_color) => front_color,
-                Err(why) => panic!("{:?}", why),
-            };
-    
-            let back_color = match back_color {
-                Ok(back_color) => back_color,
-                Err(why) => panic!("{:?}", why),
-            };
+            
+            let (front_color, back_color) = character.color_code.decompose();
+
             if self.get_blinked() {
                 self.write_buffer(self.get_height() - 1, self.get_column_position(), ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, self.get_blink_color())});
             }
@@ -298,20 +296,9 @@ impl AdvancedWriter {
     // For use with the writer - draws characters
     // If this stops working, try replacing &self with &mut self
     pub fn draw_character(&self, x: usize, y: usize, character: ScreenChar) {
-        let color = character.color_code.0;
         let ascii_character = character.ascii_character;
-        let front_color = Color16::try_from((color << 4) >> 4);
-        let back_color = Color16::try_from(color >> 4);
+        let (front_color, back_color) = character.color_code.decompose();
 
-        let front_color = match front_color {
-            Ok(front_color) => front_color,
-            Err(why) => panic!("{:?}", why),
-        };
-
-        let back_color = match back_color {
-            Ok(back_color) => back_color,
-            Err(why) => panic!("{:?}", why),
-        };
 
         self.mode.draw_character(x, y, ascii_character as char, front_color, back_color);
     }
@@ -322,20 +309,8 @@ impl AdvancedWriter {
             self.draw_character(x, y, new_character);
         }
         else {
-            let color = new_character.color_code.0;
-            let ascii_character = old_character.ascii_character;
-            let front_color = Color16::try_from((color << 4) >> 4);
-            let back_color = Color16::try_from(color >> 4);
-    
-            let front_color = match front_color {
-                Ok(front_color) => front_color,
-                Err(why) => panic!("{:?}", why),
-            };
-    
-            let back_color = match back_color {
-                Ok(back_color) => back_color,
-                Err(why) => panic!("{:?}", why),
-            };
+            let ascii_character = old_character.ascii_character;    
+            let (front_color, back_color) = new_character.color_code.decompose();
             let ascii_character_new = new_character.ascii_character;
 
             self.mode.draw_different_character(x, y, ascii_character as char, ascii_character_new as char, front_color, back_color);
