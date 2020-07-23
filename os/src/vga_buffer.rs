@@ -429,7 +429,7 @@ impl AdvancedWriter {
             offset = 1;
         }
         for (index1, (row_new, row_old)) in self.buffer.chars.iter().zip(self.old_buffer.chars.iter()).enumerate() {
-            if index1 == 0 && self.terminal_border {
+            if (index1 == 0 || index1 == self.get_height() - 1) && self.terminal_border {
                 continue;
             }
             for (index2, (character_new, character_old)) in row_new.iter().zip(row_old.iter()).enumerate() {
@@ -443,7 +443,7 @@ impl AdvancedWriter {
 
     // For when you know what's on the pixels/don't want to erase everything drawn on
     pub fn clear_buffer(&mut self) {
-        for _row in 1..BUFFER_HEIGHT_ADVANCED {
+        for _row in 0..self.get_height() {
             self.new_line();
         }
         self.draw_buffer();
@@ -674,11 +674,12 @@ lazy_static! {
 
 pub struct ModeController {
     pub text: bool,
+    blink_timer: usize,
 }
 
 impl ModeController {
     fn new() -> ModeController {
-        ModeController { text: true }
+        ModeController { text: true, blink_timer: 0}
     }
 
     pub fn init(&mut self) {
@@ -710,13 +711,20 @@ impl ModeController {
     }
 
     pub fn blink_current(&mut self) {
-        if self.text {
-            WRITER.lock().blink();
+        if  self.blink_timer == 0 {
+            if self.text {
+                WRITER.lock().blink();
+            }
+            else {
+                ADVANCED_WRITER.lock().blink();
+                ADVANCED_WRITER.lock().draw_buffer();
+            }
+            self.blink_timer = 3;
         }
         else {
-            ADVANCED_WRITER.lock().blink();
-            ADVANCED_WRITER.lock().draw_buffer();
+            self.blink_timer -= 1;
         }
+
     }
  }
 
