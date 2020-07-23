@@ -1,7 +1,11 @@
-use os::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
+use crate::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
 use vga::colors::Color16;
 use alloc::collections::vec_deque::VecDeque;
 use crate::rng::RNGSEED;
+use spin::Mutex;
+use lazy_static::lazy_static;
+use keyboard_routing::KEYBOARD_ROUTER;
+use x86_64::instructions::interrupts;
 
 struct Piece {
     rotations: [u16; 4],
@@ -55,11 +59,11 @@ fn gen_bag(bag: &mut VecDeque<u8>) {
     let mut pieces = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6];
     for i in 0..14 {
         interrupts::without_interrupts(|| {
-            pieces[(1103515245 * RNGSEED.lock().get() + 12345) % 14] = pieces[(1103515245 * RNGSEED.lock().get() + 12345) % 14]
+            pieces[((1103515245u64 * RNGSEED.lock().get() + 12345u64) % 14u64) as usize] = pieces[((1103515245u64 * RNGSEED.lock().get() + 12345u64) % 14u64) as usize]
         });
     }
     for i in pieces.iter() {
-        VecDeque.push(i as u8);
+        bag.push_back(*i as u8);
     }
 }
 
@@ -68,17 +72,51 @@ pub fn tetris() {
     let mut old_board = [[Color16::Black; 10]; 20];
     let mut bag: VecDeque<u8> = VecDeque::with_capacity(14);
     let mut piece_falling = false;
+    let mut run = true;
 
-    while true {
+    KEYBOARD_ROUTER.lock().mode = 2;
+
+    while run {
         if bag.is_empty() {
-            gen_bag(bag);
+            gen_bag(&mut bag);
         }
         if piece_falling {
-            
+
         }
         else {
-            let piece = bag.pop();
+            let piece = bag.pop_front();
+            let piece = match piece {
+                Some(i) => i,
+                None => 1,
+            };
+            let piece = PIECES[piece as usize];
         }
         
     }
+}
+
+pub struct KeyboardInterface {
+    pub key: u8,
+}
+
+impl KeyboardInterface {
+    fn new() -> KeyboardInterface {
+        KeyboardInterface { key: 0 }
+    }
+
+    pub fn set(&mut self, key: u8) {
+        self.key = key;
+    }
+
+    pub fn get(&mut self) -> u8 {
+        let k = self.key;
+        self.key = 0;
+        k
+    }
+}
+
+lazy_static! {
+    pub static ref TETRIS_KEY_HANDLER: Mutex<KeyboardInterface> = {
+        Mutex::new(KeyboardInterface::new())
+    };
 }
