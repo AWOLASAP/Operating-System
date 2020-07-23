@@ -147,10 +147,20 @@ pub trait PrintWriter {
             let (front_color, back_color) = character.color_code.decompose();
 
             if self.get_blinked() {
-                self.write_buffer(self.get_height() - 1, self.get_column_position(), ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, self.get_blink_color())});
+                self.write_buffer(self.get_height() - 1, 
+                self.get_column_position(), 
+                ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(
+                    front_color, 
+                    self.get_blink_color()
+                )});
             }
             else {
-                self.write_buffer(self.get_height() - 1, self.get_column_position(), ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(front_color, front_color)});
+                self.write_buffer(self.get_height() - 1, 
+                self.get_column_position(), 
+                ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(
+                    front_color, 
+                    front_color
+                )});
                 self.set_blink_color(back_color);
             }
             self.set_blinked(!self.get_blinked());
@@ -234,6 +244,8 @@ pub trait PrintWriter {
             match byte {
                 0x1B => self.move_cursor_left(1),
                 0x1A => self.move_cursor_right(1),
+                // Delete
+                0x7f => self.delete(),
                 // printable ASCII byte or newline
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
                 // backspace
@@ -253,6 +265,14 @@ pub trait PrintWriter {
         }
     }
 
+    fn delete(&mut self){
+        if self.get_column_position() != self.get_width()-1{
+            self.move_cursor_right(1);
+            self.write_byte(b' ');
+            self.move_cursor_left(2);
+        }
+    }
+
     // Buffer write stuff
     fn write_buffer(&mut self, row: usize, col: usize, character: ScreenChar);
 
@@ -261,17 +281,18 @@ pub trait PrintWriter {
 }
 
 pub struct AdvancedWriter {
-    column_position: usize,
-    color_code: ColorCode,
-    buffer: AdvancedBuffer,
-    old_buffer: AdvancedBuffer,
-    mode: Graphics640x480x16,
-    back_color: Color16, 
-    front_color: Color16,
-    blinked_color: Color16,
     blinked: bool,
     blink_on: bool,
     terminal_border: bool,
+    mode: Graphics640x480x16,
+    column_position: usize,
+    buffer: AdvancedBuffer,
+    old_buffer: AdvancedBuffer,
+    color_code: ColorCode,
+    back_color: Color16, 
+    front_color: Color16,
+    blinked_color: Color16,
+
 }
 
 impl AdvancedWriter {
@@ -383,8 +404,14 @@ impl AdvancedWriter {
         self.draw_circle((x, y), 2 * scale as isize, Color16::LightGreen);
 
         for i in 0..scale {
-            self.draw_line((x - 5 * scale + i, y + 3 * scale), (x - scale + i, y + 6 * scale), Color16::LightRed);
-            self.draw_line((x + 5 * scale - i, y + 3 * scale), (x + scale - i, y + 6 * scale), Color16::LightRed);
+            self.draw_line(
+                (x - 5 * scale + i, y + 3 * scale), 
+                (x - scale + i, y + 6 * scale), 
+                Color16::LightRed);
+            self.draw_line(
+                (x + 5 * scale - i, y + 3 * scale), 
+                (x + scale - i, y + 6 * scale), 
+                Color16::LightRed);
         }
     }
 
