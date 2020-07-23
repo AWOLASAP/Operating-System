@@ -441,13 +441,17 @@ impl AdvancedWriter {
         self.old_buffer = self.buffer;
     }
 
-    // For when you know what's on the pixels
+    // For when you know what's on the pixels/don't want to erase everything drawn on
     pub fn clear_buffer(&mut self) {
         for _row in 1..BUFFER_HEIGHT_ADVANCED {
             self.new_line();
         }
-        self.mode.clear_screen(Color16::Black);
         self.draw_buffer();
+    }
+
+    pub fn wipe_buffer(&mut self) {
+        self.clear_buffer();
+        self.mode.clear_screen(Color16::Black);
     }
 
     // Terminal Border stuff
