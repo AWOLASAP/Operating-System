@@ -76,6 +76,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     interrupts::without_interrupts(|| {
         
         MODE.lock().graphics_init();
+        ADVANCED_WRITER.lock().enable_border();
         ADVANCED_WRITER.lock().clear_buffer();
 
         ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);

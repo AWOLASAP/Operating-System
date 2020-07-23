@@ -3,6 +3,7 @@ use lazy_static::lazy_static;
 use alloc::string::String;
 use spin::Mutex;
 use crate::vga_buffer::MODE;
+use x86_64::instructions::interrupts;
 
 lazy_static! {
     pub static ref COMMANDRUNNER: Mutex<CommandRunner> = Mutex::new(CommandRunner::new(String::from(" ")));
@@ -51,11 +52,15 @@ impl CommandRunner {
             self.echo(args);
         }
         else if "gterm" == command {
-            MODE.lock().graphics_init();
+            interrupts::without_interrupts(|| {
+                MODE.lock().graphics_init();
+            });
             println!("Graphical mode activated");
         }
         else if "tterm" == command {
-            MODE.lock().text_init();
+            interrupts::without_interrupts(|| {
+                MODE.lock().text_init();
+            });
             println!("Text mode activated");
         }
         else {

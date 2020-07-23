@@ -315,7 +315,7 @@ impl AdvancedWriter {
 
     pub fn init(&mut self) {
         self.mode.set_mode();
-        self.mode.clear_screen(Color16::Black);
+        self.clear_buffer();
     }
 
     // Graphics specific stuff - don't move into trait
@@ -428,14 +428,25 @@ impl AdvancedWriter {
         if self.terminal_border {
             offset = 1;
         }
+        for i in 0..self.get_height() {
+            for j in 0..self.get_width() {
+                self.write_buffer(i, j, ScreenChar {
+                    ascii_character: 0,
+                    color_code: self.color_code,
+                });
+            }
+        }
         for (index1, (row_new, row_old)) in self.buffer.chars.iter().zip(self.old_buffer.chars.iter()).enumerate() {
-            if (index1 == 0 || index1 == self.get_height() - 1) && self.terminal_border {
+            if index1 > self.get_height() {
                 continue;
             }
             for (index2, (character_new, character_old)) in row_new.iter().zip(row_old.iter()).enumerate() {
-                if character_new.ascii_character != 0 && (character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code){
-                    self.draw_different_character(index2 * 8, (index1 + offset) * 8, *character_old, *character_new)
+                if index2 > self.get_width() {
+                    continue;
                 }
+                //if character_new.ascii_character != 0 && (character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code){
+                    self.draw_character((index2 + offset) * 8, (index1 + offset) * 8, *character_new)
+                //}
             }
         }
         self.old_buffer = self.buffer;
@@ -443,15 +454,51 @@ impl AdvancedWriter {
 
     // For when you know what's on the pixels/don't want to erase everything drawn on
     pub fn clear_buffer(&mut self) {
-        for _row in 0..self.get_height() {
-            self.new_line();
+        self.mode.set_write_mode_2();
+        let mut offset = 0;
+        if self.terminal_border {
+            offset = 1;
         }
-        self.draw_buffer();
+        for i in 0..self.get_height() {
+            for j in 0..self.get_width() {
+                self.write_buffer(i, j, ScreenChar {
+                    ascii_character: 0,
+                    color_code: self.color_code,
+                });
+            }
+        }
+        for (index1, (row_new, row_old)) in self.buffer.chars.iter().zip(self.old_buffer.chars.iter()).enumerate() {
+            if index1 > self.get_height() {
+                continue;
+            }
+            for (index2, (character_new, character_old)) in row_new.iter().zip(row_old.iter()).enumerate() {
+                if index2 > self.get_width() {
+                    continue;
+                }
+                if character_new.ascii_character != 0 && (character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code){
+                    self.draw_different_character((index2 + offset) * 8, (index1 + offset) * 8, *character_old, *character_new)
+                }
+            }
+        }
+        self.old_buffer = self.buffer;
     }
 
     pub fn wipe_buffer(&mut self) {
-        self.clear_buffer();
-        self.mode.clear_screen(Color16::Black);
+        self.mode.set_write_mode_2();
+        let mut offset = 0;
+        if self.terminal_border {
+            offset = 1;
+        }
+        for i in 0..self.get_height() {
+            for j in 0..self.get_width() {
+                self.write_buffer(i, j, ScreenChar {
+                    ascii_character: 0,
+                    color_code: self.color_code,
+                });
+            }
+        }
+        //self.clear_screen(self.back_color);
+        //self.old_buffer = self.buffer;
     }
 
     // Terminal Border stuff
@@ -466,11 +513,21 @@ impl AdvancedWriter {
 
 impl PrintWriter for AdvancedWriter {
     fn get_height(&self) -> usize {
-        BUFFER_HEIGHT_ADVANCED
+        if self.terminal_border {
+            return BUFFER_HEIGHT_ADVANCED - 2;
+        }
+        else {
+            return BUFFER_HEIGHT_ADVANCED;
+        }
     }
 
     fn get_width(&self) -> usize {
-        BUFFER_WIDTH_ADVANCED
+        if self.terminal_border {
+            return BUFFER_WIDTH_ADVANCED - 2;
+        }
+        else {
+            return BUFFER_WIDTH_ADVANCED;
+        }
     }
 
     fn get_front_color(&self) -> Color16 {
