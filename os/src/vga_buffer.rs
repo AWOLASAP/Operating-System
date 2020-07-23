@@ -13,6 +13,7 @@ use core::cmp::{min, max};
 use alloc::vec::Vec;
 use libm::sqrt;
 use num_traits::float::FloatCore;
+use x86_64::instructions::interrupts;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -485,16 +486,21 @@ impl ModeController {
     }
 
     pub fn text_init(&mut self) {
+        
         if !self.text {
             self.text = true;
-            WRITER.lock().init();
+            interrupts::without_interrupts(|| {
+                WRITER.lock().init();
+            });
         }
     }
 
     pub fn graphics_init(&mut self) {
         if self.text {
             self.text = false;
-            ADVANCED_WRITER.lock().init();
+            interrupts::without_interrupts(|| {
+                ADVANCED_WRITER.lock().init();
+            });
         }
     }
 }
@@ -520,7 +526,6 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    use x86_64::instructions::interrupts;
 
     interrupts::without_interrupts(|| {
       if MODE.lock().text {
@@ -548,7 +553,6 @@ fn test_println_many() {
 #[test_case]
 fn test_println_output() {
     use core::fmt::Write;
-    use x86_64::instructions::interrupts;
 
     let s = "Some test string that fits on a single line";
     interrupts::without_interrupts(|| {
