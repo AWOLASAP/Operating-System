@@ -28,6 +28,17 @@ impl CommandRunner {
             self.eval_buffer();
         } else if c == delete_char {
             self.remove_from_buffer();
+                 } else {
+            self.command_buffer.push(c);
+        }
+        
+    }
+
+    pub fn addToBuffer(&mut self, c: char) {
+        if (c == '\n'){
+            self.evalBuffer();
+        } else if (c == char::from(8)) {
+            self.deleteLastInBuffer();
         } else {
             self.command_buffer.push(c);
         }
@@ -37,7 +48,9 @@ impl CommandRunner {
     pub fn remove_from_buffer(&mut self) {
         self.command_buffer.pop();
     }
-
+    pub fn deleteLastInBuffer(&mut self) {
+        self.command_buffer.pop();
+    }
     pub fn echo(&self, string: &str) {
         println!("\n{}", string);
     }
