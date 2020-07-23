@@ -118,6 +118,11 @@ pub trait PrintWriter {
         self.set_blink_on(false);
     }
 
+    // Buffer write stuff
+    fn write_buffer(&mut self, row: usize, col: usize, character: ScreenChar);
+
+    fn read_buffer(&self, row: usize, col: usize) -> ScreenChar;
+
 }
 
 pub struct AdvancedWriter {
@@ -466,6 +471,14 @@ impl PrintWriter for AdvancedWriter {
     fn set_blink_on(&mut self, blink_on: bool) {
         self.blink_on = blink_on;
     }
+
+    fn write_buffer(&mut self, row: usize, col: usize, character: ScreenChar) {
+        self.buffer.chars[row][col] = character;
+    }
+
+    fn read_buffer(&self, row: usize, col: usize) -> ScreenChar {
+        self.buffer.chars[row][col]
+    }
 }
 
 impl fmt::Write for AdvancedWriter {
@@ -657,6 +670,14 @@ impl PrintWriter for Writer {
     }
     fn set_blink_on(&mut self, blink_on: bool) {
         self.blink_on = blink_on;
+    }
+
+    fn write_buffer(&mut self, row: usize, col: usize, character: ScreenChar) {
+        self.buffer.chars[row][col].write(character);
+    }
+
+    fn read_buffer(&self, row: usize, col: usize) -> ScreenChar {
+        self.buffer.chars[row][col].read()
     }
 }
 
