@@ -36,9 +36,9 @@ impl CommandRunner {
 
     pub fn addToBuffer(&mut self, c: char) {
         if (c == '\n'){
-            self.evalBuffer();
+            self.eval_buffer();
         } else if (c == char::from(8)) {
-            self.deleteLastInBuffer();
+            self.remove_from_buffer();
         } else {
             self.command_buffer.push(c);
         }
