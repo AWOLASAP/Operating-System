@@ -39,6 +39,7 @@ impl CommandRunner {
     pub fn remove_from_buffer(&mut self) {
         self.command_buffer.pop();
     }
+  
     pub fn echo(&self, string: &str) {
         println!("\n{}", string);
     }
