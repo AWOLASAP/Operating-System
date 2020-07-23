@@ -228,7 +228,7 @@ pub trait PrintWriter {
 
     fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
-            ascii_character: 0,
+            ascii_character: b' ',
             color_code: self.get_color_code(),
         };
         for col in 0..self.get_width() {
@@ -473,6 +473,30 @@ impl AdvancedWriter {
 
     pub fn disable_border(&mut self) {
         self.terminal_border = false;
+    }
+
+    fn move_cursor_left(&mut self, dist: usize) {
+        if self.get_blinked() {
+            self.blink();
+        }
+        if self.get_column_position() < dist {
+            self.set_column_position(0);
+        }
+        else {
+            self.set_column_position(self.get_column_position() - dist)
+        }
+    }
+
+    fn move_cursor_right(&mut self, dist: usize) {
+        if self.get_blinked() {
+            self.blink();
+        }
+        if self.get_column_position() + dist > self.get_width() - 1 {
+           self.new_line();
+        }
+        else {
+            self.set_column_position(self.get_column_position() + dist)
+        }
     }
 }
 
