@@ -7,6 +7,9 @@ use pic8259_simple::ChainedPics;
 use spin;
 use x86_64::structures::idt::PageFaultErrorCode;
 use crate::hlt_loop;
+use crate::vga_buffer::MODE;
+use x86_64::instructions::interrupts;
+use crate::add_command_buffer;
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -50,7 +53,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
 
     let mut port = Port::new(0x60);
     let scancode: u8 = unsafe { port.read() };
-    crate::task::keyboard::add_scancode(scancode); // new
+    crate::task::keyboard::add_scancode(scancode); 
 
     unsafe {
         PICS.lock()
@@ -58,9 +61,17 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
     }
 }
 
+fn printAndLog(c: char) {
+    add_command_buffer!(c);
+    print!("{}", c);
+}
+
 extern "x86-interrupt" fn timer_interrupt_handler(
     _stack_frame: &mut InterruptStackFrame)
 {
+    interrupts::without_interrupts(|| {
+        MODE.lock().blink_current();
+    });
     unsafe {
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Timer.as_u8());

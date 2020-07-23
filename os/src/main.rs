@@ -10,9 +10,7 @@ extern crate rlibc;
 mod serial;
 
 // Use these for things like buffer access
-use os::vga_buffer::MODE;
-use os::vga_buffer::WRITER;
-use os::vga_buffer::ADVANCED_WRITER;
+use os::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
 use vga::colors::Color16;
 use os::print;
 use os::println;
@@ -25,6 +23,7 @@ use core::panic::PanicInfo;
 use os::task::{Task, simple_executor::SimpleExecutor};
 use os::task::executor::Executor;
 use os::task::keyboard;
+use x86_64::instructions::interrupts;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -54,8 +53,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     // Use this to activate graphics mode - graphics mode implements all of the APIs that text mode implements,
     // but it is  slower than text mode because it doesn't operate off of direct memory access.
     // Activating graphics mode also enables graphics things like line drawing
-
-    // MODE.lock().graphics_init();
+    //MODE.lock().graphics_init();
     println!("Hello World!");
 
     os::init();
@@ -91,14 +89,21 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
+    interrupts::without_interrupts(|| {
+        
+        MODE.lock().graphics_init();
+        ADVANCED_WRITER.lock().enable_border();
+        ADVANCED_WRITER.lock().clear_buffer();
 
-    //for i in 0..60 {
-    //    println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
-    //}
-    //ADVANCED_WRITER.lock().clear_buffer();
-    //print!("This is a test");
-    //println!("It did not crash!");
-    //x86_64::instructions::interrupts::int3();
+        ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+        ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
+        for _i in 0..30 {
+            ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
+        }
+        //ADVANCED_WRITER.lock().clear_buffer();
+        MODE.lock().text_init();
+        println!("");
+    });
 
 
     //for i in 0..60 {
