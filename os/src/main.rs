@@ -10,9 +10,7 @@ extern crate rlibc;
 mod serial;
 
 // Use these for things like buffer access
-use os::vga_buffer::MODE;
-use os::vga_buffer::WRITER;
-use os::vga_buffer::ADVANCED_WRITER;
+use os::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
 use vga::colors::Color16;
 use os::print;
 use os::println;
@@ -43,7 +41,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     // Use this to activate graphics mode - graphics mode implements all of the APIs that text mode implements, 
     // but it is  slower than text mode because it doesn't operate off of direct memory access. 
     // Activating graphics mode also enables graphics things like line drawing
-    MODE.lock().graphics_init();
+    //MODE.lock().graphics_init();
     println!("Hello World!");
 
     os::init();
@@ -75,26 +73,23 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
-    //for i in 0..60 {
-    //    println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
-    //}
-    //ADVANCED_WRITER.lock().clear_buffer();
-    //print!("This is a test");
-    //println!("It did not crash!");
-    //x86_64::instructions::interrupts::int3();
     interrupts::without_interrupts(|| {
-        ADVANCED_WRITER.lock().draw_rect((220, 140), (420, 340), Color16::LightBlue);
-        ADVANCED_WRITER.lock().draw_circle((320, 240), 200, Color16::LightRed);
-        for i in (0..30).rev() {
-            ADVANCED_WRITER.lock().draw_logo(320, 240, i);
-            ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
-        }
+        
+        MODE.lock().graphics_init();
+        ADVANCED_WRITER.lock().enable_border();
         ADVANCED_WRITER.lock().clear_buffer();
+
+        ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+        ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
+        for _i in 0..30 {
+            ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
+        }
+        //ADVANCED_WRITER.lock().clear_buffer();
+        MODE.lock().text_init();
+        println!("");
     });
-    MODE.lock().text_init();
 
     os::hlt_loop();
-
 
     //for i in 0..60 {
     //    println!("{}", i);
