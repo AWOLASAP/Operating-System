@@ -66,6 +66,12 @@ impl AdvancedBuffer {
 }
 
 pub trait PrintWriter {
+    // Getters
+
+    fn get_width() -> usize;
+
+    fn get_height() -> usize;
+
     // Getters and setters
 
     fn get_front_color(&self) -> Color16;
@@ -79,6 +85,9 @@ pub trait PrintWriter {
 
     fn get_blink_on(&self) -> bool;
     fn set_blink_on(&mut self, blink_on: bool);
+
+    fn get_blink_color(&self) -> Color16;
+    fn set_blink_color(&mut self, blink_color: Color16);
 
     // Color functionality
     fn set_color_code(&mut self, color_code: ColorCode) {
@@ -444,6 +453,14 @@ impl AdvancedWriter {
 }
 
 impl PrintWriter for AdvancedWriter {
+    fn get_height() -> usize {
+        BUFFER_HEIGHT_ADVANCED
+    }
+
+    fn get_width() -> usize {
+        BUFFER_WIDTH_ADVANCED
+    }
+
     fn get_front_color(&self) -> Color16 {
         self.front_color
     }
@@ -470,6 +487,13 @@ impl PrintWriter for AdvancedWriter {
     }
     fn set_blink_on(&mut self, blink_on: bool) {
         self.blink_on = blink_on;
+    }
+
+    fn get_blink_color(&self) -> Color16 {
+        self.blinked_color
+    }
+    fn set_blink_color(&mut self, blink_color: Color16) {
+        self.blinked_color = blink_color;
     }
 
     fn write_buffer(&mut self, row: usize, col: usize, character: ScreenChar) {
@@ -644,6 +668,14 @@ impl Writer {
 }
 
 impl PrintWriter for Writer {
+    fn get_height() -> usize {
+        BUFFER_HEIGHT
+    }
+
+    fn get_width() -> usize {
+        BUFFER_WIDTH
+    }
+
     fn get_front_color(&self) -> Color16 {
         self.front_color
     }
@@ -670,6 +702,13 @@ impl PrintWriter for Writer {
     }
     fn set_blink_on(&mut self, blink_on: bool) {
         self.blink_on = blink_on;
+    }
+
+    fn get_blink_color(&self) -> Color16 {
+        self.blinked_color
+    }
+    fn set_blink_color(&mut self, blink_color: Color16) {
+        self.blinked_color = blink_color;
     }
 
     fn write_buffer(&mut self, row: usize, col: usize, character: ScreenChar) {
