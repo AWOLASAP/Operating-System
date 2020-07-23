@@ -61,11 +61,6 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
     }
 }
 
-fn printAndLog(c: char) {
-    add_command_buffer!(c);
-    print!("{}", c);
-}
-
 extern "x86-interrupt" fn timer_interrupt_handler(
     _stack_frame: &mut InterruptStackFrame)
 {

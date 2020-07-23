@@ -34,23 +34,10 @@ impl CommandRunner {
 
     }
 
-    pub fn addToBuffer(&mut self, c: char) {
-        if (c == '\n'){
-            self.eval_buffer();
-        } else if (c == char::from(8)) {
-            self.remove_from_buffer();
-        } else {
-            self.command_buffer.push(c);
-        }
-
-    }
-
     pub fn remove_from_buffer(&mut self) {
         self.command_buffer.pop();
     }
-    pub fn deleteLastInBuffer(&mut self) {
-        self.command_buffer.pop();
-    }
+
     pub fn echo(&self, string: &str) {
         println!("\n{}", string);
     }

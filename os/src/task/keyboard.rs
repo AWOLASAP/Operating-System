@@ -9,6 +9,7 @@ use crate::print;
 use crate::println;
 use crate::vga_buffer::WRITER;
 use crate::vga_buffer::PrintWriter;
+use crate::add_command_buffer;
 
 static WAKER: AtomicWaker = AtomicWaker::new();
 static SCANCODE_QUEUE: OnceCell<ArrayQueue<u8>> = OnceCell::uninit();
@@ -25,7 +26,10 @@ pub async fn print_keypresses() {
             _=>if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
                 if let Some(key) = keyboard.process_keyevent(key_event) {
                     match key {
-                        DecodedKey::Unicode(character) => print!("{}", character),
+                        DecodedKey::Unicode(character) => {
+                            add_command_buffer!(character);
+                            print!("{}", character);
+                        },
                         DecodedKey::RawKey(key) => print!("{:?}", key),
                     }
                 }
