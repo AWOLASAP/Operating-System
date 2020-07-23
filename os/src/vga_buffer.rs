@@ -11,6 +11,7 @@ use vga::drawing::Point;
 use core::convert::TryFrom;
 use core::cmp::{min, max};
 use x86_64::instructions::interrupts;
+use crate::remove_command_buffer;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -231,6 +232,8 @@ pub trait PrintWriter {
     fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
+                0x1B => self.move_cursor_left(1),
+                0x1A => self.move_cursor_right(1),
                 // printable ASCII byte or newline
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
                 // backspace
@@ -240,11 +243,13 @@ pub trait PrintWriter {
             }
         }
     }
+
     fn backspace(&mut self) {
         if self.get_column_position() != 0 {
             self.move_cursor_left(1);
             self.write_byte(b' ');
             self.move_cursor_left(1);
+            remove_command_buffer!();
         }
     }
 
@@ -449,6 +454,7 @@ impl PrintWriter for AdvancedWriter {
     }
     fn set_back_color_attr(&mut self, color: Color16) {
         self.back_color = color;
+
     }
 
     fn get_color_code(&self) -> ColorCode {
@@ -561,6 +567,21 @@ impl PrintWriter for Writer {
     }
     fn set_back_color_attr(&mut self, color: Color16) {
         self.back_color = color;
+
+    }
+
+    fn new_line(&mut self) {
+        if self.blinked {
+            self.blink();
+        }
+        for row in 1..BUFFER_HEIGHT {
+            for col in 0..BUFFER_WIDTH {
+                let character = self.buffer.chars[row][col].read();
+                self.buffer.chars[row - 1][col].write(character);
+            }
+        }
+        self.clear_row(BUFFER_HEIGHT - 1);
+        self.column_position = 0;
     }
 
     fn get_color_code(&self) -> ColorCode {

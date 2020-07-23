@@ -9,11 +9,7 @@ use x86_64::structures::idt::PageFaultErrorCode;
 use crate::hlt_loop;
 use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
-
-// Shell command stuff
-use crate::addCommandBuffer;
-#[path = "commands.rs"]
-mod commands;
+use crate::add_command_buffer;
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -84,7 +80,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
 }
 
 fn printAndLog(c: char) {
-    addCommandBuffer!(c);
+    add_command_buffer!(c);
     print!("{}", c);
 }
 

@@ -17,6 +17,7 @@ pub mod interrupts;
 pub mod gdt;
 pub mod memory;
 pub mod allocator;
+pub mod commands;
 
 pub trait Testable {
     fn run(&self) -> ();
