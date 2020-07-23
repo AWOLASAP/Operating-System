@@ -23,6 +23,8 @@ use x86_64::{VirtAddr, structures::paging::MapperAllSizes, structures::paging::P
 use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
 use core::panic::PanicInfo;
 use os::task::{Task, simple_executor::SimpleExecutor};
+use os::task::executor::Executor;
+use os::task::keyboard;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -37,14 +39,23 @@ fn panic(info: &PanicInfo) -> ! {
     os::test_panic_handler(info)
 }
 
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
+}
 
 entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     MODE.lock().init();
-    // Use this to activate graphics mode - graphics mode implements all of the APIs that text mode implements, 
-    // but it is  slower than text mode because it doesn't operate off of direct memory access. 
+    // Use this to activate graphics mode - graphics mode implements all of the APIs that text mode implements,
+    // but it is  slower than text mode because it doesn't operate off of direct memory access.
     // Activating graphics mode also enables graphics things like line drawing
-    MODE.lock().graphics_init();
+
+    // MODE.lock().graphics_init();
     println!("Hello World!");
 
     os::init();
@@ -76,6 +87,11 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
+    let mut executor = Executor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
+
     //for i in 0..60 {
     //    println!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab");
     //}
@@ -84,34 +100,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //println!("It did not crash!");
     //x86_64::instructions::interrupts::int3();
 
-    os::hlt_loop();
-
 
     //for i in 0..60 {
     //    println!("{}", i);
     //};
     // This is an example on how to reactivate text mode and deactivate graphics mode.
     // This then changes the background and foreground color.
-    //MODE.lock().text_init();
+    // MODE.lock().text_init();
     //WRITER.lock().set_back_color(Color16::White);
     //WRITER.lock().set_front_color(Color16::Black);
-}
-
-fn kernel_main(boot_info: &'static BootInfo) -> ! {
-    // […] initialization routines, including `init_heap`
-
-    let mut executor = SimpleExecutor::new();
-    executor.spawn(Task::new(example_task()));
-    executor.run();
-
-    // […] test_main, "it did not crash" message, hlt_loop
-}
-
-async fn async_number() -> u32 {
-    42
-}
-
-async fn example_task() {
-    let number = async_number().await;
-    println!("async number: {}", number);
 }
