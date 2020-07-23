@@ -22,9 +22,12 @@ impl CommandRunner {
     }
 
     pub fn addToBuffer(&mut self, c: char) {
+        let delete_char: char = char::from(8);
         if (c == '\n'){
             self.evalBuffer();
-        } else{
+        } else if (c == delete_char) {
+            self.deleteLastInBuffer();
+        } else {
             self.command_buffer.push(c);
         }
         
@@ -36,6 +39,10 @@ impl CommandRunner {
 
     pub fn printBuffer(&mut self) {
         println!("\nThe command buffer includes: {}", self.command_buffer);
+    }
+
+    pub fn deleteLastInBuffer(&mut self) {
+        self.command_buffer.pop();
     }
 
     pub fn evalBuffer(&mut self) {
