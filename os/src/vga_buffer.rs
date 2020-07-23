@@ -11,7 +11,6 @@ use vga::drawing::Point;
 use core::convert::TryFrom;
 use core::cmp::{min, max};
 use x86_64::instructions::interrupts;
-use crate::remove_command_buffer;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -261,7 +260,6 @@ pub trait PrintWriter {
             self.move_cursor_left(1);
             self.write_byte(b' ');
             self.move_cursor_left(1);
-            remove_command_buffer!();
         }
     }
 

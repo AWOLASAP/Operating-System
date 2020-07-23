@@ -23,9 +23,12 @@ impl CommandRunner {
     }
 
     pub fn add_to_buffer(&mut self, c: char) {
+        let delete_char = char::from(8);
         if c == '\n' {
             self.eval_buffer();
-        } else{
+        } else if c == delete_char {
+            self.remove_from_buffer();
+        } else {
             self.command_buffer.push(c);
         }
         
@@ -91,11 +94,6 @@ pub fn remove_command_buffer_FN() {     interrupts::without_interrupts(|| {
 #[macro_export]
 macro_rules! add_command_buffer {
     ($c: expr) => {crate::commands::add_command_buffer_FN($c)};
-}
-
-#[macro_export]
-macro_rules! remove_command_buffer {
-    () => {crate::commands::remove_command_buffer_FN()};
 }
 
 pub fn print_command_buffer_FN() {
