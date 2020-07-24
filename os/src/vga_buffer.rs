@@ -44,7 +44,7 @@ pub struct ScreenChar {
     ascii_character: u8,
     color_code: ColorCode,
 }
-
+// Character in a buffer
 impl ScreenChar {
     fn new() -> ScreenChar {
         ScreenChar {
@@ -398,7 +398,7 @@ impl AdvancedWriter {
         }
     }
 
-    // NOTE: draws this at the center
+    // NOTE: draws this at the center - this is the official logo for our operating system.
     pub fn draw_logo(&mut self, x: isize, y: isize, scale: isize) {
         // 25
         self.draw_circle((x, y), 8 * scale as isize, Color16::Pink);
@@ -473,30 +473,6 @@ impl AdvancedWriter {
 
     pub fn disable_border(&mut self) {
         self.terminal_border = false;
-    }
-
-    fn _move_cursor_left(&mut self, dist: usize) {
-        if self.get_blinked() {
-            self.blink();
-        }
-        if self.get_column_position() < dist {
-            self.set_column_position(0);
-        }
-        else {
-            self.set_column_position(self.get_column_position() - dist)
-        }
-    }
-
-    fn _move_cursor_right(&mut self, dist: usize) {
-        if self.get_blinked() {
-            self.blink();
-        }
-        if self.get_column_position() + dist > self.get_width() - 1 {
-           self.new_line();
-        }
-        else {
-            self.set_column_position(self.get_column_position() + dist)
-        }
     }
 }
 
@@ -645,20 +621,6 @@ impl PrintWriter for Writer {
     fn set_back_color_attr(&mut self, color: Color16) {
         self.back_color = color;
 
-    }
-
-    fn new_line(&mut self) {
-        if self.blinked {
-            self.blink();
-        }
-        for row in 1..BUFFER_HEIGHT {
-            for col in 0..BUFFER_WIDTH {
-                let character = self.buffer.chars[row][col].read();
-                self.buffer.chars[row - 1][col].write(character);
-            }
-        }
-        self.clear_row(BUFFER_HEIGHT - 1);
-        self.column_position = 0;
     }
 
     fn get_color_code(&self) -> ColorCode {

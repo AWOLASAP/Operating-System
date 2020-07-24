@@ -17,6 +17,7 @@ impl TimeRouter {
         TimeRouter { mode: 0 }
     }
 
+    // Called on every timer interrupt
     pub fn handle(&mut self) {
         if self.mode == 0 {
             MODE.lock().blink_current();
