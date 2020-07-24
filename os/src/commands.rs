@@ -47,15 +47,14 @@ impl CommandRunner {
         println!("\n{}", string);
     }
 
-    pub fn print_buffer(&mut self) {
+    pub fn print_buffer(&self) {
         println!("\nThe command buffer includes: {}", self.command_buffer);
     }
-
+     
     pub fn eval_buffer(&mut self) {
-        let index = 0;
-        let split_buffer = self.split_buffer();
-        let commands = split_buffer.0;
-        let args_list = split_buffer.1;
+        let mut index = 0;
+        let (commands, args_list) = self.split_buffer();
+
         for command in commands {
             let args = args_list[index];
             if "print" == command {
@@ -98,18 +97,29 @@ impl CommandRunner {
         self.command_buffer = String::from("");
     }
 
-    pub fn split_buffer(&mut self) -> (Vec<&str>, Vec<&str>) {
+    pub fn split_buffer(&self) -> (Vec<&str>, Vec<&str>) {
         let mut commands = Vec::new();
         let mut args_list = Vec::new();
-        let total_command_len = self.command_buffer.len();
         let mut command_len: i32;
         
-        for index in 0..total_command_len{
-            if &self.command_buffer.as_str()[index..index+1] == String::from(' ').as_str() {
-                commands.push(&self.command_buffer.as_str()[0..index]);
-                args_list.push(&self.command_buffer.as_str()[index + 1..self.command_buffer.len()]);
+        for command in self.command_buffer.split(";"){
+            let mut found_args = false;
+            for index in 0..command.len() {
+                if &command[index..index+1] == String::from(' ').as_str() {
+                    commands.push(&command[0..index]);
+                    args_list.push(&command[index + 1..command.len()]);
+                    found_args = true;
+                    break;
+                }
+            }    
+
+            if found_args == false {
+                commands.push(command);
+                args_list.push("");
             }
         }
+
+        
 
         /*
         for index in 0..self.command_buffer.len() {
