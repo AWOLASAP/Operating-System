@@ -1,10 +1,7 @@
 use lazy_static::lazy_static;
-use crate::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
-use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1, KeyCode};
+use crate::vga_buffer::{MODE};
 use spin::Mutex;
-use crate::add_command_buffer;
 use crate::tetris::TETRIS;
-use x86_64::instructions::interrupts;
 use crate::rng::RNGSEED;
 
 /* MODES
@@ -20,6 +17,7 @@ impl TimeRouter {
         TimeRouter { mode: 0 }
     }
 
+    // Called on every timer interrupt
     pub fn handle(&mut self) {
         if self.mode == 0 {
             MODE.lock().blink_current();

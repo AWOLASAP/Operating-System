@@ -4,14 +4,8 @@ use core::{pin::Pin, task::{Poll, Context}};
 use futures_util::stream::Stream;
 use futures_util::task::AtomicWaker;
 use futures_util::stream::StreamExt;
-use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
-use crate::print;
+use pc_keyboard::{layouts, HandleControl, Keyboard, ScancodeSet1};
 use crate::println;
-use crate::vga_buffer::WRITER;
-use crate::vga_buffer::ADVANCED_WRITER;
-use crate::vga_buffer::MODE;
-use crate::vga_buffer::PrintWriter;
-use crate::add_command_buffer;
 use crate::keyboard_routing::KEYBOARD_ROUTER;
 use x86_64::instructions::interrupts;
 
@@ -20,7 +14,7 @@ static SCANCODE_QUEUE: OnceCell<ArrayQueue<u8>> = OnceCell::uninit();
 
 pub async fn print_keypresses() {
     let mut scancodes = ScancodeStream::new();
-    let mut keyboard = Keyboard::new(layouts::Us104Key, ScancodeSet1,
+    let mut _keyboard = Keyboard::new(layouts::Us104Key, ScancodeSet1,
         HandleControl::Ignore);
 
     while let Some(scancode) = scancodes.next().await {

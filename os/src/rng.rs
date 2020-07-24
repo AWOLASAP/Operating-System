@@ -1,6 +1,9 @@
 use lazy_static::lazy_static;
 use spin::Mutex;
 
+// This entire file is just providing a singleton which functions as a provider for RNG seeds
+// In a given boot, you can be reasonably confident that you will not encounter the same seed
+
 pub struct RngSeed {
     pub times: u64,
 }
