@@ -6,6 +6,7 @@ use alloc::string::String;
 use spin::Mutex;
 use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
+use alloc::vec::Vec;
 
 lazy_static! {
     pub static ref COMMANDRUNNER: Mutex<CommandRunner> = Mutex::new(CommandRunner::new(String::from(" ")));
@@ -30,7 +31,7 @@ impl CommandRunner {
             self.eval_buffer();
         } else if c == delete_char {
             self.remove_from_buffer();
-                 } else {
+        } else {
             self.command_buffer.push(c);
         }
 
@@ -49,39 +50,46 @@ impl CommandRunner {
     }
 
     pub fn eval_buffer(&mut self) {
-        let (command, args) = self.split_buffer();
-        if "print" == command {
-            self.print_buffer();
+        for (command, args) in self.split_buffer().iter() {
+            if "print" == command {
+                self.print_buffer();
+            }
+            else if "echo" == command {
+                self.echo(args);
+            }
+            else if "gterm" == command {
+                interrupts::without_interrupts(|| {
+                    MODE.lock().graphics_init();
+                });
+                println!("Graphical mode activated");
+            }
+            else if "tterm" == command {
+                interrupts::without_interrupts(|| {
+                    MODE.lock().text_init();
+                });
+                println!("Text mode activated");
+            }
+            else {
+                println!("\nInvalid Command!");
+            }
+            self.command_buffer = String::from("");
         }
-        else if "echo" == command {
-            self.echo(args);
-        }
-        else if "gterm" == command {
-            interrupts::without_interrupts(|| {
-                MODE.lock().graphics_init();
-            });
-            println!("Graphical mode activated");
-        }
-        else if "tterm" == command {
-            interrupts::without_interrupts(|| {
-                MODE.lock().text_init();
-            });
-            println!("Text mode activated");
-        }
-        else {
-            println!("\nInvalid Command!");
-        }
-        self.command_buffer = String::from("");
     }
 
-    pub fn split_buffer(&self) -> (&str, &str) {
+    pub fn split_buffer(&self) -> (Vec<&'a str>, Vec<&'a str>) {
+        let mut commands = Vec::new();
+        let mut args_list = Vec::new();
+        let total_command_len = self.command_buffer.len();
+        let mut command_len: i32;
+        
         for index in 0..self.command_buffer.len() {
             if &self.command_buffer.as_str()[index..index+1] == String::from(' ').as_str() {
-                return (&self.command_buffer.as_str()[0..index], &self.command_buffer.as_str()[index + 1..self.command_buffer.len()])
+                commands.push(&self.command_buffer.as_str()[0..index]);
+                arguments.push(&self.command_buffer.as_str()[index + 1..self.command_buffer.len()]);
             }
         }
 
-        (&self.command_buffer.as_str(), "")
+        (commands, arguemnts)
     }
 }
 
