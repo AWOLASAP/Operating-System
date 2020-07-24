@@ -24,8 +24,9 @@ pub async fn print_keypresses() {
         HandleControl::Ignore);
 
     while let Some(scancode) = scancodes.next().await {
-            KEYBOARD_ROUTER.lock().handle_scancode(scancode);
-    
+            interrupts::without_interrupts(|| {
+                KEYBOARD_ROUTER.lock().handle_scancode(scancode);
+            });
     }
 }
 

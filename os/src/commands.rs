@@ -70,11 +70,14 @@ impl CommandRunner {
             println!("Text mode activated");
         }
         else if "tetris" == command {
+            interrupts::without_interrupts(|| {
             if MODE.lock().text == true {
                 println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
             } else {
                 TETRIS.lock().init();
             }
+            });
+
         } else if "help" == command {
             println!("\nList of available commands:");
             println!("print");
