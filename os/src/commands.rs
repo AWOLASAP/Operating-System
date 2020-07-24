@@ -55,6 +55,12 @@ impl CommandRunner {
     pub fn remove_from_buffer(&mut self) {
         self.command_buffer.pop();
     }
+    
+    // print-buffer command.
+    // Prints out the command buffer to the screen before it get cleared
+    pub fn print_buffer(&self) {
+        println!("\nThe command buffer includes: {}", self.command_buffer);
+    }
 
     // echo command.
     // Prints out the arguments given
@@ -62,10 +68,46 @@ impl CommandRunner {
         println!("\n{}", string);
     }
 
-    // print command.
-    // Prints out the command buffer to the screen before it get cleared
-    pub fn print_buffer(&self) {
-        println!("\nThe command buffer includes: {}", self.command_buffer);
+    // gterm command.
+    // Switches to graphical mode
+    pub fn gterm(&self) {
+        // Deadlock prevention
+        interrupts::without_interrupts(|| {
+            MODE.lock().graphics_init();
+        });
+        println!("Graphical mode activated");
+    }
+
+    // tterm command.
+    // Switches to text mode
+    pub fn tterm(&self) {
+        // Deadlock prevention
+        interrupts::without_interrupts(|| {
+            MODE.lock().text_init();
+        });
+        println!("Text mode activated");
+    }
+    
+    // tetris command
+    // Plays the game Tetris
+    pub fn tetris(&self) {
+        // Run tetris if in the gterm mode
+        if MODE.lock().text == true {
+            println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
+        } else {
+            TETRIS.lock().init();
+        }
+    }
+
+    // help command.
+    // Lists all available commands 
+    pub fn help(&self) {
+        println!("\nList of available commands:");
+        println!("print-buffer");
+        println!("echo");
+        println!("gterm");
+        println!("tterm");
+        println!("tetris");
     }
 
     // Evaluate the command(s) in the buffer 
@@ -80,46 +122,16 @@ impl CommandRunner {
             // Get the corresponding args for the current command
             let args = args_list[index];
 
-            if "print" == command {
-                self.print_buffer();
+            match command {
+                "print-buffer" => self.print_buffer(),
+                "echo" => self.echo(args),
+                "gterm" => self.gterm(),
+                "tterm" => self.tterm(),
+                "tetris" => self.tetris(),
+                "help" => self.help(),
+                _ => println!("\nInvalid Command: {}", command),
             }
-            else if "echo" == command {
-                self.echo(args);
-            }
-            else if "gterm" == command {
-                // Deadlock prevention
-                interrupts::without_interrupts(|| {
-                    MODE.lock().graphics_init();
-                });
-                println!("Graphical mode activated");
-            }
-            else if "tterm" == command {
-                // Deadlock prevention
-                interrupts::without_interrupts(|| {
-                    MODE.lock().text_init();
-                });
-                println!("Text mode activated");
-            }
-            else if "tetris" == command {
-                // Run tetris if in the gterm mode
-                if MODE.lock().text == true {
-                    println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
-                } else {
-                    TETRIS.lock().init();
-                }
-
-            } else if "help" == command {
-                println!("\nList of available commands:");
-                println!("print");
-                println!("echo");
-                println!("gterm");
-                println!("tterm");
-                println!("tetris");
-            }
-            else {
-                println!("\nInvalid Command!");
-            }
-
+            
             // Index increases as we move onto the next command
             index += 1;
         }
