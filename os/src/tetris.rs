@@ -11,6 +11,9 @@ use rand_pcg::Lcg128Xsl64;
 use rand_core::SeedableRng;
 use rand_core::{RngCore};
 
+//Generic game consts
+const BLOCK_SIZE: usize = 20;
+
 #[derive(Clone, Copy)]
 struct Piece {
     rotations: [u16; 4],
@@ -133,6 +136,10 @@ impl Tetris {
             let mut try_until_fall = false;
             let mut rotated = false;
             let mut move_down = false;
+            let mut moved_dir: isize = 0;
+            let mut rot_dir_inverse: isize = 0;
+            // Probably an extraneous variable but who cares :shrug:
+            let mut descended = false;
 
             if self.move_timer == 0 {
                 self.move_timer = 6;
@@ -140,18 +147,22 @@ impl Tetris {
             }
             if key == 1 {
                 self.current_piece.x -= 1;
+                moved_dir = -1;
             }
             else if key == 2 {
                 self.current_piece.x += 1;
+                moved_dir = 1;
             }
             else if key == 3 {
                 self.current_piece.y += 1;
                 if move_down {
                     move_down = false;
                 }
+                descended = true;
             }
             else if key == 4 {
                 try_until_fall = true;
+                descended = true;
             }
             else if key == 5 {
                 self.current_piece.position += 3;
@@ -171,6 +182,7 @@ impl Tetris {
 
             if move_down {
                 self.current_piece.y += 1;
+                descended = true;
             }
             else {
                 self.move_timer -= 1;
@@ -191,16 +203,47 @@ impl Tetris {
                 }
             }
             if rotated {
-                if self.current_piece.x < 0 {
-                    self.current_piece.x = 0;
+                let deserialized_piece = self.deserialize_piece();
+                if descended {
+                    self.current_piece.y -= 1;
                 }
-                else if self.current_piece.x > 6 {
-                    self.current_piece.x = 6;
+                'colcalc: for row in 0..4 {
+                    for col in 0..4 {
+                        if deserialized_piece[row][col] {
+                            if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
+                                self.current_piece.x -= moved_dir;
+                                break 'colcalc;
+                            }
+                        }
+                    }
+                }
+                if descended {
+                    self.current_piece.y += 1;
                 }
             }
-            else {
+            else if moved_dir != 0 {
                 let deserialized_piece = self.deserialize_piece();
-                'colcalc: loop {
+                if descended {
+                    self.current_piece.y -= 1;
+                }
+                'colcalc: for row in 0..4 {
+                    for col in 0..4 {
+                        if deserialized_piece[row][col] {
+                            if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
+                                self.current_piece.x -= moved_dir;
+                                break 'colcalc;
+                            }
+                        }
+                    }
+                }
+                if descended {
+                    self.current_piece.y += 1;
+                }
+
+            }
+            if descended {
+                let deserialized_piece = self.deserialize_piece();
+                'columncalc: loop {
                     for row in 0..4 {
                         for col in 0..4 {
                             if deserialized_piece[row][col] {
@@ -215,13 +258,13 @@ impl Tetris {
                                         }
                                     }
                                     self.piece_falling = false;
-                                    break 'colcalc;
+                                    break 'columncalc;
                                 }
                             }
                         }
                     }
                     if !try_until_fall {
-                        break 'colcalc;
+                        break 'columncalc;
                     }
                     else {
                         self.current_piece.y += 1;
@@ -342,7 +385,7 @@ impl Tetris {
             for i in 0..24 {
                 for j in 0..10 {
                     if composited_board[i + 4][j] != self.old_rendered_board[i + 4][j] {
-                        advanced_writer.draw_rect(((100 + j * 8) as isize, (100 + i * 8) as isize), ((108 + j * 8) as isize, (107 + i * 8) as isize), composited_board[i + 4][j]);
+                        advanced_writer.draw_rect(((220 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((220 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), composited_board[i + 4][j]);
                     }
                 }
             }
