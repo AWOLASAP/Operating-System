@@ -70,7 +70,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
     
-    /*
+    
     interrupts::without_interrupts(|| {
 
         MODE.lock().graphics_init();
@@ -86,7 +86,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         MODE.lock().text_init();
         println!("");
     });
-    */
+    
 
     let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
