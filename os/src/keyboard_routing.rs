@@ -61,6 +61,9 @@ impl KeyboardRouter {
             else if character == ' ' {
                 TETRIS.lock().set(4)                
             }
+            else if character == 'p' {
+                TETRIS.lock().set(9)
+            }
         }
     }
 
@@ -102,7 +105,9 @@ impl KeyboardRouter {
     } 
 
     fn esc(&mut self) {
-        self.mode = 0;
+        if self.mode == 2 {
+            TETRIS.lock().set(9)
+        }    
     }
 }
 

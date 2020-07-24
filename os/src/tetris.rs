@@ -81,6 +81,7 @@ pub struct Tetris {
     current_piece: RenderPiece,
     move_timer: usize,
     held_piece: Piece,
+    next_piece: Piece,
 }
 
 impl Tetris {
@@ -95,7 +96,7 @@ impl Tetris {
             run: true,
             score: 0,
             current_piece: RenderPiece {
-                piece: I,
+                piece: UNPIECE,
                 held: false,
                 position: 0,
                 x: 0,
@@ -103,6 +104,7 @@ impl Tetris {
             },
             move_timer: 6,
             held_piece: UNPIECE,
+            next_piece: UNPIECE,
          }
     }
 
@@ -115,7 +117,7 @@ impl Tetris {
         self.run = true;
         self.score = 0;
         self.current_piece = RenderPiece {
-            piece: I,
+            piece: UNPIECE,
             held: false,
             position: 0,
             x: 0,
@@ -123,6 +125,7 @@ impl Tetris {
         };
         self.move_timer = 6;
         self.held_piece = UNPIECE;
+        self.next_piece = UNPIECE;
     
         for i in 0..4 {
             for j in 0..10 {
@@ -134,6 +137,16 @@ impl Tetris {
         KEYBOARD_ROUTER.lock().mode = 2;
         TIME_ROUTER.lock().mode = 1;
         //ADVANCED_WRITER.lock().disable_blink();
+
+        /*self.gen_bag();
+        let piece = self.bag.pop_front();
+        let piece = match piece {
+            Some(i) => i,
+            None => 1,
+        };
+        self.next_piece = PIECES[piece as usize];*/
+        self.next_piece = PIECES[1];
+
     }
 
     pub fn game_loop(&mut self) {
@@ -192,6 +205,11 @@ impl Tetris {
             }
             else if key == 8 {
                 self.hold();
+            }
+            else if key == 9 {
+                unsafe {TIME_ROUTER.force_unlock()};
+                KEYBOARD_ROUTER.lock().mode = 0;
+                TIME_ROUTER.lock().mode = 0;
             }
 
             if move_down {
@@ -299,19 +317,20 @@ impl Tetris {
     
         }
         else {
-            let piece = self.bag.pop_front();
-            let piece = match piece {
-                Some(i) => i,
-                None => 1,
-            };
-            let piece = PIECES[piece as usize];
             self.current_piece = RenderPiece {
-                piece: piece,
+                piece: self.next_piece,
                 held: false,
                 position: 0,
                 x: 3,
                 y: 0,
             };
+            let piece = self.bag.pop_front();
+            let piece = match piece {
+                Some(i) => i,
+                None => 1,
+            };
+            self.next_piece = PIECES[piece as usize];
+
             self.piece_falling = true;
         }
         for i in 4..24 {
@@ -402,6 +421,48 @@ impl Tetris {
         result
     }
     
+    fn deserialize_held_piece(&mut self) -> [[bool; 4]; 4] {
+        let mut result = [[false; 4]; 4];
+        let rotation = self.held_piece.rotations[0];
+        let mut bit: u16 = 0x8000;
+    
+        let mut row: usize = 0;
+        let mut col: usize = 0;
+        while bit > 0 {
+            if (rotation & bit) > 0 {
+                result[row][col] = true;
+            }
+            bit = bit >> 1;
+            col += 1;
+            if col == 4 {
+                row += 1;
+                col = 0;
+            }
+        }
+        result
+    }
+
+    fn deserialize_next_piece(&mut self) -> [[bool; 4]; 4] {
+        let mut result = [[false; 4]; 4];
+        let rotation = self.next_piece.rotations[0];
+        let mut bit: u16 = 0x8000;
+    
+        let mut row: usize = 0;
+        let mut col: usize = 0;
+        while bit > 0 {
+            if (rotation & bit) > 0 {
+                result[row][col] = true;
+            }
+            bit = bit >> 1;
+            col += 1;
+            if col == 4 {
+                row += 1;
+                col = 0;
+            }
+        }
+        result
+    }
+
     fn render(&mut self) {
         let mut composited_board: [[Color16; 10]; 28] = [[Color16::Black; 10]; 28];
         for i in 0..24 {
@@ -423,6 +484,28 @@ impl Tetris {
                     }
                 }
             }
+            let held_piece = self.deserialize_held_piece();
+            for i in 0..4 {
+                for j in 0..4 {
+                    if held_piece[i][j] {
+                        advanced_writer.draw_rect(((70 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((70 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), self.held_piece.color);
+                    }
+                    else {
+                        advanced_writer.draw_rect(((70 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((70 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), Color16::Black);
+                    }
+                }
+            }
+            let next_piece = self.deserialize_held_piece();
+            /*for i in 0..4 {
+                for j in 0..4 {
+                    if next_piece[i][j] {
+                        advanced_writer.draw_rect(((490 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((490 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), self.next_piece.color);
+                    }
+                    else {
+                        advanced_writer.draw_rect(((490 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((490 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), Color16::Black);
+                    }
+                }
+            }*/
         });
         self.old_rendered_board = composited_board;   
     }
