@@ -1,4 +1,5 @@
 #![allow(unused_variables)]
+#![feature(in_band_lifetimes)]
 
 use crate::println;
 use lazy_static::lazy_static;
@@ -51,7 +52,12 @@ impl CommandRunner {
     }
 
     pub fn eval_buffer(&mut self) {
-        for (command, args) in self.split_buffer().iter() {
+        let index = 0;
+        let split_buffer = self.split_buffer();
+        let commands = split_buffer.0;
+        let args_list = split_buffer.1;
+        for command in commands {
+            let args = args_list[index];
             if "print" == command {
                 self.print_buffer();
             }
@@ -86,24 +92,35 @@ impl CommandRunner {
             }
             else {
                 println!("\nInvalid Command!");
+            }
+            index += 1;
         }
         self.command_buffer = String::from("");
     }
 
-    pub fn split_buffer(&self) -> (Vec<&'a str>, Vec<&'a str>) {
+    pub fn split_buffer(&mut self) -> (Vec<&str>, Vec<&str>) {
         let mut commands = Vec::new();
         let mut args_list = Vec::new();
         let total_command_len = self.command_buffer.len();
         let mut command_len: i32;
         
+        for index in 0..total_command_len{
+            if &self.command_buffer.as_str()[index..index+1] == String::from(' ').as_str() {
+                commands.push(&self.command_buffer.as_str()[0..index]);
+                args_list.push(&self.command_buffer.as_str()[index + 1..self.command_buffer.len()]);
+            }
+        }
+
+        /*
         for index in 0..self.command_buffer.len() {
             if &self.command_buffer.as_str()[index..index+1] == String::from(' ').as_str() {
                 commands.push(&self.command_buffer.as_str()[0..index]);
                 arguments.push(&self.command_buffer.as_str()[index + 1..self.command_buffer.len()]);
             }
         }
+        */
 
-        (commands, arguemnts)
+        (commands, args_list)
     }
 }
 
