@@ -4,9 +4,10 @@ use alloc::collections::vec_deque::VecDeque;
 use crate::rng::RNGSEED;
 use spin::Mutex;
 use lazy_static::lazy_static;
-use keyboard_routing::KEYBOARD_ROUTER;
+use crate::keyboard_routing::KEYBOARD_ROUTER;
 use x86_64::instructions::interrupts;
 
+#[derive(Clone, Copy)]
 struct Piece {
     rotations: [u16; 4],
     color: Color16,
@@ -51,6 +52,7 @@ const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z];
 
 struct RenderPiece {
     piece: Piece,
+    position: u8, 
     x: usize,
     y: usize,
 }
@@ -67,12 +69,45 @@ fn gen_bag(bag: &mut VecDeque<u8>) {
     }
 }
 
+fn deserialize_piece(piece: &RenderPiece) -> [[bool; 4]; 4] {
+    let mut result = [[false; 4]; 4];
+    let rotation = piece.piece.rotations[(piece.position % 4) as usize];
+    let mut bit: u16 = 0x8000;
+
+    let mut row: usize = 0;
+    let mut col: usize = 0;
+    while (bit > 0) {
+        if (rotation & bit) > 0 {
+            result[row][col] = true;
+        }
+        bit = bit >> 1;
+        col += 1;
+        if col == 4 {
+            row += 1;
+            col = 0;
+        }
+    }
+    result
+}
+
+fn render(board: [[Color16; 10]; 24], old_board: [[Color16; 10]; 24], score: usize, bag: VecDeque<u8>) {
+
+}
+
+
 pub fn tetris() {
-    let mut board = [[Color16::Black; 10]; 20];
-    let mut old_board = [[Color16::Black; 10]; 20];
+    // NOTE: last 4 in board is for piece spawning
+    let mut board = [[Color16::Black; 10]; 24];
+    let mut old_board = [[Color16::Black; 10]; 24];
     let mut bag: VecDeque<u8> = VecDeque::with_capacity(14);
     let mut piece_falling = false;
     let mut run = true;
+    let mut current_piece = RenderPiece {
+        piece: I,
+        position: 0,
+        x: 0,
+        y: 0,
+    };
 
     KEYBOARD_ROUTER.lock().mode = 2;
 
@@ -81,6 +116,43 @@ pub fn tetris() {
             gen_bag(&mut bag);
         }
         if piece_falling {
+            let key = TETRIS_KEY_HANDLER.lock().get();
+            let mut rotated = false;
+            if key == 1 {
+                current_piece.x -= 1;
+            }
+            else if key == 2 {
+                current_piece.x += 1;
+            }
+            else if key == 3 {
+                current_piece.y += 1;
+            }
+            else if key == 4 {
+
+            }
+            else if key == 5 {
+
+            }
+            else if key == 6 {
+
+            }
+            else if key == 7 {
+
+            }
+            else if key == 8 {
+
+            }
+            if rotated {
+                
+            }
+            else {
+                let deserialized_piece = deserialize_piece(&current_piece);
+                for row in 0..4 {
+                    for col in 0..4 {
+
+                    }
+                }
+            }
 
         }
         else {
@@ -90,6 +162,13 @@ pub fn tetris() {
                 None => 1,
             };
             let piece = PIECES[piece as usize];
+            current_piece = RenderPiece {
+                piece: piece,
+                position: 0,
+                x: 3,
+                y: 0,
+            };
+            piece_falling = true;
         }
         
     }
