@@ -6,11 +6,8 @@ use alloc::string::String;
 use spin::Mutex;
 use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
-<<<<<<< HEAD
 use alloc::vec::Vec;
-=======
 use crate::tetris::TETRIS;
->>>>>>> master
 
 lazy_static! {
     pub static ref COMMANDRUNNER: Mutex<CommandRunner> = Mutex::new(CommandRunner::new(String::from(" ")));
