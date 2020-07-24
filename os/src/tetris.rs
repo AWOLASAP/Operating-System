@@ -166,14 +166,17 @@ impl Tetris {
             }
             else if key == 5 {
                 self.current_piece.position += 3;
+                rot_dir_inverse = 1;
                 rotated = true;
             }
             else if key == 6 {
                 self.current_piece.position += 1;
+                rot_dir_inverse = 3;
                 rotated = true;
             }
             else if key == 7 {
                 self.current_piece.position += 2;
+                rot_dir_inverse = 2;
                 rotated = true;
             }
             else if key == 8 {
@@ -211,7 +214,7 @@ impl Tetris {
                     for col in 0..4 {
                         if deserialized_piece[row][col] {
                             if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
-                                self.current_piece.x -= moved_dir;
+                                self.current_piece.position += rot_dir_inverse as u8;
                                 break 'colcalc;
                             }
                         }
