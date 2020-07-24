@@ -4,7 +4,6 @@ use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1, Ke
 use spin::Mutex;
 use crate::add_command_buffer;
 use crate::tetris::TETRIS;
-use x86_64::instructions::interrupts;
 
 /* MODES
 0 - Terminal + sends weird stuff to screenbuffer
@@ -118,7 +117,7 @@ lazy_static! {
 }
 
  
-pub fn left(dist:usize){
+pub fn left(_dist:usize){
     if MODE.lock().text {
         WRITER.lock().move_cursor_left(1);
     }
@@ -127,7 +126,7 @@ pub fn left(dist:usize){
     }
 }
 
-pub fn right(dist:usize){
+pub fn right(_dist:usize){
     if MODE.lock().text {
         WRITER.lock().move_cursor_right(1);
     }

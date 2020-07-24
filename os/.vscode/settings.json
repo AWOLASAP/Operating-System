@@ -1,15 +1,32 @@
 {
     "cSpell.words": [
+        "COMMANDRUNNER",
+        "Deque",
         "Modecontroller",
         "Qemu",
+        "RNGSEED",
         "Scancode",
+        "Screenbuffer",
+        "Seedable",
+        "TETRIS",
+        "UNPIECE",
+        "Virt",
         "autocfg",
         "bootloader",
+        "colcalc",
+        "columncalc",
         "concat",
+        "eval",
+        "gterm",
+        "keybinds",
         "keyevent",
+        "keypresses",
         "repr",
         "rlibc",
-        "uart"
+        "scancodes",
+        "tterm",
+        "uart",
+        "uninit"
     ],
     "cSpell.ignorePaths": [
         "**/package-lock.json",

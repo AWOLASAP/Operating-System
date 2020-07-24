@@ -7,7 +7,6 @@ use pic8259_simple::ChainedPics;
 use spin;
 use x86_64::structures::idt::PageFaultErrorCode;
 use crate::hlt_loop;
-use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
 use crate::add_command_buffer;
 use crate::timer_routing::TIME_ROUTER;
@@ -62,7 +61,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
     }
 }
 
-fn print_and_log(c: char) {
+fn _print_and_log(c: char) {
     add_command_buffer!(c);
     print!("{}", c);
 }
@@ -84,7 +83,7 @@ pub fn init_idt() {
 }
 
 extern "x86-interrupt" fn double_fault_handler(
-    stack_frame: &mut InterruptStackFrame, error_code: u64) -> !
+    stack_frame: &mut InterruptStackFrame, _error_code: u64) -> !
 {
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }

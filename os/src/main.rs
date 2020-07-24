@@ -10,15 +10,13 @@ extern crate rlibc;
 mod serial;
 
 // Use these for things like buffer access
-use os::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
+use os::vga_buffer::{MODE, ADVANCED_WRITER};
 use vga::colors::Color16;
-use os::print;
 use os::println;
 use os::memory::{self, BootInfoFrameAllocator};
 use os::allocator;
 use bootloader::{BootInfo, entry_point};
-use x86_64::{VirtAddr, structures::paging::MapperAllSizes, structures::paging::Page};
-use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
+use x86_64::{VirtAddr};
 use core::panic::PanicInfo;
 use os::task::{Task};
 use os::task::executor::Executor;
@@ -98,7 +96,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //executor.spawn(Task::new(example_task()));
     //executor.spawn(Task::new(keyboard::print_keypresses()));
     //executor.run();
-    os::hlt_loop();
+    //os::hlt_loop();
 
     //for i in 0..60 {
     //    println!("{}", i);

@@ -1,4 +1,4 @@
-use crate::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
+use crate::vga_buffer::{ADVANCED_WRITER};
 use vga::colors::Color16;
 use alloc::collections::vec_deque::VecDeque;
 use crate::rng::RNGSEED;
@@ -11,7 +11,7 @@ use rand_pcg::Lcg128Xsl64;
 use rand_core::SeedableRng;
 use rand_core::{RngCore};
 
-//Generic game consts
+//Generic game constants
 const BLOCK_SIZE: usize = 20;
 
 #[derive(Clone, Copy)]
@@ -248,12 +248,12 @@ impl Tetris {
                 if descended {
                     self.current_piece.y -= 1;
                 }
-                'colcalc: for row in 0..4 {
+                'colcalc1: for row in 0..4 {
                     for col in 0..4 {
                         if deserialized_piece[row][col] {
                             if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
                                 self.current_piece.position += rot_dir_inverse as u8;
-                                break 'colcalc;
+                                break 'colcalc1;
                             }
                         }
                     }
@@ -396,7 +396,7 @@ impl Tetris {
     fn gen_bag(&mut self) {
         let mut pieces = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6];
         let mut rand_num = Lcg128Xsl64::seed_from_u64(RNGSEED.lock().get());
-        for i in 0..30 {
+        for _i in 0..30 {
             let r1 = (rand_num.next_u64() % 14) as usize;
             let r2 = (rand_num.next_u64() % 14) as usize;
             let swap = pieces[r1];

@@ -135,6 +135,7 @@ pub trait PrintWriter {
         self.set_blink_on(false);
     }
 
+    // If cursor has blinked, then un-blink it, otherwise blink it
     fn blink(&mut self) {
         if self.get_blink_on() {
             let character = self.read_buffer(self.get_height() - 1, self.get_column_position());
@@ -474,7 +475,7 @@ impl AdvancedWriter {
         self.terminal_border = false;
     }
 
-    fn move_cursor_left(&mut self, dist: usize) {
+    fn _move_cursor_left(&mut self, dist: usize) {
         if self.get_blinked() {
             self.blink();
         }
@@ -486,7 +487,7 @@ impl AdvancedWriter {
         }
     }
 
-    fn move_cursor_right(&mut self, dist: usize) {
+    fn _move_cursor_right(&mut self, dist: usize) {
         if self.get_blinked() {
             self.blink();
         }
