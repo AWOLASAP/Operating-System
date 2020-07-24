@@ -7,6 +7,9 @@ use lazy_static::lazy_static;
 use crate::keyboard_routing::KEYBOARD_ROUTER;
 use crate::timer_routing::TIME_ROUTER;
 use x86_64::instructions::interrupts;
+use rand_pcg::Lcg128Xsl64;
+use rand_core::SeedableRng;
+use rand_core::{RngCore};
 
 #[derive(Clone, Copy)]
 struct Piece {
@@ -67,6 +70,7 @@ pub struct Tetris {
     run: bool,
     score: u64,
     current_piece: RenderPiece,
+    move_timer: usize,
 }
 
 impl Tetris {
@@ -86,6 +90,7 @@ impl Tetris {
                 x: 0,
                 y: 0,
             },
+            move_timer: 6,
          }
     }
 
@@ -103,6 +108,7 @@ impl Tetris {
             x: 0,
             y: 0,
         };
+        self.move_timer = 6;
     
         for i in 0..4 {
             for j in 0..10 {
@@ -124,7 +130,14 @@ impl Tetris {
         if self.piece_falling {
             let key = self.get();
             
+            let mut try_until_fall = false;
             let mut rotated = false;
+            let mut move_down = false;
+
+            if self.move_timer == 0 {
+                self.move_timer = 6;
+                move_down = true;
+            }
             if key == 1 {
                 self.current_piece.x -= 1;
             }
@@ -133,9 +146,12 @@ impl Tetris {
             }
             else if key == 3 {
                 self.current_piece.y += 1;
+                if move_down {
+                    move_down = false;
+                }
             }
             else if key == 4 {
-    
+                try_until_fall = true;
             }
             else if key == 5 {
                 self.current_piece.position += 3;
@@ -152,6 +168,28 @@ impl Tetris {
             else if key == 8 {
     
             }
+
+            if move_down {
+                self.current_piece.y += 1;
+            }
+            else {
+                self.move_timer -= 1;
+            }
+            // Left and right bounds checking
+            let deserialized_piece = self.deserialize_piece();
+            for row_1 in 0..4 {
+                for col_1 in 0..4 {
+                    if deserialized_piece[row_1][col_1] {
+                        if self.current_piece.x + col_1 as isize > 9 {
+                            self.current_piece.x += 9 - self.current_piece.x - col_1 as isize ; 
+
+                        }
+                        else if (self.current_piece.x + col_1 as isize) < 0 {
+                            self.current_piece.x = 0 - col_1 as isize ; 
+                        }
+                    }
+                }
+            }
             if rotated {
                 if self.current_piece.x < 0 {
                     self.current_piece.x = 0;
@@ -162,28 +200,37 @@ impl Tetris {
             }
             else {
                 let deserialized_piece = self.deserialize_piece();
-                'colcalc: for row in 0..4 {
-                    for col in 0..4 {
-                        if deserialized_piece[row][col] {
-                            if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
-                                self.current_piece.y -= 1;
-                                // Imprint stuff to the board
-                                for row_1 in 0..4 {
-                                    for col_1 in 0..4 {
-                                        if deserialized_piece[row_1][col_1] {
-                                            self.board[(self.current_piece.y + row_1 as isize) as usize][(self.current_piece.x + col_1 as isize) as usize] = self.current_piece.piece.color;
+                'colcalc: loop {
+                    for row in 0..4 {
+                        for col in 0..4 {
+                            if deserialized_piece[row][col] {
+                                if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
+                                    self.current_piece.y -= 1;
+                                    // Imprint stuff to the board
+                                    for row_1 in 0..4 {
+                                        for col_1 in 0..4 {
+                                            if deserialized_piece[row_1][col_1] {
+                                                self.board[(self.current_piece.y + row_1 as isize) as usize][(self.current_piece.x + col_1 as isize) as usize] = self.current_piece.piece.color;
+                                            }
                                         }
                                     }
+                                    self.piece_falling = false;
+                                    break 'colcalc;
                                 }
-                                self.piece_falling = false;
-                                break 'colcalc;
                             }
                         }
                     }
-                    
+                    if !try_until_fall {
+                        break 'colcalc;
+                    }
+                    else {
+                        self.current_piece.y += 1;
+                    }
                 }
+
             }
             let deserialized_piece = self.deserialize_piece();
+
             self.rendered_board = [[Color16::Black; 10]; 28];
             for row_1 in 0..4 {
                 for col_1 in 0..4 {
@@ -227,6 +274,15 @@ impl Tetris {
                 }
             }
         }
+        for i in 0..4 {
+            for j in 0..10 {
+                if self.board[i][j] != Color16::Black {
+                    loop {
+                        print!("DEAD");
+                    }
+                }
+            }
+        }
         self.render();
         
     }
@@ -234,12 +290,15 @@ impl Tetris {
 
     fn gen_bag(&mut self) {
         let mut pieces = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6];
+        let mut rand_num = Lcg128Xsl64::seed_from_u64(RNGSEED.lock().get());
         for i in 0..14 {
-            interrupts::without_interrupts(|| {
-                let mut rng_seed = RNGSEED.lock();
-                pieces[((1103515245u64 * rng_seed.get() + 12345u64) % 14u64) as usize] = pieces[((1103515245u64 * rng_seed.get() + 12345u64) % 14u64) as usize];
-            });
+            let r1 = (rand_num.next_u64() % 14) as usize;
+            let r2 = (rand_num.next_u64() % 14) as usize;
+            let swap = pieces[r1];
+            pieces[r1] = pieces[r2];
+            pieces[r2] = swap;
         }
+        rand_num.next_u32();
         for i in pieces.iter() {
             self.bag.push_back(*i as u8);
         }
