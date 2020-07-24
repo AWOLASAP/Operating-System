@@ -38,7 +38,6 @@ impl ColorCode {
         (foreground, background)
     }
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub struct ScreenChar {

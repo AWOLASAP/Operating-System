@@ -6,6 +6,7 @@ use alloc::string::String;
 use spin::Mutex;
 use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
+use crate::tetris::TETRIS;
 
 lazy_static! {
     pub static ref COMMANDRUNNER: Mutex<CommandRunner> = Mutex::new(CommandRunner::new(String::from(" ")));
@@ -68,6 +69,20 @@ impl CommandRunner {
             });
             println!("Text mode activated");
         }
+        else if "tetris" == command {
+            if MODE.lock().text == true {
+                println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
+            } else {
+                TETRIS.lock().init();
+            }
+        } else if "help" == command {
+            println!("\nList of available commands:");
+            println!("print");
+            println!("echo");
+            println!("gterm");
+            println!("tterm");
+            println!("tetris");
+        }
         else {
             println!("\nInvalid Command!");
         }
@@ -86,12 +101,11 @@ impl CommandRunner {
 }
 
 pub fn add_command_buffer_fn(c: char) {
-    interrupts::without_interrupts(|| {
         COMMANDRUNNER.lock().add_to_buffer(c);
-    });
 }
-pub fn remove_command_buffer_fn() {     interrupts::without_interrupts(|| {
-    COMMANDRUNNER.lock().remove_from_buffer();}); }
+pub fn remove_command_buffer_fn() { 
+    COMMANDRUNNER.lock().remove_from_buffer(); 
+}
 
 #[macro_export]
 macro_rules! add_command_buffer {
@@ -99,7 +113,5 @@ macro_rules! add_command_buffer {
 }
 
 pub fn print_command_buffer_fn() {
-    interrupts::without_interrupts(|| {
     COMMANDRUNNER.lock().print_buffer();
-    });
 }
