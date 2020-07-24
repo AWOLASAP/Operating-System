@@ -171,7 +171,7 @@ impl Tetris {
             let mut descended = false;
 
             if self.move_timer == 0 {
-                self.move_timer = 6;
+                self.move_timer = 5;
                 move_down = true;
             }
             if key == 1 {
@@ -493,6 +493,7 @@ impl Tetris {
                 }
             }
         });
+        self.old_rendered_board = composited_board;   
         let held_piece = self.deserialize_held_piece();
         for i in 0..4 {
             for j in 0..4 {
@@ -510,6 +511,7 @@ impl Tetris {
                 }
             }
         });
+        self.old_held = composited_held;
         let next_piece = self.deserialize_next_piece();
         for i in 0..4 {
             for j in 0..4 {
@@ -527,7 +529,7 @@ impl Tetris {
                 }
             }
         });
-        self.old_rendered_board = composited_board;   
+        self.old_next = composited_next;
     }
 
     pub fn set(&mut self, key: u8) {
