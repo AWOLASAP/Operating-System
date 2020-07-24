@@ -55,10 +55,16 @@ const Z: Piece = Piece {
     color: Color16::Red,
 };
 
+const UNPIECE: Piece = Piece {
+    rotations: [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF],
+    color: Color16::Black,
+};
+
 const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z]; 
 
 struct RenderPiece {
     piece: Piece,
+    held: bool,
     position: u8, 
     x: isize,
     y: isize,
@@ -74,6 +80,7 @@ pub struct Tetris {
     score: u64,
     current_piece: RenderPiece,
     move_timer: usize,
+    held_piece: Piece,
 }
 
 impl Tetris {
@@ -89,11 +96,13 @@ impl Tetris {
             score: 0,
             current_piece: RenderPiece {
                 piece: I,
+                held: false,
                 position: 0,
                 x: 0,
                 y: 0,
             },
             move_timer: 6,
+            held_piece: UNPIECE,
          }
     }
 
@@ -107,11 +116,13 @@ impl Tetris {
         self.score = 0;
         self.current_piece = RenderPiece {
             piece: I,
+            held: false,
             position: 0,
             x: 0,
             y: 0,
         };
         self.move_timer = 6;
+        self.held_piece = UNPIECE;
     
         for i in 0..4 {
             for j in 0..10 {
@@ -180,7 +191,7 @@ impl Tetris {
                 rotated = true;
             }
             else if key == 8 {
-    
+                self.hold();
             }
 
             if move_down {
@@ -296,6 +307,7 @@ impl Tetris {
             let piece = PIECES[piece as usize];
             self.current_piece = RenderPiece {
                 piece: piece,
+                held: false,
                 position: 0,
                 x: 3,
                 y: 0,
@@ -333,11 +345,30 @@ impl Tetris {
         
     }
 
+    fn hold(&mut self) {
+        let piece = self.held_piece;
+        if !self.current_piece.held {
+            self.held_piece = self.current_piece.piece;
+            if piece.color == Color16::Black {
+                self.piece_falling = false;
+            }
+            else {
+                self.current_piece = RenderPiece {
+                    piece: piece,
+                    held: true,
+                    position: 0,
+                    x: 3,
+                    y: 0,
+                };  
+            }
+        }
+
+    }
 
     fn gen_bag(&mut self) {
         let mut pieces = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6];
         let mut rand_num = Lcg128Xsl64::seed_from_u64(RNGSEED.lock().get());
-        for i in 0..14 {
+        for i in 0..30 {
             let r1 = (rand_num.next_u64() % 14) as usize;
             let r2 = (rand_num.next_u64() % 14) as usize;
             let swap = pieces[r1];
