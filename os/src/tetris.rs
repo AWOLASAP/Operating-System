@@ -138,7 +138,8 @@ impl Tetris {
                 self.board[i + 24][j] = Color16::LightGrey;
             }
         }
-
+        print!("Tetris started");
+        ADVANCED_WRITER.lock().wipe_buffer();
         unsafe {KEYBOARD_ROUTER.force_unlock()};
         KEYBOARD_ROUTER.lock().mode = 2;
         TIME_ROUTER.lock().mode = 1;
@@ -215,6 +216,9 @@ impl Tetris {
                 unsafe {TIME_ROUTER.force_unlock()};
                 KEYBOARD_ROUTER.lock().mode = 0;
                 TIME_ROUTER.lock().mode = 0;
+                ADVANCED_WRITER.lock().wipe_buffer();
+                println!("");
+                return;
             }
 
             if move_down {
