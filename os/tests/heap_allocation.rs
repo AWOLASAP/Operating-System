@@ -11,7 +11,6 @@ use core::panic::PanicInfo;
 use os::allocator;
 use os::memory::{self, BootInfoFrameAllocator};
 use x86_64::VirtAddr;
-use os::{serial_print, serial_println};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use allocator::HEAP_SIZE;

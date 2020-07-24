@@ -4,7 +4,6 @@ use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1, Ke
 use spin::Mutex;
 use crate::add_command_buffer;
 use crate::tetris::TETRIS;
-use x86_64::instructions::interrupts;
 
 /* MODES
 0 - Terminal + sends weird stuff to screenbuffer
@@ -24,7 +23,9 @@ impl KeyboardRouter {
         let mut keyboard = Keyboard::new(layouts::Us104Key, ScancodeSet1,
             HandleControl::Ignore);
         match scancode{
+            // We need to find the right scancode for this (escape)
             27=>self.esc(),
+            // Arrow keys
             72=>self.up(),
             75=>self.move_cursor(-1),
             77=>self.move_cursor(1),
@@ -49,6 +50,7 @@ impl KeyboardRouter {
             print!("{}", character);
         }
         else if self.mode == 2 {
+            // These are the tetris control keys, it's easier to pass them as integers though this solution isn't really efficent or extensible.
             if character == 'a' {
                 TETRIS.lock().set(7)
             }
@@ -73,6 +75,7 @@ impl KeyboardRouter {
         }
     }
 
+    // You though it was move_cursor, but it was I, arrow key
     fn move_cursor(&self, dist: isize) {
         if self.mode == 0 || self.mode == 1 {
             if dist > 0 {
@@ -118,7 +121,7 @@ lazy_static! {
 }
 
  
-pub fn left(dist:usize){
+pub fn left(_dist:usize){
     if MODE.lock().text {
         WRITER.lock().move_cursor_left(1);
     }
@@ -127,7 +130,7 @@ pub fn left(dist:usize){
     }
 }
 
-pub fn right(dist:usize){
+pub fn right(_dist:usize){
     if MODE.lock().text {
         WRITER.lock().move_cursor_right(1);
     }
