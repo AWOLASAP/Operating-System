@@ -13,6 +13,7 @@ use crate::vga_buffer::MODE;
 use crate::vga_buffer::PrintWriter;
 use crate::add_command_buffer;
 use crate::keyboard_routing::KEYBOARD_ROUTER;
+use x86_64::instructions::interrupts;
 
 static WAKER: AtomicWaker = AtomicWaker::new();
 static SCANCODE_QUEUE: OnceCell<ArrayQueue<u8>> = OnceCell::uninit();
@@ -23,7 +24,8 @@ pub async fn print_keypresses() {
         HandleControl::Ignore);
 
     while let Some(scancode) = scancodes.next().await {
-        KEYBOARD_ROUTER.lock().handle_scancode(scancode);
+            KEYBOARD_ROUTER.lock().handle_scancode(scancode);
+    
     }
 }
 

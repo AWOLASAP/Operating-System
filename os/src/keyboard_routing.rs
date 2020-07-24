@@ -3,7 +3,7 @@ use crate::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
 use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1, KeyCode};
 use spin::Mutex;
 use crate::add_command_buffer;
-use crate::tetris::TETRIS_KEY_HANDLER;
+use crate::tetris::TETRIS;
 use x86_64::instructions::interrupts;
 
 /* MODES
@@ -21,25 +21,23 @@ impl KeyboardRouter {
     }
 
     pub fn handle_scancode(&mut self, scancode: u8) {
-        interrupts::without_interrupts(|| {
-            let mut keyboard = Keyboard::new(layouts::Us104Key, ScancodeSet1,
-                HandleControl::Ignore);
-            match scancode{
-                27=>self.esc(),
-                72=>self.up(),
-                75=>self.move_cursor(-1),
-                77=>self.move_cursor(1),
-                80=>self.down(),
-                _=>if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-                    if let Some(key) = keyboard.process_keyevent(key_event) {
-                        match key {
-                            DecodedKey::Unicode(character) => self.unicode(character),
-                            DecodedKey::RawKey(key) => self.raw_key(key),
-                        }
+        let mut keyboard = Keyboard::new(layouts::Us104Key, ScancodeSet1,
+            HandleControl::Ignore);
+        match scancode{
+            27=>self.esc(),
+            72=>self.up(),
+            75=>self.move_cursor(-1),
+            77=>self.move_cursor(1),
+            80=>self.down(),
+            _=>if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
+                if let Some(key) = keyboard.process_keyevent(key_event) {
+                    match key {
+                        DecodedKey::Unicode(character) => self.unicode(character),
+                        DecodedKey::RawKey(key) => self.raw_key(key),
                     }
                 }
             }
-        });
+        }
     }
 
     fn unicode(&self, character: char) {
@@ -52,16 +50,16 @@ impl KeyboardRouter {
         }
         else if self.mode == 2 {
             if character == 'a' {
-                TETRIS_KEY_HANDLER.lock().set(7)
+                TETRIS.lock().set(7)
             }
             else if character == 'c' {
-                TETRIS_KEY_HANDLER.lock().set(8)
+                TETRIS.lock().set(8)
             }
             else if character == 'z' {
-                TETRIS_KEY_HANDLER.lock().set(5)
+                TETRIS.lock().set(5)
             }
             else if character == ' ' {
-                TETRIS_KEY_HANDLER.lock().set(4)                
+                TETRIS.lock().set(4)                
             }
         }
     }
@@ -83,23 +81,23 @@ impl KeyboardRouter {
         }
         else if self.mode == 2 {
             if dist > 0 {
-                TETRIS_KEY_HANDLER.lock().set(2)
+                TETRIS.lock().set(2)
             }
             else {
-                TETRIS_KEY_HANDLER.lock().set(1)
+                TETRIS.lock().set(1)
             }
         }
     }
 
     fn down(&self) {
         if self.mode == 2 {
-            TETRIS_KEY_HANDLER.lock().set(3)
+            TETRIS.lock().set(3)
         }
     }
 
     fn up(&self) {
         if self.mode == 2 {
-            TETRIS_KEY_HANDLER.lock().set(6)
+            TETRIS.lock().set(6)
         }
     } 
 
@@ -108,11 +106,11 @@ impl KeyboardRouter {
     }
 }
 
- lazy_static! {
-     pub static ref KEYBOARD_ROUTER: Mutex<KeyboardRouter> = {
-         Mutex::new(KeyboardRouter::new())
-     };
- }
+lazy_static! {
+    pub static ref KEYBOARD_ROUTER: Mutex<KeyboardRouter> = {
+        Mutex::new(KeyboardRouter::new())
+    };
+}
 
  
 pub fn left(dist:usize){

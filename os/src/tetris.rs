@@ -5,6 +5,7 @@ use crate::rng::RNGSEED;
 use spin::Mutex;
 use lazy_static::lazy_static;
 use crate::keyboard_routing::KEYBOARD_ROUTER;
+use crate::timer_routing::TIME_ROUTER;
 use x86_64::instructions::interrupts;
 
 #[derive(Clone, Copy)]
@@ -53,134 +54,241 @@ const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z];
 struct RenderPiece {
     piece: Piece,
     position: u8, 
-    x: usize,
-    y: usize,
+    x: isize,
+    y: isize,
+}
+pub struct Tetris {
+    pub key: u8,
+    board: [[Color16; 10]; 28],
+    rendered_board: [[Color16; 10]; 28],
+    old_rendered_board: [[Color16; 10]; 28],
+    bag: VecDeque<u8>,
+    piece_falling: bool,
+    run: bool,
+    score: u64,
+    current_piece: RenderPiece,
 }
 
-fn gen_bag(bag: &mut VecDeque<u8>) {
-    let mut pieces = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6];
-    for i in 0..14 {
-        interrupts::without_interrupts(|| {
-            pieces[((1103515245u64 * RNGSEED.lock().get() + 12345u64) % 14u64) as usize] = pieces[((1103515245u64 * RNGSEED.lock().get() + 12345u64) % 14u64) as usize]
-        });
+impl Tetris {
+    fn new() -> Tetris {
+        Tetris { 
+            key: 0,
+            board: [[Color16::Black; 10]; 28],
+            rendered_board: [[Color16::Black; 10]; 28],
+            old_rendered_board: [[Color16::DarkGrey; 10]; 28],
+            bag:  VecDeque::with_capacity(14),
+            piece_falling: false,
+            run: true,
+            score: 0,
+            current_piece: RenderPiece {
+                piece: I,
+                position: 0,
+                x: 0,
+                y: 0,
+            },
+         }
     }
-    for i in pieces.iter() {
-        bag.push_back(*i as u8);
+
+    pub fn init(&mut self) {
+        self.board = [[Color16::Black; 10]; 28];
+        self.rendered_board = [[Color16::Black; 10]; 28];
+        self.old_rendered_board = [[Color16::DarkGrey; 10]; 28];
+        self.bag = VecDeque::with_capacity(14);
+        self.piece_falling = false;
+        self.run = true;
+        self.score = 0;
+        self.current_piece = RenderPiece {
+            piece: I,
+            position: 0,
+            x: 0,
+            y: 0,
+        };
+    
+        for i in 0..4 {
+            for j in 0..10 {
+                self.board[i + 24][j] = Color16::LightGrey;
+            }
+        }
+
+        unsafe {KEYBOARD_ROUTER.force_unlock()};
+        KEYBOARD_ROUTER.lock().mode = 2;
+        TIME_ROUTER.lock().mode = 1;
+        //ADVANCED_WRITER.lock().disable_blink();
     }
-}
 
-fn deserialize_piece(piece: &RenderPiece) -> [[bool; 4]; 4] {
-    let mut result = [[false; 4]; 4];
-    let rotation = piece.piece.rotations[(piece.position % 4) as usize];
-    let mut bit: u16 = 0x8000;
-
-    let mut row: usize = 0;
-    let mut col: usize = 0;
-    while (bit > 0) {
-        if (rotation & bit) > 0 {
-            result[row][col] = true;
+    pub fn game_loop(&mut self) {
+        if self.bag.is_empty() {
+            self.gen_bag();
+    
         }
-        bit = bit >> 1;
-        col += 1;
-        if col == 4 {
-            row += 1;
-            col = 0;
-        }
-    }
-    result
-}
-
-fn render(board: [[Color16; 10]; 24], old_board: [[Color16; 10]; 24], score: usize, bag: VecDeque<u8>) {
-
-}
-
-
-pub fn tetris() {
-    // NOTE: last 4 in board is for piece spawning
-    let mut board = [[Color16::Black; 10]; 24];
-    let mut old_board = [[Color16::Black; 10]; 24];
-    let mut bag: VecDeque<u8> = VecDeque::with_capacity(14);
-    let mut piece_falling = false;
-    let mut run = true;
-    let mut current_piece = RenderPiece {
-        piece: I,
-        position: 0,
-        x: 0,
-        y: 0,
-    };
-
-    KEYBOARD_ROUTER.lock().mode = 2;
-
-    while run {
-        if bag.is_empty() {
-            gen_bag(&mut bag);
-        }
-        if piece_falling {
-            let key = TETRIS_KEY_HANDLER.lock().get();
+        if self.piece_falling {
+            let key = self.get();
+            
             let mut rotated = false;
             if key == 1 {
-                current_piece.x -= 1;
+                self.current_piece.x -= 1;
             }
             else if key == 2 {
-                current_piece.x += 1;
+                self.current_piece.x += 1;
             }
             else if key == 3 {
-                current_piece.y += 1;
+                self.current_piece.y += 1;
             }
             else if key == 4 {
-
+    
             }
             else if key == 5 {
-
+                self.current_piece.position += 3;
+                rotated = true;
             }
             else if key == 6 {
-
+                self.current_piece.position += 1;
+                rotated = true;
             }
             else if key == 7 {
-
+                self.current_piece.position += 2;
+                rotated = true;
             }
             else if key == 8 {
-
+    
             }
             if rotated {
-                
+                if self.current_piece.x < 0 {
+                    self.current_piece.x = 0;
+                }
+                else if self.current_piece.x > 6 {
+                    self.current_piece.x = 6;
+                }
             }
             else {
-                let deserialized_piece = deserialize_piece(&current_piece);
-                for row in 0..4 {
+                let deserialized_piece = self.deserialize_piece();
+                'colcalc: for row in 0..4 {
                     for col in 0..4 {
-
+                        if deserialized_piece[row][col] {
+                            if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
+                                self.current_piece.y -= 1;
+                                // Imprint stuff to the board
+                                for row_1 in 0..4 {
+                                    for col_1 in 0..4 {
+                                        if deserialized_piece[row_1][col_1] {
+                                            self.board[(self.current_piece.y + row_1 as isize) as usize][(self.current_piece.x + col_1 as isize) as usize] = self.current_piece.piece.color;
+                                        }
+                                    }
+                                }
+                                self.piece_falling = false;
+                                break 'colcalc;
+                            }
+                        }
+                    }
+                    
+                }
+            }
+            let deserialized_piece = self.deserialize_piece();
+            self.rendered_board = [[Color16::Black; 10]; 28];
+            for row_1 in 0..4 {
+                for col_1 in 0..4 {
+                    if deserialized_piece[row_1][col_1] {
+                        self.rendered_board[(self.current_piece.y + row_1 as isize) as usize][(self.current_piece.x + col_1 as isize) as usize] = self.current_piece.piece.color;
                     }
                 }
             }
-
+    
         }
         else {
-            let piece = bag.pop_front();
+            let piece = self.bag.pop_front();
             let piece = match piece {
                 Some(i) => i,
                 None => 1,
             };
             let piece = PIECES[piece as usize];
-            current_piece = RenderPiece {
+            self.current_piece = RenderPiece {
                 piece: piece,
                 position: 0,
                 x: 3,
                 y: 0,
             };
-            piece_falling = true;
+            self.piece_falling = true;
         }
+        for i in 4..24 {
+            let mut line = true;
+            for j in 0..10 {
+                if self.board[i][j] == Color16::Black {
+                    line = false;
+                }
+            }
+            if line {
+                for x in (4..i).rev() {
+                    for y in 0..10 {
+                        self.board[x + 1][y] = self.board[x][y];
+                    }
+                }
+                for y in 0..10 {
+                    self.board[4][y] = Color16::Black;
+                }
+            }
+        }
+        self.render();
         
     }
-}
 
-pub struct KeyboardInterface {
-    pub key: u8,
-}
 
-impl KeyboardInterface {
-    fn new() -> KeyboardInterface {
-        KeyboardInterface { key: 0 }
+    fn gen_bag(&mut self) {
+        let mut pieces = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6];
+        for i in 0..14 {
+            interrupts::without_interrupts(|| {
+                let mut rng_seed = RNGSEED.lock();
+                pieces[((1103515245u64 * rng_seed.get() + 12345u64) % 14u64) as usize] = pieces[((1103515245u64 * rng_seed.get() + 12345u64) % 14u64) as usize];
+            });
+        }
+        for i in pieces.iter() {
+            self.bag.push_back(*i as u8);
+        }
+    }
+    
+    fn deserialize_piece(&mut self) -> [[bool; 4]; 4] {
+        let mut result = [[false; 4]; 4];
+        let rotation = self.current_piece.piece.rotations[(self.current_piece.position % 4) as usize];
+        let mut bit: u16 = 0x8000;
+    
+        let mut row: usize = 0;
+        let mut col: usize = 0;
+        while bit > 0 {
+            if (rotation & bit) > 0 {
+                result[row][col] = true;
+            }
+            bit = bit >> 1;
+            col += 1;
+            if col == 4 {
+                row += 1;
+                col = 0;
+            }
+        }
+        result
+    }
+    
+    fn render(&mut self) {
+        let mut composited_board: [[Color16; 10]; 28] = [[Color16::Black; 10]; 28];
+        for i in 0..24 {
+            for j in 0..10 {
+                if self.board[i + 4][j] != Color16::Black {
+                    composited_board[i + 4][j] = self.board[i + 4][j];
+                }
+                if self.rendered_board[i + 4][j] != Color16::Black {
+                    composited_board[i + 4][j] = self.rendered_board[i + 4][j];
+                }
+            }
+        }
+        interrupts::without_interrupts(|| {
+            let advanced_writer = ADVANCED_WRITER.lock();
+            for i in 0..24 {
+                for j in 0..10 {
+                    if composited_board[i + 4][j] != self.old_rendered_board[i + 4][j] {
+                        advanced_writer.draw_rect(((100 + j * 8) as isize, (100 + i * 8) as isize), ((108 + j * 8) as isize, (107 + i * 8) as isize), composited_board[i + 4][j]);
+                    }
+                }
+            }
+        });
+        self.old_rendered_board = composited_board;   
     }
 
     pub fn set(&mut self, key: u8) {
@@ -195,7 +303,7 @@ impl KeyboardInterface {
 }
 
 lazy_static! {
-    pub static ref TETRIS_KEY_HANDLER: Mutex<KeyboardInterface> = {
-        Mutex::new(KeyboardInterface::new())
+    pub static ref TETRIS: Mutex<Tetris> = {
+        Mutex::new(Tetris::new())
     };
 }
