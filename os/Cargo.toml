@@ -18,6 +18,8 @@ pc-keyboard = "0.5.0"
 vga = { git = "https://github.com/otisdog8/vga" }
 libm = "0.2.1"
 linked_list_allocator = "0.8.0"
+rand_core = "0.5.0"
+rand_pcg = "0.2.1"
 
 [dependencies.futures-util]
 version = "0.3.4"
@@ -36,6 +38,11 @@ default-features = false
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
+
+[dependencies.rand]
+version = "0.7.3"
+default-features = false
+small_rng = true
 
 [package.metadata.bootimage]
 test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"]

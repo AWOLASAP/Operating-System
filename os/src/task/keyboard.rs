@@ -12,6 +12,8 @@ use crate::vga_buffer::ADVANCED_WRITER;
 use crate::vga_buffer::MODE;
 use crate::vga_buffer::PrintWriter;
 use crate::add_command_buffer;
+use crate::keyboard_routing::KEYBOARD_ROUTER;
+use x86_64::instructions::interrupts;
 
 static WAKER: AtomicWaker = AtomicWaker::new();
 static SCANCODE_QUEUE: OnceCell<ArrayQueue<u8>> = OnceCell::uninit();
@@ -22,41 +24,11 @@ pub async fn print_keypresses() {
         HandleControl::Ignore);
 
     while let Some(scancode) = scancodes.next().await {
-        match scancode{
-            75=>left(1),
-            77=>right(1),
-            _=>if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-                if let Some(key) = keyboard.process_keyevent(key_event) {
-                    match key {
-                        DecodedKey::Unicode(character) => {
-                            add_command_buffer!(character);
-                            print!("{}", character);
-                        },
-                        DecodedKey::RawKey(key) => print!("{:?}", key),
-                    }
-                }
-            }
-        }
+            KEYBOARD_ROUTER.lock().handle_scancode(scancode);
+    
     }
 }
 
-pub fn left(dist:usize){
-    if MODE.lock().text {
-        WRITER.lock().move_cursor_left(1);
-    }
-    else {
-        ADVANCED_WRITER.lock().move_cursor_left(1);
-    }
-}
-
-pub fn right(dist:usize){
-    if MODE.lock().text {
-        WRITER.lock().move_cursor_right(1);
-    }
-    else {
-        ADVANCED_WRITER.lock().move_cursor_right(1);
-    }
-}
 
 pub(crate) fn add_scancode(scancode: u8) {
     if let Ok(queue) = SCANCODE_QUEUE.try_get() {

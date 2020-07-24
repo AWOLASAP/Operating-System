@@ -20,6 +20,10 @@ pub mod memory;
 pub mod allocator;
 pub mod task;
 pub mod commands;
+pub mod rng;
+pub mod keyboard_routing;
+pub mod timer_routing;
+pub mod tetris;
 
 pub trait Testable {
     fn run(&self) -> ();

@@ -69,12 +69,8 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     #[cfg(test)]
     test_main();
-
-    let mut executor = Executor::new();
-    executor.spawn(Task::new(example_task()));
-    executor.spawn(Task::new(keyboard::print_keypresses()));
-    executor.run();
-
+    
+    /*
     interrupts::without_interrupts(|| {
 
         MODE.lock().graphics_init();
@@ -90,12 +86,19 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         MODE.lock().text_init();
         println!("");
     });
+    */
 
     let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
 
+
+    //let mut executor = Executor::new();
+    //executor.spawn(Task::new(example_task()));
+    //executor.spawn(Task::new(keyboard::print_keypresses()));
+    //executor.run();
+    os::hlt_loop();
 
     //for i in 0..60 {
     //    println!("{}", i);
