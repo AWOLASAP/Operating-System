@@ -74,6 +74,8 @@ pub struct Tetris {
     board: [[Color16; 10]; 28],
     rendered_board: [[Color16; 10]; 28],
     old_rendered_board: [[Color16; 10]; 28],
+    old_held: [[Color16; 4]; 4],
+    old_next: [[Color16; 4]; 4],
     bag: VecDeque<u8>,
     piece_falling: bool,
     run: bool,
@@ -91,6 +93,8 @@ impl Tetris {
             board: [[Color16::Black; 10]; 28],
             rendered_board: [[Color16::Black; 10]; 28],
             old_rendered_board: [[Color16::DarkGrey; 10]; 28],
+            old_held: [[Color16::Black; 4]; 4],
+            old_next: [[Color16::Black; 4]; 4],
             bag:  VecDeque::with_capacity(14),
             piece_falling: false,
             run: true,
@@ -112,6 +116,8 @@ impl Tetris {
         self.board = [[Color16::Black; 10]; 28];
         self.rendered_board = [[Color16::Black; 10]; 28];
         self.old_rendered_board = [[Color16::DarkGrey; 10]; 28];
+        self.old_held = [[Color16::Black; 4]; 4];
+        self.old_next = [[Color16::Black; 4]; 4];
         self.bag = VecDeque::with_capacity(14);
         self.piece_falling = false;
         self.run = true;
@@ -138,14 +144,13 @@ impl Tetris {
         TIME_ROUTER.lock().mode = 1;
         //ADVANCED_WRITER.lock().disable_blink();
 
-        /*self.gen_bag();
+        self.gen_bag();
         let piece = self.bag.pop_front();
         let piece = match piece {
             Some(i) => i,
             None => 1,
         };
-        self.next_piece = PIECES[piece as usize];*/
-        self.next_piece = PIECES[1];
+        self.next_piece = PIECES[piece as usize];
 
     }
 
@@ -465,6 +470,9 @@ impl Tetris {
 
     fn render(&mut self) {
         let mut composited_board: [[Color16; 10]; 28] = [[Color16::Black; 10]; 28];
+        let mut composited_held: [[Color16; 4]; 4] = [[Color16::Black; 4]; 4];
+        let mut composited_next: [[Color16; 4]; 4] = [[Color16::Black; 4]; 4];
+
         for i in 0..24 {
             for j in 0..10 {
                 if self.board[i + 4][j] != Color16::Black {
@@ -484,28 +492,40 @@ impl Tetris {
                     }
                 }
             }
-            let held_piece = self.deserialize_held_piece();
+        });
+        let held_piece = self.deserialize_held_piece();
+        for i in 0..4 {
+            for j in 0..4 {
+                if held_piece[i][j] {
+                    composited_held[i][j] = self.held_piece.color;
+                }
+            }
+        }
+        interrupts::without_interrupts(|| {
             for i in 0..4 {
                 for j in 0..4 {
-                    if held_piece[i][j] {
-                        advanced_writer.draw_rect(((70 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((70 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), self.held_piece.color);
-                    }
-                    else {
-                        advanced_writer.draw_rect(((70 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((70 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), Color16::Black);
+                    if self.old_held[i][j] != composited_held[i][i] {
+                        ADVANCED_WRITER.lock().draw_rect(((70 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((70 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), composited_held[i][j]);
                     }
                 }
             }
-            let next_piece = self.deserialize_held_piece();
-            /*for i in 0..4 {
+        });
+        let next_piece = self.deserialize_next_piece();
+        for i in 0..4 {
+            for j in 0..4 {
+                if next_piece[i][j] {
+                    composited_next[i][j] = self.next_piece.color;
+                }
+            }
+        }
+        interrupts::without_interrupts(|| {
+            for i in 0..4 {
                 for j in 0..4 {
-                    if next_piece[i][j] {
-                        advanced_writer.draw_rect(((490 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((490 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), self.next_piece.color);
-                    }
-                    else {
-                        advanced_writer.draw_rect(((490 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((490 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), Color16::Black);
+                    if self.old_next[i][j] != composited_next[i][i] {
+                        ADVANCED_WRITER.lock().draw_rect(((490 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((490 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), composited_next[i][j]);
                     }
                 }
-            }*/
+            }
         });
         self.old_rendered_board = composited_board;   
     }
