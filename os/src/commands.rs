@@ -10,6 +10,9 @@ use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
 
+use crate::play_beep;
+
+
 // Init a CommandRunner class to run commands for the user
 lazy_static! {
     pub static ref COMMANDRUNNER: Mutex<CommandRunner> = Mutex::new(CommandRunner::new(String::from(" ")));
@@ -110,6 +113,10 @@ impl CommandRunner {
         println!("tetris");
     }
 
+    pub fn beep(&self) {
+        play_beep!();
+    }
+
     // Evaluate the command(s) in the buffer 
     pub fn eval_buffer(&mut self) {
         // Index to keep track of the command number for the argument number
@@ -129,6 +136,7 @@ impl CommandRunner {
                 "tterm" => self.tterm(),
                 "tetris" => self.tetris(),
                 "help" => self.help(),
+                "beep" => self.beep(),
                 _ => println!("\nInvalid Command: {}", command),
             }
             

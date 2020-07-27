@@ -24,6 +24,7 @@ pub mod rng;
 pub mod keyboard_routing;
 pub mod timer_routing;
 pub mod tetris;
+pub mod speaker;
 
 pub trait Testable {
     fn run(&self) -> ();
