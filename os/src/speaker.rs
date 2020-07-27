@@ -39,6 +39,7 @@ pub fn beep() {
     //set_PIT_2(old_frequency);
 }
 
+// Macro to allow beeps to be played in other files
 #[macro_export]
 macro_rules! play_beep {
     () => {crate::speaker::beep()};
