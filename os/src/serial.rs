@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 use uart_16550::SerialPort;
 
+// static access to the serial port
 lazy_static! {
     pub static ref SERIAL1: Mutex<SerialPort> = {
         let mut serial_port = unsafe { SerialPort::new(0x3F8) };
@@ -10,6 +11,7 @@ lazy_static! {
     };
 }
 
+// defines how to print to the serial port
 #[doc(hidden)]
 pub fn _print(args: ::core::fmt::Arguments) {
     use core::fmt::Write;
@@ -20,6 +22,7 @@ pub fn _print(args: ::core::fmt::Arguments) {
     });
 }
 
+// creates a macro for printing to the serial port
 #[macro_export]
 macro_rules! serial_print {
     ($($arg:tt)*) => {
@@ -27,6 +30,7 @@ macro_rules! serial_print {
     };
 }
 
+// creates a macro for printing to the serial port
 #[macro_export]
 macro_rules! serial_println {
     () => ($crate::serial_print!("\n"));

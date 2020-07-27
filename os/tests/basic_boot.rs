@@ -7,6 +7,7 @@
 use core::panic::PanicInfo;
 use os::println;
 
+// entry point for test
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     test_main();
@@ -14,15 +15,18 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
+// defines a test runner for tests
 fn _test_runner(_tests: &[&dyn Fn()]) {
     unimplemented!();
 }
 
+// defines panic function for tests
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     os::test_panic_handler(info)
 }
 
+// tests the println macro
 #[test_case]
 fn test_println() {
     println!("test_println output");

@@ -22,6 +22,7 @@ use os::task::{Task,keyboard};
 use os::task::executor::Executor;
 use x86_64::instructions::interrupts;
 
+// defines a panic function for when not testing
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -29,6 +30,7 @@ fn panic(info: &PanicInfo) -> ! {
     os::hlt_loop();
 }
 
+// defines a panic function for when testing
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -44,6 +46,7 @@ async fn example_task() {
     println!("async number: {}", number);
 }
 
+// creates the entry point for the application
 entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     MODE.lock().init();

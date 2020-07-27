@@ -15,8 +15,8 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use allocator::HEAP_SIZE;
 
+// defines entry point for test and initializes the heap
 entry_point!(main);
-
 fn main(boot_info: &'static BootInfo) -> ! {
     os::init();
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
@@ -31,11 +31,13 @@ fn main(boot_info: &'static BootInfo) -> ! {
     loop {}
 }
 
+// defines panic funtion for test
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     os::test_panic_handler(info)
 }
 
+// tests simple heap allocation
 #[test_case]
 fn simple_allocation() {
     let heap_value_1 = Box::new(41);
@@ -44,6 +46,7 @@ fn simple_allocation() {
     assert_eq!(*heap_value_2, 13);
 }
 
+// test allocating a large vector on the heap
 #[test_case]
 fn large_vec() {
     let n = 1000;
@@ -54,6 +57,7 @@ fn large_vec() {
     assert_eq!(vec.iter().sum::<u64>(), (n - 1) * n / 2);
 }
 
+// tests allocating a large number of boxes on the heap
 #[test_case]
 fn many_boxes() {
     for i in 0..HEAP_SIZE {
