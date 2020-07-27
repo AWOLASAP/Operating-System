@@ -206,7 +206,9 @@ pub fn to_i32(string: &str) -> i32 {
     let mut isNum = 1;
     let mut valid = 0;
     let mut result: i32;
+    
 
+    println!("{} and {}", valid, valid);
     // Go through the string and make sure each char is a num
     for c in string.chars() {
         valid = 0;
@@ -216,6 +218,7 @@ pub fn to_i32(string: &str) -> i32 {
             }
         }
 
+        println!("{} and {}", valid, c);
         if valid == 0 {
             isNum = 0;
             break;
