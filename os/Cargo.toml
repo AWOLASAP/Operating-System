@@ -45,7 +45,8 @@ default-features = false
 small_rng = true
 
 [package.metadata.bootimage]
-run-args = [ "-drive", "if=virtio,format=raw,file=os.dsk"]
+#run-args = [ "-drive", "if=none,format=raw,file=os.dsk", "-accel", "tcg"]
+run-args = [ "-drive", "if=none,format=raw,file=os.dsk,id=foo", "-device", "virtio-blk-device,scsi=off,drive=foo", "-M", "microvm"]
 test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"]
 test-success-exit-code = 33  # (0x10 << 1) | 1
 test-timeout = 300          # (in seconds)
