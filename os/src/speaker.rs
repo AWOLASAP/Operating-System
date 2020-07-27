@@ -8,6 +8,7 @@ pub fn play_sound(frequence: i32) {
     let tmp: i32;
 
     // Set the PIT to the desired frequency
+    // if frequence is 0, stop the function
     if frequence == 0 {
         println!("\nInvalid Frequency: {}", frequence);
         return;
