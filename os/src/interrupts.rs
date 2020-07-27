@@ -1,6 +1,5 @@
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use crate::print;
-use crate::println;
+use crate::{print,println};
 use lazy_static::lazy_static;
 use crate::gdt;
 use pic8259_simple::ChainedPics;
@@ -48,7 +47,7 @@ extern "x86-interrupt" fn page_fault_handler(
     hlt_loop();
 }
 
-// defines a response to a keyboard interrupt
+// when a keyboard interrupt is received it gets sent to the key queue
 extern "x86-interrupt" fn keyboard_interrupt_handler(
     _stack_frame: &mut InterruptStackFrame
 ) {

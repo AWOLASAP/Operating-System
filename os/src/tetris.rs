@@ -1,4 +1,4 @@
-use crate::vga_buffer::{ADVANCED_WRITER};
+use crate::vga_buffer::ADVANCED_WRITER;
 use vga::colors::Color16;
 use alloc::collections::vec_deque::VecDeque;
 use crate::rng::RNGSEED;
@@ -8,8 +8,7 @@ use crate::keyboard_routing::KEYBOARD_ROUTER;
 use crate::timer_routing::TIME_ROUTER;
 use x86_64::instructions::interrupts;
 use rand_pcg::Lcg128Xsl64;
-use rand_core::SeedableRng;
-use rand_core::{RngCore};
+use rand_core::{SeedableRng,RngCore};
 
 //Generic game constant(s)
 const BLOCK_SIZE: usize = 20;
@@ -60,12 +59,12 @@ const UNPIECE: Piece = Piece {
     color: Color16::Black,
 };
 
-const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z]; 
+const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z];
 
 struct RenderPiece {
     piece: Piece,
     held: bool,
-    position: u8, 
+    position: u8,
     x: isize,
     y: isize,
 }
@@ -89,7 +88,7 @@ pub struct Tetris {
 impl Tetris {
     // Makes the struct, but doesn't really initialize it - you need to do that with Tetris::init();
     fn new() -> Tetris {
-        Tetris { 
+        Tetris {
             key: 0,
             board: [[Color16::Black; 10]; 28],
             rendered_board: [[Color16::Black; 10]; 28],
@@ -113,7 +112,7 @@ impl Tetris {
          }
     }
 
-    //Not only sets/resets every relevant variable, but also 
+    //Not only sets/resets every relevant variable, but also
     pub fn init(&mut self) {
         self.board = [[Color16::Black; 10]; 28];
         self.rendered_board = [[Color16::Black; 10]; 28];
@@ -134,7 +133,7 @@ impl Tetris {
         self.move_timer = 6;
         self.held_piece = UNPIECE;
         self.next_piece = UNPIECE;
-    
+
         for i in 0..4 {
             for j in 0..10 {
                 self.board[i + 24][j] = Color16::LightGrey;
@@ -165,11 +164,11 @@ impl Tetris {
     pub fn game_loop(&mut self) {
         if self.bag.is_empty() {
             self.gen_bag();
-    
+
         }
         if self.piece_falling {
             let key = self.get();
-            
+
             let mut try_until_fall = false;
             let mut rotated = false;
             let mut move_down = false;
@@ -242,11 +241,11 @@ impl Tetris {
                 for col_1 in 0..4 {
                     if deserialized_piece[row_1][col_1] {
                         if self.current_piece.x + col_1 as isize > 9 {
-                            self.current_piece.x += 9 - self.current_piece.x - col_1 as isize ; 
+                            self.current_piece.x += 9 - self.current_piece.x - col_1 as isize ;
 
                         }
                         else if (self.current_piece.x + col_1 as isize) < 0 {
-                            self.current_piece.x = 0 - col_1 as isize ; 
+                            self.current_piece.x = 0 - col_1 as isize ;
                         }
                     }
                 }
@@ -293,7 +292,7 @@ impl Tetris {
 
             }
             if descended {
-                //Runs if the piece goes down 
+                //Runs if the piece goes down
                 let deserialized_piece = self.deserialize_piece();
                 'columncalc: loop {
                     for row in 0..4 {
@@ -334,7 +333,7 @@ impl Tetris {
                     }
                 }
             }
-    
+
         }
         else {
             //Handles getting a new piece - includes support for next_piece
@@ -383,7 +382,7 @@ impl Tetris {
             }
         }
         self.render();
-        
+
     }
     // Holds the piece, and, if there is a piece held, replaces the current piece
     fn hold(&mut self) {
@@ -400,7 +399,7 @@ impl Tetris {
                     position: 0,
                     x: 3,
                     y: 0,
-                };  
+                };
             }
         }
 
@@ -422,13 +421,13 @@ impl Tetris {
             self.bag.push_back(*i as u8);
         }
     }
-    
+
     //All the following functions turn a piece from its rotation to a [[bool; 4]; 4], where each true is a place where the piece has a block
     fn deserialize_piece(&mut self) -> [[bool; 4]; 4] {
         let mut result = [[false; 4]; 4];
         let rotation = self.current_piece.piece.rotations[(self.current_piece.position % 4) as usize];
         let mut bit: u16 = 0x8000;
-    
+
         let mut row: usize = 0;
         let mut col: usize = 0;
         while bit > 0 {
@@ -444,12 +443,12 @@ impl Tetris {
         }
         result
     }
-    
+
     fn deserialize_held_piece(&mut self) -> [[bool; 4]; 4] {
         let mut result = [[false; 4]; 4];
         let rotation = self.held_piece.rotations[0];
         let mut bit: u16 = 0x8000;
-    
+
         let mut row: usize = 0;
         let mut col: usize = 0;
         while bit > 0 {
@@ -470,7 +469,7 @@ impl Tetris {
         let mut result = [[false; 4]; 4];
         let rotation = self.next_piece.rotations[0];
         let mut bit: u16 = 0x8000;
-    
+
         let mut row: usize = 0;
         let mut col: usize = 0;
         while bit > 0 {
@@ -487,7 +486,7 @@ impl Tetris {
         result
     }
 
-    // Renders the pieces - composits the rendered board and then the stationary board, and only renders pixels that have changed. 
+    // Renders the pieces - composits the rendered board and then the stationary board, and only renders pixels that have changed.
     fn render(&mut self) {
         let mut composited_board: [[Color16; 10]; 28] = [[Color16::Black; 10]; 28];
         let mut composited_held: [[Color16; 4]; 4] = [[Color16::Black; 4]; 4];
@@ -513,7 +512,7 @@ impl Tetris {
                 }
             }
         });
-        self.old_rendered_board = composited_board;   
+        self.old_rendered_board = composited_board;
         let held_piece = self.deserialize_held_piece();
         for i in 0..4 {
             for j in 0..4 {

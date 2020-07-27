@@ -18,9 +18,8 @@ use os::allocator;
 use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr};
 use core::panic::PanicInfo;
-use os::task::{Task};
+use os::task::{Task,keyboard};
 use os::task::executor::Executor;
-use os::task::keyboard;
 use x86_64::instructions::interrupts;
 
 // defines a panic function for when not testing
@@ -70,8 +69,8 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     #[cfg(test)]
     test_main();
-    
-    
+
+
     interrupts::without_interrupts(|| {
 
         MODE.lock().graphics_init();
@@ -87,7 +86,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         MODE.lock().text_init();
         println!("");
     });
-    
+
 
     let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
