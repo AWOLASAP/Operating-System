@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use crate::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
-use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1, KeyCode};
+use pc_keyboard::{layouts, DecodedKey, Keyboard, ScancodeSet1, KeyCode};
 use spin::Mutex;
 use crate::add_command_buffer;
 use crate::tetris::TETRIS;
@@ -19,9 +19,7 @@ impl KeyboardRouter {
         KeyboardRouter { mode: 0 }
     }
 
-    pub fn handle_scancode(&mut self, scancode: u8) {
-        let mut keyboard = Keyboard::new(layouts::Us104Key, ScancodeSet1,
-            HandleControl::Ignore);
+    pub fn handle_scancode(&mut self, scancode: u8, keyboard: &mut Keyboard<layouts::Us104Key,ScancodeSet1>) {
         match scancode{
             // We need to find the right scancode for this (escape)
             27=>self.esc(),
@@ -61,7 +59,7 @@ impl KeyboardRouter {
                 TETRIS.lock().set(5)
             }
             else if character == ' ' {
-                TETRIS.lock().set(4)                
+                TETRIS.lock().set(4)
             }
             else if character == 'p' {
                 TETRIS.lock().set(9)
@@ -105,12 +103,12 @@ impl KeyboardRouter {
         if self.mode == 2 {
             TETRIS.lock().set(6)
         }
-    } 
+    }
 
     fn esc(&mut self) {
         if self.mode == 2 {
             TETRIS.lock().set(9)
-        }    
+        }
     }
 }
 
@@ -120,7 +118,7 @@ lazy_static! {
     };
 }
 
- 
+
 pub fn left(_dist:usize){
     if MODE.lock().text {
         WRITER.lock().move_cursor_left(1);

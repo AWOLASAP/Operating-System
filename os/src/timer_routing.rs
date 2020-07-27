@@ -1,8 +1,6 @@
 use lazy_static::lazy_static;
-use crate::vga_buffer::{MODE};
 use spin::Mutex;
-use crate::tetris::TETRIS;
-use crate::rng::RNGSEED;
+use crate::{tetris::TETRIS,rng::RNGSEED,vga_buffer::MODE};
 
 /* MODES
 0 - Terminal + RNG
