@@ -116,7 +116,7 @@ impl CommandRunner {
         if args == " "{
             println!("\nWhat frequency do you want the beep?");
         } else {
-            let freq = to_i32(args);
+            let freq: i32 = args.parse().unwrap_or(0);
             play_beep!(freq);
         }
     }
@@ -198,41 +198,4 @@ pub fn add_command_buffer_fn(c: char) {
 #[macro_export]
 macro_rules! add_command_buffer {
     ($c: expr) => {crate::commands::add_command_buffer_fn($c)};
-}
-
-// Function to check a string to see if it can be turned into an i32
-pub fn to_i32(string: &str) -> i32 {
-    let nums: [char; 10] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-    let mut isNum = 1;
-    let mut valid = 0;
-    let mut result: i32;
-    
-
-    println!("{} and {}", valid, valid);
-    // Go through the string and make sure each char is a num
-    for c in string.chars() {
-        valid = 0;
-        for n in nums.iter() {
-            if c == *n {
-                valid = 1;
-            }
-        }
-
-        println!("{} and {}", valid, c);
-        if valid == 0 {
-            isNum = 0;
-            break;
-        }
-    }
-
-    // If the string can be a valid num, turn it into one, else default to 0;
-    if isNum == 1 {
-        result = string.parse::<i32>().unwrap();
-    } else {
-        println!("\n Not a number!");
-        println!("Defaulting to 0.");
-        result = 0;
-    }
-
-    return result;
 }

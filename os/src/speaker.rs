@@ -8,7 +8,11 @@ pub fn play_sound(frequence: i32) {
     let tmp: i32;
 
     // Set the PIT to the desired frequency
-    div = 1193180 / freq;
+    if frequence == 0 {
+        prinln!("Invalid Frequency: {}", frequence);
+    } else {
+        div = 1193180 / frequence;
+    }
     unsafe {
         outb(0x43, 0xb6);
         outb(0x42, (div) as u8);
