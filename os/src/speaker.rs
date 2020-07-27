@@ -4,15 +4,15 @@ use x86::io::outb;
 
 
 pub fn play_sound(frequence: i32) {
-    let Div: i32;
+    let div: i32;
     let tmp: i32;
 
     // Set the PIT to the desired frequency
-    Div = 1193180;
+    div = 1193180;
     unsafe {
         outb(0x43, 0xb6);
-        outb(0x42, (Div) as u8);
-        outb(0x42, (Div >> 8) as u8);
+        outb(0x42, (div) as u8);
+        outb(0x42, (div >> 8) as u8);
     }    
 
     // And play the sound using the PC speaker
@@ -31,8 +31,8 @@ pub fn no_sound() {
 }
 
 // Make a beep
-pub fn beep() {
-    play_sound(1000);
+pub fn beep(freq: i32) {
+    play_sound(freq);
     //timer_wait(10);
     println!("\nBEEP!");
     no_sound();
@@ -42,5 +42,5 @@ pub fn beep() {
 // Macro to allow beeps to be played in other files
 #[macro_export]
 macro_rules! play_beep {
-    () => {crate::speaker::beep()};
+    ($f: expr) => {crate::speaker::beep($f)};
 }

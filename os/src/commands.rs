@@ -1,6 +1,5 @@
 #![allow(unused_variables)]
 #![feature(in_band_lifetimes)]
-
 use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
@@ -113,8 +112,13 @@ impl CommandRunner {
         println!("tetris");
     }
 
-    pub fn beep(&self) {
-        play_beep!();
+    pub fn beep(&self, args: &str) {
+        if args == " "{
+            println!("\nWhat frequency do you want the beep?");
+        } else {
+            let freq = to_i32(args);
+            play_beep!(freq);
+        }
     }
 
     // Evaluate the command(s) in the buffer 
@@ -136,7 +140,7 @@ impl CommandRunner {
                 "tterm" => self.tterm(),
                 "tetris" => self.tetris(),
                 "help" => self.help(),
-                "beep" => self.beep(),
+                "beep" => self.beep(args),
                 _ => println!("\nInvalid Command: {}", command),
             }
             
@@ -196,3 +200,36 @@ macro_rules! add_command_buffer {
     ($c: expr) => {crate::commands::add_command_buffer_fn($c)};
 }
 
+// Function to check a string to see if it can be turned into an i32
+pub fn to_i32(string: &str) -> i32 {
+    let nums: [char; 10] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+    let mut isNum = 1;
+    let mut valid = 0;
+    let mut result: i32;
+
+    // Go through the string and make sure each char is a num
+    for c in string.chars() {
+        valid = 0;
+        for n in nums.iter() {
+            if c == *n {
+                valid = 1;
+            }
+        }
+
+        if valid == 0 {
+            isNum = 0;
+            break;
+        }
+    }
+
+    // If the string can be a valid num, turn it into one, else default to 0;
+    if isNum == 1 {
+        result = string.parse::<i32>().unwrap();
+    } else {
+        println!("\n Not a number!");
+        println!("Defaulting to 0.");
+        result = 0;
+    }
+
+    return result;
+}
