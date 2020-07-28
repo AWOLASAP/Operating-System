@@ -1,9 +1,8 @@
 use super::{Task, TaskId};
-use alloc::{collections::BTreeMap, sync::Arc};
-use core::task::Waker;
+use alloc::{collections::BTreeMap, sync::Arc,task::Wake};
 use crossbeam_queue::ArrayQueue;
-use alloc::task::Wake;
-use core::task::{Context, Poll};
+use core::task::{Context, Poll,Waker};
+use x86_64::instructions::interrupts::{self, enable_interrupts_and_hlt};
 
 struct TaskWaker {
     task_id: TaskId,
@@ -11,6 +10,7 @@ struct TaskWaker {
 }
 
 impl TaskWaker {
+    // when a task is woken it gets pushed onto the queue of tasks to run
     fn wake_task(&self) {
         self.task_queue.push(self.task_id).expect("task_queue full");
     }
@@ -33,6 +33,7 @@ impl Wake for TaskWaker {
     }
 }
 
+// tasks are stored in a BTreeMap and accessed by their id's. The id's get put into a queue
 pub struct Executor {
     tasks: BTreeMap<TaskId, Task>,
     task_queue: Arc<ArrayQueue<TaskId>>,
@@ -56,6 +57,7 @@ impl Executor {
         self.task_queue.push(task_id).expect("queue full");
     }
 
+    // starts executor
     pub fn run(&mut self) -> ! {
         loop {
             self.run_ready_tasks();
@@ -63,9 +65,8 @@ impl Executor {
         }
     }
 
+    // if the tasks queue is empty halts the cpu until a new task arrives
     fn sleep_if_idle(&self) {
-        use x86_64::instructions::interrupts::{self, enable_interrupts_and_hlt};
-
         interrupts::disable();
         if self.task_queue.is_empty() {
             enable_interrupts_and_hlt();
@@ -82,18 +83,20 @@ impl Executor {
             waker_cache,
         } = self;
 
+        // polls tasks in queue until queue is empty
         while let Ok(task_id) = task_queue.pop() {
             let task = match tasks.get_mut(&task_id) {
                 Some(task) => task,
                 None => continue, // task no longer exists
             };
+            // gets waker from cache or creates waker if one doesn't exist
             let waker = waker_cache
                 .entry(task_id)
                 .or_insert_with(|| TaskWaker::new(task_id, task_queue.clone()));
             let mut context = Context::from_waker(waker);
+            // runs task and removes it if it's finished
             match task.poll(&mut context) {
                 Poll::Ready(()) => {
-                    // task done -> remove it and its cached waker
                     tasks.remove(&task_id);
                     waker_cache.remove(&task_id);
                 }

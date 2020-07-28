@@ -12,6 +12,7 @@ extern crate alloc;
 
 use core::panic::PanicInfo;
 
+// defines the modules in the project
 pub mod serial;
 pub mod vga_buffer;
 pub mod interrupts;
@@ -26,10 +27,12 @@ pub mod timer_routing;
 pub mod tetris;
 pub mod speaker;
 
+// defines the Testable trait
 pub trait Testable {
     fn run(&self) -> ();
 }
 
+// implementation of the Testable trait
 impl<T> Testable for T
     where
         T: Fn(),
@@ -41,6 +44,7 @@ impl<T> Testable for T
     }
 }
 
+// creates a test runner for running test functions
 pub fn test_runner(tests: &[&dyn Testable]) {
     serial_println!("Running {} tests", tests.len());
     for test in tests {
@@ -49,6 +53,7 @@ pub fn test_runner(tests: &[&dyn Testable]) {
     exit_qemu(QemuExitCode::Success);
 }
 
+// defines a special panic handler for when running tests
 pub fn test_panic_handler(info: &PanicInfo) -> ! {
     serial_println!("[failed]\n");
     serial_println!("Error: {}\n", info);
@@ -56,6 +61,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
     hlt_loop();
 }
 
+// enum that defines the Qemu Exit codes
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum QemuExitCode {
@@ -63,6 +69,7 @@ pub enum QemuExitCode {
     Failed = 0x11,
 }
 
+// exits qemu with the corresponding exit code
 pub fn exit_qemu(exit_code: QemuExitCode) {
     use x86_64::instructions::port::Port;
 
@@ -75,9 +82,11 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
 #[cfg(test)]
 use bootloader::{entry_point, BootInfo};
 
+//defines the entry point when testing
 #[cfg(test)]
 entry_point!(test_kernel_main);
 
+// entry point when testing
 #[cfg(test)]
 fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     init();
@@ -85,12 +94,14 @@ fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     hlt_loop();
 }
 
+// panic function for when testing
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     test_panic_handler(info)
 }
 
+// initializes everything in the os
 pub fn init() {
     interrupts::init_idt();
     gdt::init();
@@ -98,12 +109,14 @@ pub fn init() {
     x86_64::instructions::interrupts::enable();
 }
 
+// halts the cpu when not working
 pub fn hlt_loop() -> ! {
     loop {
         x86_64::instructions::hlt();
     }
 }
 
+// handles errors with heap allocation
 #[alloc_error_handler]
 fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
     panic!("allocation error: {:?}", layout)

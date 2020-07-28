@@ -1,6 +1,5 @@
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use crate::print;
-use crate::println;
+use crate::{print,println};
 use lazy_static::lazy_static;
 use crate::gdt;
 use pic8259_simple::ChainedPics;
@@ -16,6 +15,7 @@ pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 
 pub static PICS: spin::Mutex<ChainedPics> = spin::Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
 
+// creates an InterruptDescriptorTable that defines how to handle interrupts
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
@@ -33,6 +33,7 @@ lazy_static! {
     };
 }
 
+// defines a response to a page fault interrupt
 extern "x86-interrupt" fn page_fault_handler(
     stack_frame: &mut InterruptStackFrame,
     error_code: PageFaultErrorCode,
@@ -46,6 +47,7 @@ extern "x86-interrupt" fn page_fault_handler(
     hlt_loop();
 }
 
+// when a keyboard interrupt is received it gets sent to the key queue
 extern "x86-interrupt" fn keyboard_interrupt_handler(
     _stack_frame: &mut InterruptStackFrame
 ) {
@@ -61,11 +63,13 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
     }
 }
 
+// prints c to screen and adds it to the command buffer
 fn _print_and_log(c: char) {
     add_command_buffer!(c);
     print!("{}", c);
 }
 
+// defines a response to a timer interrupt
 extern "x86-interrupt" fn timer_interrupt_handler(
     _stack_frame: &mut InterruptStackFrame)
 {
@@ -78,22 +82,26 @@ extern "x86-interrupt" fn timer_interrupt_handler(
     }
 }
 
+// initializes the InterruptDescriptorTable
 pub fn init_idt() {
     IDT.load();
 }
 
+// defines a response to a double fault interrupt
 extern "x86-interrupt" fn double_fault_handler(
     stack_frame: &mut InterruptStackFrame, _error_code: u64) -> !
 {
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }
 
+// defines a response to a breakpoint interrupt
 extern "x86-interrupt" fn breakpoint_handler(
     stack_frame: &mut InterruptStackFrame)
 {
     println!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
 }
 
+// defines an enum that stores the index for the IDT
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum InterruptIndex {
@@ -101,6 +109,7 @@ pub enum InterruptIndex {
     Keyboard,
 }
 
+// allows access of InterruptIndex as an u8 or usize
 impl InterruptIndex {
     fn as_u8(self) -> u8 {
         self as u8
@@ -111,6 +120,7 @@ impl InterruptIndex {
     }
 }
 
+// causes a breakpoint interrupt to be thrown, checking if it is handled properly
 #[test_case]
 fn test_breakpoint_exception() {
     x86_64::instructions::interrupts::int3();
