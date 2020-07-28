@@ -85,6 +85,15 @@ impl PcSpeaker {
         self.no_sound();
     }
 
+    pub fn tet_ost(&mut self) {
+        let notes = [21, 31, 16, 18, 16, 31, 27];
+
+        for note in notes.iter() {
+            self.play_sound(*note as i32);
+            self.start_timer(3);
+            while self.timer_done == false {}
+        }
+    }
 
 
 }
