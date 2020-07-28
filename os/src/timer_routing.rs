@@ -1,6 +1,5 @@
 use lazy_static::lazy_static;
 use spin::Mutex;
-use crate::inc_speaker_timer;
 use crate::{
     tetris::TETRIS,
     rng::RNGSEED,
