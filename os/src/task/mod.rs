@@ -23,7 +23,7 @@ pub struct Task {
 
 impl Task {
     // creates a new task with a unique id and a new future
-    pub fn new(future: impl Future<Output = ()> + 'static) -> Task {
+    pub fn new<'send>(future: impl Future<Output = ()> + 'send) -> Task {
         Task {
             id: TaskId::new(),
             future: Box::pin(future),

@@ -12,15 +12,15 @@ mod serial;
 // Use these for things like buffer access
 use os::vga_buffer::{MODE, ADVANCED_WRITER};
 use vga::colors::Color16;
-use os::println;
+use os::{println,allocator};
 use os::memory::{self, BootInfoFrameAllocator};
-use os::allocator;
 use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr};
 use core::panic::PanicInfo;
-use os::task::{Task,keyboard};
-use os::task::executor::Executor;
+use os::task::{Task,keyboard,executor::Executor};
 use x86_64::instructions::interrupts;
+use lazy_static::lazy_static;
+use spin::Mutex;
 
 // defines a panic function for when not testing
 #[cfg(not(test))]
@@ -71,27 +71,31 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     test_main();
 
 
-    interrupts::without_interrupts(|| {
+    // interrupts::without_interrupts(|| {
+    //
+    //     MODE.lock().graphics_init();
+    //     //ADVANCED_WRITER.lock().enable_border();
+    //     ADVANCED_WRITER.lock().clear_buffer();
+    //
+    //     ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+    //     ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
+    //     for _i in 0..30 {
+    //         ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
+    //     }
+    //     //ADVANCED_WRITER.lock().clear_buffer();
+    //     MODE.lock().text_init();
+    //     println!("");
+    // });
 
-        MODE.lock().graphics_init();
-        //ADVANCED_WRITER.lock().enable_border();
-        ADVANCED_WRITER.lock().clear_buffer();
-
-        ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
-        ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
-        for _i in 0..30 {
-            ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
-        }
-        //ADVANCED_WRITER.lock().clear_buffer();
-        MODE.lock().text_init();
-        println!("");
-    });
-
-
-    let mut executor = Executor::new();
-    executor.spawn(Task::new(example_task()));
-    executor.spawn(Task::new(keyboard::print_keypresses()));
-    executor.run();
+    lazy_static! {
+        pub static ref EXECUTOR: Mutex<Executor> = {
+            Mutex::new(Executor::new())
+        };
+    }
+    // let mut executor = Executor::new();
+    EXECUTOR.spawn(Task::new(example_task()));
+    EXECUTOR.spawn(Task::new(keyboard::print_keypresses()));
+    EXECUTOR.run();
 
 
     //let mut executor = Executor::new();
