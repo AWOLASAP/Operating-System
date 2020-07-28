@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use crate::println;
 use x86::io::inb;
 use x86::io::outb;
