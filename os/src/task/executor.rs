@@ -3,6 +3,14 @@ use alloc::{collections::BTreeMap, sync::Arc,task::Wake};
 use crossbeam_queue::ArrayQueue;
 use core::task::{Context, Poll,Waker};
 use x86_64::instructions::interrupts::{self, enable_interrupts_and_hlt};
+use lazy_static::lazy_static;
+use spin::Mutex;
+
+// to be able to add stuff to executor in a file add:
+// use crate::task::{Task,executor::EXECUTOR};
+// to it's header and run the async function like this:
+// unsafe{EXECUTOR.force_unlock()}
+// EXECUTOR.lock().spawn(Task::new(FUNCTION_NAME()));
 
 struct TaskWaker {
     task_id: TaskId,
@@ -104,4 +112,8 @@ impl Executor {
             }
         }
     }
+}
+
+lazy_static! {
+    pub static ref EXECUTOR: Mutex<Executor> = Mutex::new(Executor::new());
 }

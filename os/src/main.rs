@@ -12,15 +12,15 @@ mod serial;
 // Use these for things like buffer access
 use os::vga_buffer::{MODE, ADVANCED_WRITER};
 use vga::colors::Color16;
-use os::println;
+use os::{println,allocator};
 use os::memory::{self, BootInfoFrameAllocator};
-use os::allocator;
 use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr};
 use core::panic::PanicInfo;
-use os::task::{Task,keyboard};
-use os::task::executor::Executor;
+use os::task::{Task,keyboard,executor::Executor};
 use x86_64::instructions::interrupts;
+use lazy_static::lazy_static;
+use spin::Mutex;
 
 // defines a panic function for when not testing
 #[cfg(not(test))]
@@ -87,25 +87,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         println!("");
     });
 
+    lazy_static! {
+        pub static ref EXECUTOR: Mutex<Executor> = {
+            Mutex::new(Executor::new())
+        };
+    }
 
-    let mut executor = Executor::new();
-    executor.spawn(Task::new(example_task()));
-    executor.spawn(Task::new(keyboard::print_keypresses()));
-    executor.run();
-
-
-    //let mut executor = Executor::new();
-    //executor.spawn(Task::new(example_task()));
-    //executor.spawn(Task::new(keyboard::print_keypresses()));
-    //executor.run();
-    //os::hlt_loop();
-
-    //for i in 0..60 {
-    //    println!("{}", i);
-    //};
-    // This is an example on how to reactivate text mode and deactivate graphics mode.
-    // This then changes the background and foreground color.
-    // MODE.lock().text_init();
-    //WRITER.lock().set_back_color(Color16::White);
-    //WRITER.lock().set_front_color(Color16::Black);
+    EXECUTOR.spawn(Task::new(example_task()));
+    EXECUTOR.spawn(Task::new(keyboard::print_keypresses()));
+    EXECUTOR.run();
 }
