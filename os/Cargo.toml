@@ -21,6 +21,7 @@ linked_list_allocator = "0.8.0"
 rand_core = "0.5.0"
 rand_pcg = "0.2.1"
 bitflags = "1.0"
+cpuio = "0.3.0"
 
 [dependencies.futures-util]
 version = "0.3.4"
@@ -46,7 +47,7 @@ default-features = false
 small_rng = true
 
 [package.metadata.bootimage]
-run-args = [ "-drive", "if=floppy,format=raw,index=0,file=os.img"]
+run-args = [ "-drive", "if=ide,format=raw,index=1,file=os.img"]
 test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"]
 test-success-exit-code = 33  # (0x10 << 1) | 1
 test-timeout = 300          # (in seconds)
