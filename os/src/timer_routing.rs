@@ -4,7 +4,8 @@ use crate::{
     tetris::TETRIS,
     rng::RNGSEED,
     vga_buffer::MODE,
-    inc_speaker_timer
+    inc_speaker_timer,
+    speaker::PCSPEAKER,
 };
 
 
@@ -12,7 +13,8 @@ use crate::{
  * MODES
  * 0 - Terminal + RNG
  * 1 - Tetris + RNG
- * 2 - Speaker
+ * 2 - Speaker - Beep
+ * 3 - Speaker - Song
 */
 
 pub struct TimeRouter {
@@ -36,6 +38,9 @@ impl TimeRouter {
         } 
         else if self.mode == 2 {
             inc_speaker_timer!();
+        }
+        else if self.mode == 3 {
+            PCSPEAKER.lock().song_loop();
         }
     }
 }

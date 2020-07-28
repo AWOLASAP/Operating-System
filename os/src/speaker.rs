@@ -32,6 +32,9 @@ impl PcSpeaker {
     }
 
     pub fn play_sound(&mut self, frequence: i32) {
+        // Make sure nothing is playing before      
+        self.no_sound();
+
         // Set the PIT to the desired frequency
         // If `frequence` is 0, stop the function
         if frequence == 0 {
@@ -63,6 +66,22 @@ impl PcSpeaker {
         unsafe { outb(0x61, self.tmp as u8); }
     }
 
+    pub fn start_song_loop(&mut self) {
+        self.timer = 0;
+        TIME_ROUTER.lock().mode = 3;
+    }
+
+    pub fn song_loop(&mut self) {
+        self.timer += 1;
+        self.tet_ost();
+    }
+     
+    pub fn stop_song_loop(&mut self) {
+        unsafe {TIME_ROUTER.force_unlock()};
+        TIME_ROUTER.lock().mode = 0;
+        self.no_sound();
+    }
+
     pub fn start_timer(&mut self, limit: i32) {
         self.timer = 0;
         self.timer_limit = limit;
@@ -86,16 +105,19 @@ impl PcSpeaker {
     }
 
     pub fn tet_ost(&mut self) {
-        let notes = [21, 31, 16, 18, 16, 31, 27];
-
-        for note in notes.iter() {
-            self.play_sound(*note as i32);
-            self.start_timer(3);
-            while self.timer_done == false {}
+        match self.timer {
+            0 => self.play_sound(21),
+            2 => self.play_sound(31),
+            4 => self.play_sound(16),
+            6 => self.play_sound(18),
+            8 => self.play_sound(16),
+            10 => self.play_sound(31),
+            12 => self.play_sound(27),
+            14 => self.stop_song_loop(),
+            _ => (),
         }
+
     }
-
-
 }
 
 // Make a beep
@@ -110,7 +132,7 @@ pub fn inc_speaker_timer_fn() {
 }
 
 pub fn play_tet_ost_fn() {
-    PCSPEAKER.lock().tet_ost();
+    PCSPEAKER.lock().start_song_loop();
 }
 
 // Macro to allow beeps to be played in other files
