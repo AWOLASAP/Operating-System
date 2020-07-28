@@ -18,12 +18,12 @@ impl TaskId {
 // a task is a wrapper for a async defined function.
 pub struct Task {
     id: TaskId,
-    future: Pin<Box<dyn Future<Output = ()>>>,
+    future: Pin<Box<dyn Future<Output = ()> + Send + 'static>>,
 }
 
 impl Task {
     // creates a new task with a unique id and a new future
-    pub fn new<'send>(future: impl Future<Output = ()> + 'send) -> Task {
+    pub fn new(future: impl Future<Output = ()> + Send + 'static) -> Task {
         Task {
             id: TaskId::new(),
             future: Box::pin(future),

@@ -71,45 +71,29 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     test_main();
 
 
-    // interrupts::without_interrupts(|| {
-    //
-    //     MODE.lock().graphics_init();
-    //     //ADVANCED_WRITER.lock().enable_border();
-    //     ADVANCED_WRITER.lock().clear_buffer();
-    //
-    //     ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
-    //     ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
-    //     for _i in 0..30 {
-    //         ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
-    //     }
-    //     //ADVANCED_WRITER.lock().clear_buffer();
-    //     MODE.lock().text_init();
-    //     println!("");
-    // });
+    interrupts::without_interrupts(|| {
+
+        MODE.lock().graphics_init();
+        //ADVANCED_WRITER.lock().enable_border();
+        ADVANCED_WRITER.lock().clear_buffer();
+
+        ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+        ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
+        for _i in 0..30 {
+            ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
+        }
+        //ADVANCED_WRITER.lock().clear_buffer();
+        MODE.lock().text_init();
+        println!("");
+    });
 
     lazy_static! {
         pub static ref EXECUTOR: Mutex<Executor> = {
             Mutex::new(Executor::new())
         };
     }
-    // let mut executor = Executor::new();
+
     EXECUTOR.spawn(Task::new(example_task()));
     EXECUTOR.spawn(Task::new(keyboard::print_keypresses()));
     EXECUTOR.run();
-
-
-    //let mut executor = Executor::new();
-    //executor.spawn(Task::new(example_task()));
-    //executor.spawn(Task::new(keyboard::print_keypresses()));
-    //executor.run();
-    //os::hlt_loop();
-
-    //for i in 0..60 {
-    //    println!("{}", i);
-    //};
-    // This is an example on how to reactivate text mode and deactivate graphics mode.
-    // This then changes the background and foreground color.
-    // MODE.lock().text_init();
-    //WRITER.lock().set_back_color(Color16::White);
-    //WRITER.lock().set_front_color(Color16::Black);
 }
