@@ -6,10 +6,11 @@ use crate::rng::RNGSEED;
 use crate::inc_speaker_timer;
 
 
-/* MODES
-0 - Terminal + RNG
-1 - Tetris + RNG
-2 - Speaker
+/* 
+ * MODES
+ * 0 - Terminal + RNG
+ * 1 - Tetris + RNG
+ * 2 - Speaker
 */
 
 pub struct TimeRouter {

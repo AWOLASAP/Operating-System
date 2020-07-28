@@ -23,8 +23,8 @@ pub struct CommandRunner{
 }
 
 // Implementation of CommandRunner. 
-// Essentially it handles a command buffer, which commands inside 
-// it can be executed by CommandRunner
+// Essentially it handles a command buffer, with
+// commands inside that it can be executed upon
 impl CommandRunner {
 
     // Create a new CommandRunner with an empty command_buffer string
@@ -117,7 +117,7 @@ impl CommandRunner {
             println!("\nWhat frequency do you want the beep?");
         } else {
             let freq: i32 = args.parse().unwrap_or(0);
-            play_beep!(freq);
+            play_beep!(freq, 2);
         }
     }
 

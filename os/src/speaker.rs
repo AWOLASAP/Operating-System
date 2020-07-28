@@ -7,63 +7,66 @@ use spin::Mutex;
 
 
 lazy_static! {
-    pub static ref SPEAKER: Mutex<Speaker> = {
-        Mutex::new(Speaker::new())
+    pub static ref PCSPEAKER: Mutex<PcSpeaker> = {
+        Mutex::new(PcSpeaker::new())
     };
 }
 
-pub struct Speaker {
+pub struct PcSpeaker {
     timer: i32,
     timer_limit: i32,
+    timer_done: bool,
+    div: i32,
+    tmp: i32,
 }
 
-impl Speaker {
-
-    pub fn new() -> Speaker { Speaker{
+impl PcSpeaker {
+    pub fn new() -> PcSpeaker { 
+        PcSpeaker{
             timer: 0,
             timer_limit: 0,
+            timer_done: false,
+            div: 0,
+            tmp: 0,
         }
     }
 
-    pub fn play_sound(&self, frequence: i32) {
-        let div: i32;
-        let tmp: i32;
-
+    pub fn play_sound(&mut self, frequence: i32) {
         // Set the PIT to the desired frequency
-        // if frequence is 0, stop the function
+        // If `frequence` is 0, stop the function
         if frequence == 0 {
             println!("\nInvalid Frequency: {}", frequence);
             return;
         } else {
-            div = 1193180 / frequence;
+            self.div = 1193180 / frequence;
         }
 
         unsafe {
             outb(0x43, 0xb6);
-            outb(0x42, (div) as u8);
-            outb(0x42, (div >> 8) as u8);
+            outb(0x42, (self.div) as u8);
+            outb(0x42, (self.div >> 8) as u8);
         }    
 
         // And play the sound using the PC speaker
-        unsafe { tmp = inb(0x61).into(); }
-        if tmp != (tmp | 3) {
-            unsafe { outb(0x61, tmp as u8| 3); }
-            println!("{}", tmp as u8 | 3)
+        unsafe { self.tmp = inb(0x61).into(); }
+        if self.tmp != (self.tmp | 3) {
+            unsafe { outb(0x61, self.tmp as u8| 3); }
         }
 
         println!("\nBEEP!");
     }
 
     // Make it shutup
-    pub fn no_sound(&self) {
-         unsafe { let tmp: u8 =inb(0x61) & 0xFC; }
+    pub fn no_sound(&mut self) {
+        unsafe { self.tmp = (inb(0x61) & 0xFC) as i32; }
         
-        //outb(0x61);
+        unsafe { outb(0x61, self.tmp as u8); }
     }
 
     pub fn start_timer(&mut self, limit: i32) {
         self.timer = 0;
         self.timer_limit = limit;
+        self.timer_done = false;
         TIME_ROUTER.lock().mode = 2;
     }
 
@@ -71,32 +74,34 @@ impl Speaker {
         self.timer += 1;
         if self.timer >= self.timer_limit {
             self.stop_timer();
+            self.no_sound();
         }
     }
     
     pub fn stop_timer(&mut self) {
         unsafe {TIME_ROUTER.force_unlock()};
         TIME_ROUTER.lock().mode = 0;
+        self.timer_done = true;
+        self.no_sound();
     }
 
 }
 
 // Make a beep
-pub fn beep(freq: i32) {
-    SPEAKER.play_sound(freq);
-    SPEAKER.start_timer(100);
-    SPEAKER.no_sound();
+pub fn beep(freq: i32, len: i32) {
+    PCSPEAKER.lock().play_sound(freq);
+    PCSPEAKER.lock().start_timer(len);
     //set_PIT_2(old_frequency);
 }
 
 pub fn inc_speaker_timer_fn() {
-    SPEAKER.inc_timer();
+    PCSPEAKER.lock().inc_timer();
 }
 
 // Macro to allow beeps to be played in other files
 #[macro_export]
 macro_rules! play_beep {
-    ($f: expr) => {crate::speaker::beep($f)};
+    ($f: expr, $l: expr) => {crate::speaker::beep($f, $l)};
 }
 
 #[macro_export]
