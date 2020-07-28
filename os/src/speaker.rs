@@ -85,6 +85,8 @@ impl PcSpeaker {
         self.no_sound();
     }
 
+
+
 }
 
 // Make a beep
@@ -98,6 +100,10 @@ pub fn inc_speaker_timer_fn() {
     PCSPEAKER.lock().inc_timer();
 }
 
+pub fn play_tet_ost_fn() {
+    PCSPEAKER.lock().tet_ost();
+}
+
 // Macro to allow beeps to be played in other files
 #[macro_export]
 macro_rules! play_beep {
@@ -107,4 +113,9 @@ macro_rules! play_beep {
 #[macro_export]
 macro_rules! inc_speaker_timer {
     () => {crate::speaker::inc_speaker_timer_fn()};
+}
+
+#[macro_export]
+macro_rules! play_tet_ost {
+    () => {crate::speaker::play_tet_ost_fn()};
 }

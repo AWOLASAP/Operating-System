@@ -8,8 +8,8 @@ use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
-
 use crate::play_beep;
+use crate::play_tet_ost;
 
 
 // Init a CommandRunner class to run commands for the user
@@ -89,6 +89,14 @@ impl CommandRunner {
         });
         println!("Text mode activated");
     }
+
+    pub fn mode(&self) {
+        if MODE.lock().text {
+            println!("\nText mode is active");
+        } else {
+            println!("\nGraphics mode is active");
+        }
+    }
     
     // tetris command
     // Plays the game Tetris
@@ -120,6 +128,10 @@ impl CommandRunner {
             play_beep!(freq, 2);
         }
     }
+    
+    pub fn tet_ost(&self) {
+        play_tet_ost!();
+    }
 
     // Evaluate the command(s) in the buffer 
     pub fn eval_buffer(&mut self) {
@@ -138,9 +150,11 @@ impl CommandRunner {
                 "echo" => self.echo(args),
                 "gterm" => self.gterm(),
                 "tterm" => self.tterm(),
+                "mode" => self.mode(),
                 "tetris" => self.tetris(),
                 "help" => self.help(),
                 "beep" => self.beep(args),
+                "tet-ost" => self.tet_ost(),
                 _ => println!("\nInvalid Command: {}", command),
             }
             
