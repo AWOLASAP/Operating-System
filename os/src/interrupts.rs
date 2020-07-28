@@ -29,6 +29,7 @@ lazy_static! {
         idt[InterruptIndex::Keyboard.as_usize()]
             .set_handler_fn(keyboard_interrupt_handler);
         idt.page_fault.set_handler_fn(page_fault_handler);
+        idt[46].set_handler_fn(ata_interrupt_handler);
         idt
     };
 }
@@ -45,6 +46,15 @@ extern "x86-interrupt" fn page_fault_handler(
     println!("{:#?}", stack_frame);
     hlt_loop();
 }
+
+extern "x86-interrupt" fn ata_interrupt_handler(
+    _stack_frame: &mut InterruptStackFrame
+) {
+    unsafe {
+        PICS.lock()
+            .notify_end_of_interrupt(46);
+    }}
+
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(
     _stack_frame: &mut InterruptStackFrame

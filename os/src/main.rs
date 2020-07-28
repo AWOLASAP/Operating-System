@@ -53,10 +53,9 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     // but it is  slower than text mode because it doesn't operate off of direct memory access.
     // Activating graphics mode also enables graphics things like line drawing
     //MODE.lock().graphics_init();
-    println!("Hello World!");
+    //println!("Hello World!");
 
     os::init();
-    ata_block_driver::AtaPio::try_new();
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
     let mut frame_allocator = unsafe {
@@ -86,6 +85,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         println!("");
     });
     
+    ata_block_driver::AtaPio::try_new();
 
     let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
