@@ -93,7 +93,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         };
     }
 
-    EXECUTOR.spawn(Task::new(example_task()));
-    EXECUTOR.spawn(Task::new(keyboard::print_keypresses()));
-    EXECUTOR.run();
+    EXECUTOR.lock().spawn(Task::new(example_task()));
+    EXECUTOR.lock().spawn(Task::new(keyboard::print_keypresses()));
+    EXECUTOR.lock().run();
 }
