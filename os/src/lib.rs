@@ -10,6 +10,9 @@
 extern crate rlibc;
 extern crate alloc;
 
+#[macro_use]
+extern crate bitflags;
+
 use core::panic::PanicInfo;
 
 pub mod serial;
@@ -24,6 +27,7 @@ pub mod rng;
 pub mod keyboard_routing;
 pub mod timer_routing;
 pub mod tetris;
+pub mod floppy_block_driver;
 
 pub trait Testable {
     fn run(&self) -> ();

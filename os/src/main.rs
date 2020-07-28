@@ -22,6 +22,7 @@ use os::task::{Task};
 use os::task::executor::Executor;
 use os::task::keyboard;
 use x86_64::instructions::interrupts;
+use os::floppy_block_driver;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -55,7 +56,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     println!("Hello World!");
 
     os::init();
-
+    floppy_block_driver::init();
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
     let mut frame_allocator = unsafe {
