@@ -87,6 +87,14 @@ impl CommandRunner {
         });
         println!("Text mode activated");
     }
+
+    pub fn mode(&self) {
+        if MODE.lock().text {
+            println!("\nText mode is active");
+        } else {
+            println!("\nGraphics mode is active");
+        }
+    }
     
     // tetris command
     // Plays the game Tetris
@@ -127,6 +135,7 @@ impl CommandRunner {
                 "echo" => self.echo(args),
                 "gterm" => self.gterm(),
                 "tterm" => self.tterm(),
+                "mode" => self.mode(),
                 "tetris" => self.tetris(),
                 "help" => self.help(),
                 _ => println!("\nInvalid Command: {}", command),
