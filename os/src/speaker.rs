@@ -40,7 +40,6 @@ impl PcSpeaker {
         // Set the PIT to the desired frequency
         // If `frequence` is 0, stop the function
         if frequence == 0 {
-            println!("\nInvalid Frequency: {}", frequence);
             return;
         } else {
             self.div = 1193180 / frequence;
@@ -57,8 +56,6 @@ impl PcSpeaker {
         if self.tmp != (self.tmp | 3) {
             unsafe { outb(0x61, self.tmp as u8| 3); }
         }
-
-        println!("\nBEEP!");
     }
 
     // Make it shutup
