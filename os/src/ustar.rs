@@ -60,6 +60,12 @@ impl UstarFileSystem {
         //Write any changes
     }
 
+    // Features to add - 
+    // Copy
+    // Move
+    // Rename
+    // (for files)
+
     // Directory based seeking functions (will handle things like ls in the future)
     // First, call the get_id function - once your program has such an ID it can do things
     // Like control which directory is active (at least for it)
