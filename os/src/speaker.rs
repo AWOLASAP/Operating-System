@@ -1,8 +1,5 @@
 use crate::println;
-use x86::io::inb;
-use x86::io::outb;
-use crate::timer_routing::TIME_ROUTER;
-use lazy_static::lazy_static;
+use x86::io::inb; use x86::io::outb; use crate::timer_routing::TIME_ROUTER; use lazy_static::lazy_static;
 use spin::Mutex;
 
 
@@ -38,7 +35,6 @@ impl PcSpeaker {
         // Set the PIT to the desired frequency
         // If `frequence` is 0, stop the function
         if frequence == 0 {
-            println!("\nInvalid Frequency: {}", frequence);
             return;
         } else {
             self.div = 1193180 / frequence;
@@ -56,7 +52,6 @@ impl PcSpeaker {
             unsafe { outb(0x61, self.tmp as u8| 3); }
         }
 
-        println!("\nBEEP!");
     }
 
     // Make it shutup
@@ -237,7 +232,6 @@ impl PcSpeaker {
             081 => self.play_sound(_A4 as i32),
             087 => self.play_sound(_A4 as i32),
             093 => self.play_sound(_R  as i32),
-            //works
             105 => self.play_sound(_D5 as i32),
             111 => self.play_sound(_F5 as i32),
             114 => self.play_sound(_A5 as i32),
@@ -257,6 +251,25 @@ impl PcSpeaker {
             180 => self.play_sound(_A4 as i32),
             186 => self.play_sound(_A4 as i32),
             192 => self.play_sound(_R  as i32),
+            198 => self.play_sound(_E4 as i32),
+            210 => self.play_sound(_C4 as i32),
+            222 => self.play_sound(_D4 as i32),
+            234 => self.play_sound(_B3 as i32),
+            246 => self.play_sound(_C4 as i32),
+            268 => self.play_sound(_A3 as i32),
+            280 => self.play_sound(_GS3 as i32),
+            292 => self.play_sound(_B3 as i32),
+            304 => self.play_sound(_E4 as i32),
+            316 => self.play_sound(_C4 as i32),
+            328 => self.play_sound(_D4 as i32),
+            340 => self.play_sound(_B3 as i32),
+            352 => self.play_sound(_C4 as i32),
+            358 => self.play_sound(_E4 as i32),
+            364 => self.play_sound(_A4 as i32),
+            370 => self.play_sound(_A4 as i32),
+            376 => self.play_sound(_GS4 as i32),
+            394 => self.play_sound(_R as i32),
+            400 => self.stop_song_loop(),
             _ => (),
         }
 
