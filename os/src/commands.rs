@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use alloc::string::String;
 use spin::Mutex;
 use crate::vga_buffer::MODE;
+use crate::vga_buffer::BUFFER_HEIGHT;
 use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
@@ -118,6 +119,8 @@ impl CommandRunner {
         println!("gterm");
         println!("tterm");
         println!("tetris");
+        println!("tet-ost");
+        println!("clear");
     }
 
     pub fn beep(&self, args: &str) {
@@ -131,6 +134,12 @@ impl CommandRunner {
     
     pub fn tet_ost(&self) {
         play_tet_ost!();
+    }
+    
+    pub fn clear(&self) {
+        for line in 0..BUFFER_HEIGHT {
+            println!();
+        }
     }
 
     // Evaluate the command(s) in the buffer 
@@ -155,6 +164,7 @@ impl CommandRunner {
                 "help" => self.help(),
                 "beep" => self.beep(args),
                 "tet-ost" => self.tet_ost(),
+                "clear" => self.clear(),
                 _ => println!("\nInvalid Command: {}", command),
             }
             
