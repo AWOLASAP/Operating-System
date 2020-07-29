@@ -6,20 +6,37 @@ use alloc::string::String;
 use hashbrown::HashMap;
 use core::option::Option;
 
+// Note to me tomorrow - we're going to use Rc<RefCell<File>> and Directory because
+// It gives me interior mutability (RefCell), and shared ownership (Rc). This is important
+// because it lets me change it at different times for different reasons to do different things. 
+// Basically I can hold references to the USTARItems in both Directories and the File master array
+// Because they kinda need to be mutable (to make defragmenting optimized and possible)
+
 trait USTARItem {
+    // Handles changing filenames and stuff
+    // NOTE: filenames for things like folders do matter, so make sure to change subfolders and stuff too
+    // Or (evil idea) - implement that in the change name/prefix for folders
     fn get_name(&self) -> String;
     fn set_name(&mut self, name: String);
     fn set_prefix(&mut self, prefix: String);
     fn get_name_and_prefix(&self) -> String;
 
-    fn get_size(&self) -> usize;
 
     fn should_write(&mut self);
     fn get_should_write(&self) -> bool;
 
-    // Stuff related to directories
-    fn is_directory(&self) -> bool;
-    fn get_dir_contents(&self) -> Vec<USTARItem>;
+    // Get writable representation - this is how the driver actually applies changes to disk
+    // Driver should auto handle writing the vector/using the right number of sectors, but 
+    // care should still be made to making it a correct multiple
+    fn get_writable_representation(&self) -> Vec<u8>;
+    
+
+    // Gets and sets the block ID - do this RARELY, probably only during initialization of the
+    // file and defragmenting - otherwise you could lose the file and corrupt the disk
+    fn get_block_id(&self) -> u64;
+    fn set_block_id(&mut self, block_id: u64);
+
+
 }
 
 struct Directory {
@@ -36,16 +53,25 @@ struct Directory {
     mode: String,
     owner_id: u64, 
     group_id: u64,
-    size: u64,
+    size: u64, // Should always be 0
     time: u64,
     checksum: u64, // 256 + the sum of all the bytes in this header except the checksum field.
-    type_flag: u8, 
+    type_flag: u8, // Should always be 5
     linked_name: String,
     owner_name: String, 
     group_name: String,
     device_major_number: u64,
     device_minor_number: u64,
     prefix: String,
+}
+
+impl Directory {
+    fn from_block(block: Vec<u8>, block_id: u64) -> File {
+
+    }
+
+
+
 }
 
 struct File {
@@ -64,7 +90,7 @@ struct File {
     size: u64,
     time: u64,
     checksum: u64, // 256 + the sum of all the bytes in this header except the checksum field.
-    type_flag: u8, 
+    type_flag: u8, // Should always be 0
     linked_name: String,
     owner_name: String, 
     group_name: String,
@@ -73,6 +99,26 @@ struct File {
     prefix: String,
 }
 
+impl File {
+    fn from_block(block: Vec<u8>, block_id: u64) -> File {
+        // Handle name
+        let name = String::with_capacity(100);
+        for i in 0..100 {
+            let chr = match block.get(i) {
+                Some(chr) => chr as char,
+                None => 'a',
+            };
+        }
+    }
+
+    fn get_data(&self) -> Vec<u8> {
+
+    }
+    // This handles size 
+    fn set_data(&mut self, size: Vec<u8>) {
+
+    }
+}
 
 struct USTARFileSystem {
     block_driver: AtaPio,
@@ -111,8 +157,10 @@ impl UstarFileSystem {
     // First, call the get_id function - once your program has such an ID it can do things
     // Like control which directory is active (at least for it)
     // Not sure how this will handle having a parent directory deleted (yet)
+    // Absolute paths need to start with a /
+    // Relative paths cannot start with a /
     pub fn get_id(&mut self) {
-        self.current_dirs.insert(self.current_dirs_tracker, root);
+        self.current_dirs.insert(self.current_dirs_tracker, self.root);
     }
 
     pub fn list_files(&self, id: u64) -> Vec<String> {

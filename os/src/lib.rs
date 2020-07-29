@@ -28,6 +28,7 @@ pub mod keyboard_routing;
 pub mod timer_routing;
 pub mod tetris;
 pub mod ata_block_driver;
+pub mod ustar;
 
 pub trait Testable {
     fn run(&self) -> ();
