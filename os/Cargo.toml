@@ -47,7 +47,7 @@ default-features = false
 small_rng = true
 
 [package.metadata.bootimage]
-run-args = [ "-drive", "if=ide,format=raw,index=1,file=os.img"]
+run-args = [ "-drive", "if=ide,format=raw,index=1,file=os.tar"]
 test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"]
 test-success-exit-code = 33  # (0x10 << 1) | 1
 test-timeout = 300          # (in seconds)

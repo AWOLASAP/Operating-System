@@ -302,11 +302,10 @@ impl AtaPio {
 
         let mut data_port = UnsafePort::<u16>::new(PORT_DATA);
         let u16_per_sector = SECTOR_SIZE / 2;
-
-        let mut result: Vec<u8> = Vec::new();
-        for i in data.iter() {
+        // Not sure if this code works
+        /*for i in data.iter() {
             data_port.write(*i);
-        }
+        }*/
         for i in 0..sectors {
             for j in 0..u16_per_sector {
                 let word = data.get(i as usize*u16_per_sector + j);

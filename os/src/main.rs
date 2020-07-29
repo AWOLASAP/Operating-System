@@ -87,7 +87,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         println!("");
     });*/
     
-    let driv = ata_block_driver::AtaPio::try_new();
+    /*let driv = ata_block_driver::AtaPio::try_new();
     let data = unsafe {driv.read_lba(0, 1)};
 
     for c in data.iter() {
@@ -100,13 +100,14 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         data.push(0u16);
     }
 
-    //let data = unsafe {driv.write(0, 1, data)};
+    let data = unsafe {driv.write(0, 1, data)};
 
     let dota = unsafe {driv.read_lba(0, 1)};
 
     for c in dota.iter() {
         print!("{}", *c as char);
     }
+    */
 
 
     let mut executor = Executor::new();
