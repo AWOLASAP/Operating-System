@@ -13,6 +13,7 @@ mod serial;
 use os::vga_buffer::{MODE, ADVANCED_WRITER};
 use vga::colors::Color16;
 use os::println;
+use os::print;
 use os::memory::{self, BootInfoFrameAllocator};
 use os::allocator;
 use bootloader::{BootInfo, entry_point};
@@ -23,6 +24,7 @@ use os::task::executor::Executor;
 use os::task::keyboard;
 use x86_64::instructions::interrupts;
 use os::ata_block_driver;
+use alloc::vec::Vec;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -69,7 +71,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     test_main();
     
     
-    interrupts::without_interrupts(|| {
+    /*interrupts::without_interrupts(|| {
 
         MODE.lock().graphics_init();
         //ADVANCED_WRITER.lock().enable_border();
@@ -83,9 +85,29 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         //ADVANCED_WRITER.lock().clear_buffer();
         MODE.lock().text_init();
         println!("");
-    });
+    });*/
     
-    ata_block_driver::AtaPio::try_new();
+    let driv = ata_block_driver::AtaPio::try_new();
+    let data = unsafe {driv.read_lba(0, 1)};
+
+    for c in data.iter() {
+        print!("{}", *c as char);
+    }
+
+    let mut data = Vec::with_capacity(256);
+
+    for i in 0..256 {
+        data.push(0u16);
+    }
+
+    //let data = unsafe {driv.write(0, 1, data)};
+
+    let dota = unsafe {driv.read_lba(0, 1)};
+
+    for c in dota.iter() {
+        print!("{}", *c as char);
+    }
+
 
     let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));

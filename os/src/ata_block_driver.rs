@@ -110,26 +110,29 @@ impl AtaPio {
     }
 
     unsafe fn identify() -> DriveProperties {
-        let mut ctrl = UnsafePort::<u8>::new(PORT_DEV_CTRL);
-
         // https://wiki.osdev.org/ATA_PIO_Mode#IDENTIFY_command
 
+        // I know this is bad, but it as of now hardcodes the drive to identify
+        let mut port_lba3 = UnsafePort::<u8>::new(PORT_LBA3);
+        port_lba3.write(0xB0);
+
         // Clear LBA_N ports
+        let mut port_seccount = UnsafePort::<u8>::new(PORT_SECCOUNT);
+        port_seccount.write(0);
         let mut port_lba0 = UnsafePort::<u8>::new(PORT_LBA0);
         port_lba0.write(0);
         let mut port_lba1 = UnsafePort::<u8>::new(PORT_LBA1);
         port_lba1.write(0);
         let mut port_lba2 = UnsafePort::<u8>::new(PORT_LBA2);
         port_lba2.write(0);
-        let mut port_lba3 = UnsafePort::<u8>::new(PORT_LBA3);
-        port_lba3.write(0);
+
 
         // Send IDENTIFY command
         Self::send_command(0xEC);
 
-        for j in 0..10000 {
-            let _ = ctrl.read();
-        }
+        //for j in 0..10000 {
+        //    let _ = ctrl.read();
+        //}
 
         let mut first_cleared = true;
         loop {
@@ -168,9 +171,9 @@ impl AtaPio {
 
         for i in 0..256 {
             data[i] = data_port.read();
-            for j in 0..10000 {
-                let _ = ctrl.read();
-            }
+            //for j in 0..10000 {
+            //    let _ = ctrl.read();
+            //}
         }
 
         let lba48_supported = (data[83] & (1 << 10)) != 0;
@@ -205,7 +208,7 @@ impl AtaPio {
         let mut port = UnsafePort::<u8>::new(PORT_LBA3);
         let mut bits24_27: u8 = (lba >> 24) as u8;
         assert!(bits24_27 < 8);
-        bits24_27 |= 0b11100000; // LBA mode
+        bits24_27 |= 0b11110000; // Drive select - we want the slave drive
         port.write(bits24_27);
 
         // Send number of sectors
@@ -263,7 +266,57 @@ impl AtaPio {
         unsafe { self.read_lba(sector as u32, 1) }
     }
 
-    fn write(&mut self, sector: u64, data: Vec<u8>) {
-        unimplemented!("ATA PIO writing is not implemented");
+    // Make the fs driver do the hard job of converting Vec<u8> to Vec<u16>
+    pub unsafe fn write(&self, lba: u32, sectors: u8, data: Vec<u16>) {
+        // https://wiki.osdev.org/ATA_read/write_sectors#Read_in_LBA_mode
+
+        assert!(sectors > 0);
+
+        // Send bits 24-27 of LBA, drive number and LBA mode
+        let mut port = UnsafePort::<u8>::new(PORT_LBA3);
+        let mut bits24_27: u8 = (lba >> 24) as u8;
+        assert!(bits24_27 < 8);
+        bits24_27 |= 0b11110000; // Drive select - we want the slave drive
+        port.write(bits24_27);
+
+        // Send number of sectors
+        let mut port = UnsafePort::<u8>::new(PORT_SECCOUNT);
+        port.write(sectors);
+
+        // Send bits 0-7 of LBA
+        let mut port = UnsafePort::<u8>::new(PORT_LBA0);
+        port.write((lba & 0xFF) as u8);
+
+        // Send bits 8-15 of LBA
+        let mut port = UnsafePort::<u8>::new(PORT_LBA1);
+        port.write(((lba & 0xFF00) >> 0x8) as u8);
+
+        // Send bits 16-23 of LBA
+        let mut port = UnsafePort::<u8>::new(PORT_LBA2);
+        port.write(((lba & 0xFF0000) >> 0x10) as u8);
+
+        // Send command
+        Self::send_command(0x30); // Read with retry
+
+        Self::wait_ready();
+
+        let mut data_port = UnsafePort::<u16>::new(PORT_DATA);
+        let u16_per_sector = SECTOR_SIZE / 2;
+
+        let mut result: Vec<u8> = Vec::new();
+        for i in data.iter() {
+            data_port.write(*i);
+        }
+        for i in 0..sectors {
+            for j in 0..u16_per_sector {
+                let word = data.get(i as usize*u16_per_sector + j);
+                let word=  match word {
+                    Some(i) => *i,
+                    None => 0,
+                };
+                data_port.write(word);
+            }
+        }
+
     }
 }
