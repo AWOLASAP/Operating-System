@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use crate::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
 use pc_keyboard::{layouts, DecodedKey, Keyboard, ScancodeSet1, KeyCode};
 use spin::Mutex;
-use crate::add_command_buffer;
+use crate::{add_command_buffer, move_command_cursor};
 use crate::tetris::TETRIS;
 
 /* MODES
@@ -74,13 +74,13 @@ impl KeyboardRouter {
     }
 
     // You though it was move_cursor, but it was I, arrow key
-    fn move_cursor(&self, dist: isize) {
+    fn move_cursor(&self, dist: i8) {
         if self.mode == 0 || self.mode == 1 {
             if dist > 0 {
-                right(dist as usize);
+                right();
             }
             else {
-                left(dist as usize);
+                left();
             }
         }
         else if self.mode == 2 {
@@ -119,20 +119,22 @@ lazy_static! {
 }
 
 
-pub fn left(_dist:usize){
+pub fn left(){
     if MODE.lock().text {
         WRITER.lock().move_cursor_left(1);
     }
     else {
         ADVANCED_WRITER.lock().move_cursor_left(1);
     }
+    move_command_cursor!(-1);
 }
 
-pub fn right(_dist:usize){
+pub fn right(){
     if MODE.lock().text {
         WRITER.lock().move_cursor_right(1);
     }
     else {
         ADVANCED_WRITER.lock().move_cursor_right(1);
     }
+    move_command_cursor!(1)
 }

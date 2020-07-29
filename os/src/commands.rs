@@ -1,5 +1,4 @@
 #![allow(unused_variables)]
-#![feature(in_band_lifetimes)]
 use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
@@ -21,6 +20,7 @@ lazy_static! {
 // CommandRunner really only needs a place to store the commands
 pub struct CommandRunner{
     command_buffer: String,
+    index: usize,
 }
 
 // Implementation of CommandRunner. 
@@ -32,6 +32,7 @@ impl CommandRunner {
     pub fn new(string: String) -> CommandRunner {
         CommandRunner{
             command_buffer: String::new(),
+            index: 0,
         }
 
     }
@@ -49,14 +50,32 @@ impl CommandRunner {
             self.remove_from_buffer();
         } else {
             // If not a special case, just add the char to the buffer
-            self.command_buffer.push(c);
+            if self.index < self.command_buffer.len() {
+                self.command_buffer.remove(self.index);
+                self.command_buffer.insert(self.index, c);
+            } else {
+                self.command_buffer.push(c);
+            }
+            self.index += 1;
         }
 
     }
 
     // Remove the last char from the command buffer
     pub fn remove_from_buffer(&mut self) {
-        self.command_buffer.pop();
+        if self.index != 0 {
+            self.command_buffer.remove(self.index - 1);
+            self.index -= 1;
+        }
+    }
+
+    // Moves the index in the command buffer when you move the cursor
+    pub fn move_command_cursor(&mut self, i: i8) {
+        if i > 0 && self.index < self.command_buffer.len() {
+            self.index += 1;
+        } else if i < 0 && self.index != 0 {
+            self.index -= 1;
+        }
     }
     
     // print-buffer command.
@@ -174,6 +193,7 @@ impl CommandRunner {
         
         // Clear the command buffer after an evaluation
         self.command_buffer = String::from("");
+        self.index = 0;
     }
 
     pub fn split_buffer(&self) -> (Vec<&str>, Vec<&str>) {
@@ -218,8 +238,18 @@ pub fn add_command_buffer_fn(c: char) {
         COMMANDRUNNER.lock().add_to_buffer(c);
 }
 
+// Calls the CommandRunner class to move cursor in buffer
+pub fn move_command_cursor_fn(i: i8) {
+    COMMANDRUNNER.lock().move_command_cursor(i);
+}
+
 // Macro for adding to the command buffer from different files
 #[macro_export]
 macro_rules! add_command_buffer {
     ($c: expr) => {crate::commands::add_command_buffer_fn($c)};
+}
+
+#[macro_export]
+macro_rules! move_command_cursor {
+    ($c: expr) => {crate::commands::move_command_cursor_fn($c)};
 }
