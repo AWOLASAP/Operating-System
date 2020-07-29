@@ -4,7 +4,9 @@ use os::ata_block_driver::AtaPio;
 use alloc::vec::Vec;
 
 trait USTARItem {
-
+    fn get_name(&self) -> String {
+        
+    }
 }
 
 struct Directory {

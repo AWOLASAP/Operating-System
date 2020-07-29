@@ -5,7 +5,7 @@ use linked_list_allocator::LockedHeap;
 static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 pub const HEAP_START: usize = 0x_4444_4444_0000;
-pub const HEAP_SIZE: usize = 512 * 1024; // 512 KiB
+pub const HEAP_SIZE: usize = 64 * 1024 * 1024; // 64 MiB - we want a heap this large so that it can contain the entire fs in ram, plus more
 
 pub fn init_heap(mapper: &mut impl Mapper<Size4KiB>, frame_allocator: &mut impl FrameAllocator<Size4KiB>) -> Result<(), MapToError<Size4KiB>> {
     let page_range = {
