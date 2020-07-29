@@ -15,6 +15,8 @@ lazy_static! {
 
 pub struct PcSpeaker {
     timer: i32,
+    current_run: i32,
+    total_runs: i32,
     timer_limit: i32,
     timer_done: bool,
     div: i32,
@@ -25,6 +27,8 @@ impl PcSpeaker {
     pub fn new() -> PcSpeaker { 
         PcSpeaker{
             timer: 0,
+            current_run: 1,
+            total_runs: 1,
             timer_limit: 0,
             timer_done: false,
             div: 0,
@@ -64,8 +68,10 @@ impl PcSpeaker {
         unsafe { outb(0x61, self.tmp as u8); }
     }
 
-    pub fn start_song_loop(&mut self) {
+    pub fn start_song_loop(&mut self, repeat: i32) {
         self.timer = 0;
+        self.current_run += 1;
+        self.total_runs = repeat;
         TIME_ROUTER.lock().mode.terminal = false;
         TIME_ROUTER.lock().mode.song = true;
         unsafe {KEYBOARD_ROUTER.force_unlock()};
@@ -77,13 +83,21 @@ impl PcSpeaker {
         self.tet_ost();
     }
      
-    pub fn stop_song_loop(&mut self) {
+    pub fn stop_song_loop(&mut self, force: bool) {
         unsafe {TIME_ROUTER.force_unlock()};
         TIME_ROUTER.lock().mode.terminal = true;
         TIME_ROUTER.lock().mode.song = false;
         unsafe {KEYBOARD_ROUTER.force_unlock()};
         KEYBOARD_ROUTER.lock().mode.song = false;
         self.no_sound();
+        if force {
+            self.current_run = 0;
+        }
+        else if self.total_runs == 0 || self.current_run < self.total_runs {
+            self.start_song_loop(self.total_runs);
+        } else {
+            self.current_run = 0;
+        }
     }
 
     pub fn start_timer(&mut self, limit: i32) {
@@ -280,7 +294,7 @@ impl PcSpeaker {
             370 => self.play_sound(_A4 as i32),
             376 => self.play_sound(_GS4 as i32),
             394 => self.play_sound(_R as i32),
-            400 => self.stop_song_loop(),
+            400 => self.stop_song_loop(false),
             _ => (),
         }
 
@@ -298,12 +312,12 @@ pub fn inc_speaker_timer_fn() {
     PCSPEAKER.lock().inc_timer();
 }
 
-pub fn play_tet_ost_fn() {
-    PCSPEAKER.lock().start_song_loop();
+pub fn play_tet_ost_fn(num: i32) {
+    PCSPEAKER.lock().start_song_loop(num);
 }
 
 pub fn end_tet_ost_fn() {
-    PCSPEAKER.lock().stop_song_loop();
+    PCSPEAKER.lock().stop_song_loop(true);
 }
 
 // Macro to allow beeps to be played in other files
@@ -319,7 +333,7 @@ macro_rules! inc_speaker_timer {
 
 #[macro_export]
 macro_rules! play_tet_ost {
-    () => {crate::speaker::play_tet_ost_fn()};
+    ($i: expr) => {crate::speaker::play_tet_ost_fn($i)};
 }
 
 #[macro_export]

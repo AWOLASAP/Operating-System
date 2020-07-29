@@ -151,8 +151,9 @@ impl CommandRunner {
         }
     }
     
-    pub fn tet_ost(&self) {
-        play_tet_ost!();
+    pub fn tet_ost(&self, args: &str) {
+        let num: i32 = args.parse().unwrap_or(1);
+        play_tet_ost!(num);
     }
     
     pub fn clear(&self) {
@@ -182,7 +183,7 @@ impl CommandRunner {
                 "tetris" => self.tetris(),
                 "help" => self.help(),
                 "beep" => self.beep(args),
-                "tet-ost" => self.tet_ost(),
+                "tet-ost" => self.tet_ost(args),
                 "clear" => self.clear(),
                 _ => println!("\nInvalid Command: {}", command),
             }
