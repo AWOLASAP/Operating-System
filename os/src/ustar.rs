@@ -26,10 +26,41 @@ struct Directory {
     contents: Vec<File>,
     subdirectories: Vec<Directory>,
     data: Vec<u8>,
+
+    // Stuff needed by the USTAR filesystem
+    name: String,
+    mode: String,
+    owner_id: u64, 
+    group_id: u64,
+    size: u64,
+    time: u64,
+    checksum: u64, // 256 + the sum of all the bytes in this header except the checksum field.
+    type_flag: u8, 
+    linked_name: String,
+    owner_name: String, 
+    group_name: String,
+    device_major_number: u64,
+    device_minor_number: u64,
+    prefix: String,
 }
 
 struct File {
 
+    // Stuff needed by the USTAR filesystem
+    name: String,
+    mode: String,
+    owner_id: u64, 
+    group_id: u64,
+    size: u64,
+    time: u64,
+    checksum: u64, // 256 + the sum of all the bytes in this header except the checksum field.
+    type_flag: u8, 
+    linked_name: String,
+    owner_name: String, 
+    group_name: String,
+    device_major_number: u64,
+    device_minor_number: u64,
+    prefix: String,
 }
 
 
@@ -53,7 +84,7 @@ impl UstarFileSystem {
     }
 
     pub fn defragment(&mut self) {
-        // Remove all files named defragment, than move the rest of the files
+        // Remove all files named defragment, than move the rest of the files (blockwise), so that it's still valid USTAR
     }
 
     fn write(&mut self) {
