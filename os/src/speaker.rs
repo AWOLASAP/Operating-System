@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use crate::println;
 use x86::io::inb; use x86::io::outb; use crate::timer_routing::TIME_ROUTER; use lazy_static::lazy_static;
 use spin::Mutex;
@@ -51,7 +53,6 @@ impl PcSpeaker {
         if self.tmp != (self.tmp | 3) {
             unsafe { outb(0x61, self.tmp as u8| 3); }
         }
-
     }
 
     // Make it shutup
