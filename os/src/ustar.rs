@@ -25,9 +25,13 @@ trait USTARItem {
 struct Directory {
     contents: Vec<File>,
     subdirectories: Vec<Directory>,
-    data: Vec<u8>,
+
+    //Additional needed stuff not from the USTAR filesystem.
+    // What block is this hosted on? (we need this for writing to disk)
+    block_id: u64,
 
     // Stuff needed by the USTAR filesystem
+    // https://wiki.osdev.org/USTAR
     name: String,
     mode: String,
     owner_id: u64, 
@@ -45,8 +49,14 @@ struct Directory {
 }
 
 struct File {
+    data: Vec<u8>,
+
+    //Additional needed stuff not from the USTAR filesystem.
+    // What block is this hosted on? (we need this for writing to disk)
+    block_id: u64,
 
     // Stuff needed by the USTAR filesystem
+    // https://wiki.osdev.org/USTAR
     name: String,
     mode: String,
     owner_id: u64, 
