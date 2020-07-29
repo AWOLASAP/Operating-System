@@ -140,6 +140,7 @@ impl CommandRunner {
         println!("tetris");
         println!("tet-ost");
         println!("clear");
+        println!("yes");
     }
 
     pub fn beep(&self, args: &str) {
@@ -159,6 +160,12 @@ impl CommandRunner {
     pub fn clear(&self) {
         for line in 0..BUFFER_HEIGHT {
             println!();
+        }
+    }
+    
+    pub fn yes(&self) {
+        loop {
+            println!("y");
         }
     }
 
@@ -185,6 +192,7 @@ impl CommandRunner {
                 "beep" => self.beep(args),
                 "tet-ost" => self.tet_ost(args),
                 "clear" => self.clear(),
+                "yes" => self.yes(),
                 _ => println!("\nInvalid Command: {}", command),
             }
             
