@@ -18,6 +18,7 @@
         "columncalc",
         "composits",
         "concat",
+        "defragment",
         "efficent",
         "eval",
         "gterm",

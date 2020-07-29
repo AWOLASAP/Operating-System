@@ -22,6 +22,7 @@ rand_core = "0.5.0"
 rand_pcg = "0.2.1"
 bitflags = "1.0"
 cpuio = "0.3.0"
+hashbrown = "0.8"
 
 [dependencies.futures-util]
 version = "0.3.4"
