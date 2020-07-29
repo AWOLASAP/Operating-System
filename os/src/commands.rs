@@ -9,7 +9,9 @@ use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
 use crate::play_beep;
+use crate::serial_println;
 use crate::play_tet_ost;
+use crate::task::{Task,executor::EXECUTOR};
 
 
 // Init a CommandRunner class to run commands for the user
@@ -17,12 +19,18 @@ lazy_static! {
     pub static ref COMMANDRUNNER: Mutex<CommandRunner> = Mutex::new(CommandRunner::new(String::from(" ")));
 }
 
+async fn run_tetris(){
+    serial_println!("test");
+    // unsafe{TETRIS.force_unlock()}
+    TETRIS.lock().game_loop().await;
+}
+
 // CommandRunner really only needs a place to store the commands
 pub struct CommandRunner{
     command_buffer: String,
 }
 
-// Implementation of CommandRunner. 
+// Implementation of CommandRunner.
 // Essentially it handles a command buffer, with
 // commands inside that it can be executed upon
 impl CommandRunner {
@@ -35,7 +43,7 @@ impl CommandRunner {
 
     }
 
-    // Add a character to the command buffer. 
+    // Add a character to the command buffer.
     // This was used instead of reading what was on the screen
     // due to it being easier and more reliable.
     pub fn add_to_buffer(&mut self, c: char) {
@@ -57,7 +65,7 @@ impl CommandRunner {
     pub fn remove_from_buffer(&mut self) {
         self.command_buffer.pop();
     }
-    
+
     // print-buffer command.
     // Prints out the command buffer to the screen before it get cleared
     pub fn print_buffer(&self) {
@@ -97,7 +105,7 @@ impl CommandRunner {
             println!("\nGraphics mode is active");
         }
     }
-    
+
     // tetris command
     // Plays the game Tetris
     pub fn tetris(&self) {
@@ -106,11 +114,13 @@ impl CommandRunner {
             println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
         } else {
             TETRIS.lock().init();
+            unsafe{EXECUTOR.force_unlock()}
+            EXECUTOR.lock().spawn(Task::new(run_tetris()));
         }
     }
 
     // help command.
-    // Lists all available commands 
+    // Lists all available commands
     pub fn help(&self) {
         println!("\nList of available commands:");
         println!("print-buffer");
@@ -128,12 +138,12 @@ impl CommandRunner {
             play_beep!(freq, 2);
         }
     }
-    
+
     pub fn tet_ost(&self) {
         play_tet_ost!();
     }
 
-    // Evaluate the command(s) in the buffer 
+    // Evaluate the command(s) in the buffer
     pub fn eval_buffer(&mut self) {
         // Index to keep track of the command number for the argument number
         let mut index = 0;
@@ -157,11 +167,11 @@ impl CommandRunner {
                 "tet-ost" => self.tet_ost(),
                 _ => println!("\nInvalid Command: {}", command),
             }
-            
+
             // Index increases as we move onto the next command
             index += 1;
         }
-        
+
         // Clear the command buffer after an evaluation
         self.command_buffer = String::from("");
     }
@@ -171,7 +181,7 @@ impl CommandRunner {
         let mut commands = Vec::new();
         let mut args_list = Vec::new();
         let mut command_len: i32;
-        
+
         // Go through the seperate commands in the buffer, each seperated by a `;`
         for command in self.command_buffer.split(";"){
 
@@ -187,7 +197,7 @@ impl CommandRunner {
                     found_args = true;
                     break;
                 }
-            }    
+            }
 
             // If no arguments were found,
             // make sure the command still gets added,

@@ -9,7 +9,7 @@ use crate::{
 };
 
 
-/* 
+/*
  * MODES
  * 0 - Terminal + RNG
  * 1 - Tetris + RNG
@@ -33,9 +33,8 @@ impl TimeRouter {
             RNGSEED.lock().inc();
         }
         else if self.mode == 1 {
-            TETRIS.lock().game_loop();
             RNGSEED.lock().inc();
-        } 
+        }
         else if self.mode == 2 {
             inc_speaker_timer!();
         }

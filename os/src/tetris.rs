@@ -161,231 +161,232 @@ impl Tetris {
 
     }
 
-    pub fn game_loop(&mut self) {
-        if self.bag.is_empty() {
-            self.gen_bag();
+    pub async fn game_loop(&mut self) {
+        loop{
+            if self.bag.is_empty() {
+                self.gen_bag().await;
 
-        }
-        if self.piece_falling {
-            let key = self.get();
+            }
+            if self.piece_falling {
+                let key = self.get().await;
 
-            let mut try_until_fall = false;
-            let mut rotated = false;
-            let mut move_down = false;
-            let mut moved_dir: isize = 0;
-            let mut rot_dir_inverse: isize = 0;
-            // Probably an extraneous variable but who cares :shrug:
-            let mut descended = false;
+                let mut try_until_fall = false;
+                let mut rotated = false;
+                let mut move_down = false;
+                let mut moved_dir: isize = 0;
+                let mut rot_dir_inverse: isize = 0;
+                // Probably an extraneous variable but who cares :shrug:
+                let mut descended = false;
 
-            if self.move_timer == 0 {
-                self.move_timer = 5;
-                move_down = true;
-            }
-            if key == 1 {
-                self.current_piece.x -= 1;
-                moved_dir = -1;
-            }
-            else if key == 2 {
-                self.current_piece.x += 1;
-                moved_dir = 1;
-            }
-            else if key == 3 {
-                self.current_piece.y += 1;
+                if self.move_timer == 0 {
+                    self.move_timer = 5;
+                    move_down = true;
+                }
+                if key == 1 {
+                    self.current_piece.x -= 1;
+                    moved_dir = -1;
+                }
+                else if key == 2 {
+                    self.current_piece.x += 1;
+                    moved_dir = 1;
+                }
+                else if key == 3 {
+                    self.current_piece.y += 1;
+                    if move_down {
+                        move_down = false;
+                    }
+                    descended = true;
+                }
+                else if key == 4 {
+                    try_until_fall = true;
+                    descended = true;
+                }
+                else if key == 5 {
+                    self.current_piece.position += 3;
+                    rot_dir_inverse = 1;
+                    rotated = true;
+                }
+                else if key == 6 {
+                    self.current_piece.position += 1;
+                    rot_dir_inverse = 3;
+                    rotated = true;
+                }
+                else if key == 7 {
+                    self.current_piece.position += 2;
+                    rot_dir_inverse = 2;
+                    rotated = true;
+                }
+                else if key == 8 {
+                    self.hold().await;
+                }
+                else if key == 9 {
+                    // This turns tetris off
+                    unsafe {TIME_ROUTER.force_unlock()};
+                    KEYBOARD_ROUTER.lock().mode = 0;
+                    TIME_ROUTER.lock().mode = 0;
+                    ADVANCED_WRITER.lock().wipe_buffer();
+                    println!("");
+                    return;
+                }
+
                 if move_down {
-                    move_down = false;
+                    self.current_piece.y += 1;
+                    descended = true;
                 }
-                descended = true;
-            }
-            else if key == 4 {
-                try_until_fall = true;
-                descended = true;
-            }
-            else if key == 5 {
-                self.current_piece.position += 3;
-                rot_dir_inverse = 1;
-                rotated = true;
-            }
-            else if key == 6 {
-                self.current_piece.position += 1;
-                rot_dir_inverse = 3;
-                rotated = true;
-            }
-            else if key == 7 {
-                self.current_piece.position += 2;
-                rot_dir_inverse = 2;
-                rotated = true;
-            }
-            else if key == 8 {
-                self.hold();
-            }
-            else if key == 9 {
-                // This turns tetris off
-                unsafe {TIME_ROUTER.force_unlock()};
-                KEYBOARD_ROUTER.lock().mode = 0;
-                TIME_ROUTER.lock().mode = 0;
-                ADVANCED_WRITER.lock().wipe_buffer();
-                println!("");
-                return;
-            }
+                else {
+                    self.move_timer -= 1;
+                }
+                // Left and right bounds checking - makes it so that if a piece IS too far to one side, it won't be after this
+                let deserialized_piece = self.deserialize_piece().await;
+                for row_1 in 0..4 {
+                    for col_1 in 0..4 {
+                        if deserialized_piece[row_1][col_1] {
+                            if self.current_piece.x + col_1 as isize > 9 {
+                                self.current_piece.x += 9 - self.current_piece.x - col_1 as isize ;
 
-            if move_down {
-                self.current_piece.y += 1;
-                descended = true;
-            }
-            else {
-                self.move_timer -= 1;
-            }
-            // Left and right bounds checking - makes it so that if a piece IS too far to one side, it won't be after this
-            let deserialized_piece = self.deserialize_piece();
-            for row_1 in 0..4 {
-                for col_1 in 0..4 {
-                    if deserialized_piece[row_1][col_1] {
-                        if self.current_piece.x + col_1 as isize > 9 {
-                            self.current_piece.x += 9 - self.current_piece.x - col_1 as isize ;
-
-                        }
-                        else if (self.current_piece.x + col_1 as isize) < 0 {
-                            self.current_piece.x = 0 - col_1 as isize ;
-                        }
-                    }
-                }
-            }
-            if rotated {
-                //Prevents rotations which put blocks in other blocks
-                let deserialized_piece = self.deserialize_piece();
-                if descended {
-                    self.current_piece.y -= 1;
-                }
-                'colcalc1: for row in 0..4 {
-                    for col in 0..4 {
-                        if deserialized_piece[row][col] {
-                            if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
-                                self.current_piece.position += rot_dir_inverse as u8;
-                                break 'colcalc1;
+                            }
+                            else if (self.current_piece.x + col_1 as isize) < 0 {
+                                self.current_piece.x = 0 - col_1 as isize ;
                             }
                         }
                     }
                 }
-                if descended {
-                    self.current_piece.y += 1;
-                }
-            }
-            else if moved_dir != 0 {
-                //Prevents illegal left/right movement
-                let deserialized_piece = self.deserialize_piece();
-                if descended {
-                    self.current_piece.y -= 1;
-                }
-                'colcalc: for row in 0..4 {
-                    for col in 0..4 {
-                        if deserialized_piece[row][col] {
-                            if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
-                                self.current_piece.x -= moved_dir;
-                                break 'colcalc;
-                            }
-                        }
+                if rotated {
+                    //Prevents rotations which put blocks in other blocks
+                    let deserialized_piece = self.deserialize_piece().await;
+                    if descended {
+                        self.current_piece.y -= 1;
                     }
-                }
-                if descended {
-                    self.current_piece.y += 1;
-                }
-
-            }
-            if descended {
-                //Runs if the piece goes down
-                let deserialized_piece = self.deserialize_piece();
-                'columncalc: loop {
-                    for row in 0..4 {
+                    'colcalc1: for row in 0..4 {
                         for col in 0..4 {
                             if deserialized_piece[row][col] {
                                 if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
-                                    self.current_piece.y -= 1;
-                                    // Imprint stuff to the board
-                                    for row_1 in 0..4 {
-                                        for col_1 in 0..4 {
-                                            if deserialized_piece[row_1][col_1] {
-                                                self.board[(self.current_piece.y + row_1 as isize) as usize][(self.current_piece.x + col_1 as isize) as usize] = self.current_piece.piece.color;
-                                            }
-                                        }
-                                    }
-                                    self.piece_falling = false;
-                                    break 'columncalc;
+                                    self.current_piece.position += rot_dir_inverse as u8;
+                                    break 'colcalc1;
                                 }
                             }
                         }
                     }
-                    if !try_until_fall {
-                        break 'columncalc;
-                    }
-                    else {
+                    if descended {
                         self.current_piece.y += 1;
                     }
                 }
+                else if moved_dir != 0 {
+                    //Prevents illegal left/right movement
+                    let deserialized_piece = self.deserialize_piece().await;
+                    if descended {
+                        self.current_piece.y -= 1;
+                    }
+                    'colcalc: for row in 0..4 {
+                        for col in 0..4 {
+                            if deserialized_piece[row][col] {
+                                if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
+                                    self.current_piece.x -= moved_dir;
+                                    break 'colcalc;
+                                }
+                            }
+                        }
+                    }
+                    if descended {
+                        self.current_piece.y += 1;
+                    }
 
-            }
-            let deserialized_piece = self.deserialize_piece();
-            //Renders the moving piece (not th  stationary stuff)
-            self.rendered_board = [[Color16::Black; 10]; 28];
-            for row_1 in 0..4 {
-                for col_1 in 0..4 {
-                    if deserialized_piece[row_1][col_1] {
-                        self.rendered_board[(self.current_piece.y + row_1 as isize) as usize][(self.current_piece.x + col_1 as isize) as usize] = self.current_piece.piece.color;
+                }
+                if descended {
+                    //Runs if the piece goes down
+                    let deserialized_piece = self.deserialize_piece().await;
+                    'columncalc: loop {
+                        for row in 0..4 {
+                            for col in 0..4 {
+                                if deserialized_piece[row][col] {
+                                    if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
+                                        self.current_piece.y -= 1;
+                                        // Imprint stuff to the board
+                                        for row_1 in 0..4 {
+                                            for col_1 in 0..4 {
+                                                if deserialized_piece[row_1][col_1] {
+                                                    self.board[(self.current_piece.y + row_1 as isize) as usize][(self.current_piece.x + col_1 as isize) as usize] = self.current_piece.piece.color;
+                                                }
+                                            }
+                                        }
+                                        self.piece_falling = false;
+                                        break 'columncalc;
+                                    }
+                                }
+                            }
+                        }
+                        if !try_until_fall {
+                            break 'columncalc;
+                        }
+                        else {
+                            self.current_piece.y += 1;
+                        }
+                    }
+
+                }
+                let deserialized_piece = self.deserialize_piece().await;
+                //Renders the moving piece (not th  stationary stuff)
+                self.rendered_board = [[Color16::Black; 10]; 28];
+                for row_1 in 0..4 {
+                    for col_1 in 0..4 {
+                        if deserialized_piece[row_1][col_1] {
+                            self.rendered_board[(self.current_piece.y + row_1 as isize) as usize][(self.current_piece.x + col_1 as isize) as usize] = self.current_piece.piece.color;
+                        }
                     }
                 }
+
             }
+            else {
+                //Handles getting a new piece - includes support for next_piece
+                self.current_piece = RenderPiece {
+                    piece: self.next_piece,
+                    held: false,
+                    position: 0,
+                    x: 3,
+                    y: 0,
+                };
+                let piece = self.bag.pop_front();
+                let piece = match piece {
+                    Some(i) => i,
+                    None => 1,
+                };
+                self.next_piece = PIECES[piece as usize];
 
-        }
-        else {
-            //Handles getting a new piece - includes support for next_piece
-            self.current_piece = RenderPiece {
-                piece: self.next_piece,
-                held: false,
-                position: 0,
-                x: 3,
-                y: 0,
-            };
-            let piece = self.bag.pop_front();
-            let piece = match piece {
-                Some(i) => i,
-                None => 1,
-            };
-            self.next_piece = PIECES[piece as usize];
-
-            self.piece_falling = true;
-        }
-        for i in 4..24 {
-            let mut line = true;
-            for j in 0..10 {
-                if self.board[i][j] == Color16::Black {
-                    line = false;
+                self.piece_falling = true;
+            }
+            for i in 4..24 {
+                let mut line = true;
+                for j in 0..10 {
+                    if self.board[i][j] == Color16::Black {
+                        line = false;
+                    }
                 }
-            }
-            if line {
-                for x in (4..i).rev() {
+                if line {
+                    for x in (4..i).rev() {
+                        for y in 0..10 {
+                            self.board[x + 1][y] = self.board[x][y];
+                        }
+                    }
                     for y in 0..10 {
-                        self.board[x + 1][y] = self.board[x][y];
-                    }
-                }
-                for y in 0..10 {
-                    self.board[4][y] = Color16::Black;
-                }
-            }
-        }
-        for i in 0..4 {
-            for j in 0..10 {
-                if self.board[i][j] != Color16::Black {
-                    loop {
-                        //You lose, you lose the OS
-                        print!("DEAD");
+                        self.board[4][y] = Color16::Black;
                     }
                 }
             }
+            for i in 0..4 {
+                for j in 0..10 {
+                    if self.board[i][j] != Color16::Black {
+                        loop {
+                            //You lose, you lose the OS
+                            print!("DEAD");
+                        }
+                    }
+                }
+            }
+            self.render().await;
         }
-        self.render();
-
     }
     // Holds the piece, and, if there is a piece held, replaces the current piece
-    fn hold(&mut self) {
+    async fn hold(&mut self) {
         let piece = self.held_piece;
         if !self.current_piece.held {
             self.held_piece = self.current_piece.piece;
@@ -406,7 +407,7 @@ impl Tetris {
     }
 
     // Generates a random 14-bag of pieces
-    fn gen_bag(&mut self) {
+    async fn gen_bag(&mut self) {
         let mut pieces = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6];
         let mut rand_num = Lcg128Xsl64::seed_from_u64(RNGSEED.lock().get());
         for _i in 0..30 {
@@ -423,7 +424,7 @@ impl Tetris {
     }
 
     //All the following functions turn a piece from its rotation to a [[bool; 4]; 4], where each true is a place where the piece has a block
-    fn deserialize_piece(&mut self) -> [[bool; 4]; 4] {
+    async fn deserialize_piece(&mut self) -> [[bool; 4]; 4] {
         let mut result = [[false; 4]; 4];
         let rotation = self.current_piece.piece.rotations[(self.current_piece.position % 4) as usize];
         let mut bit: u16 = 0x8000;
@@ -444,7 +445,7 @@ impl Tetris {
         result
     }
 
-    fn deserialize_held_piece(&mut self) -> [[bool; 4]; 4] {
+    async fn deserialize_held_piece(&mut self) -> [[bool; 4]; 4] {
         let mut result = [[false; 4]; 4];
         let rotation = self.held_piece.rotations[0];
         let mut bit: u16 = 0x8000;
@@ -465,7 +466,7 @@ impl Tetris {
         result
     }
 
-    fn deserialize_next_piece(&mut self) -> [[bool; 4]; 4] {
+    async fn deserialize_next_piece(&mut self) -> [[bool; 4]; 4] {
         let mut result = [[false; 4]; 4];
         let rotation = self.next_piece.rotations[0];
         let mut bit: u16 = 0x8000;
@@ -487,7 +488,7 @@ impl Tetris {
     }
 
     // Renders the pieces - composits the rendered board and then the stationary board, and only renders pixels that have changed.
-    fn render(&mut self) {
+    async fn render(&mut self) {
         let mut composited_board: [[Color16; 10]; 28] = [[Color16::Black; 10]; 28];
         let mut composited_held: [[Color16; 4]; 4] = [[Color16::Black; 4]; 4];
         let mut composited_next: [[Color16; 4]; 4] = [[Color16::Black; 4]; 4];
@@ -513,7 +514,7 @@ impl Tetris {
             }
         });
         self.old_rendered_board = composited_board;
-        let held_piece = self.deserialize_held_piece();
+        let held_piece = self.deserialize_held_piece().await;
         for i in 0..4 {
             for j in 0..4 {
                 if held_piece[i][j] {
@@ -531,7 +532,7 @@ impl Tetris {
             }
         });
         self.old_held = composited_held;
-        let next_piece = self.deserialize_next_piece();
+        let next_piece = self.deserialize_next_piece().await;
         for i in 0..4 {
             for j in 0..4 {
                 if next_piece[i][j] {
@@ -555,7 +556,7 @@ impl Tetris {
         self.key = key;
     }
 
-    pub fn get(&mut self) -> u8 {
+    pub async fn get(&mut self) -> u8 {
         let k = self.key;
         self.key = 0;
         k

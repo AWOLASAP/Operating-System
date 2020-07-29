@@ -17,7 +17,7 @@ use os::memory::{self, BootInfoFrameAllocator};
 use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr};
 use core::panic::PanicInfo;
-use os::task::{Task,keyboard,executor::Executor};
+use os::task::{Task,keyboard,executor::EXECUTOR};
 use x86_64::instructions::interrupts;
 use lazy_static::lazy_static;
 use spin::Mutex;
@@ -70,28 +70,21 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
-
-    interrupts::without_interrupts(|| {
-
-        MODE.lock().graphics_init();
-        //ADVANCED_WRITER.lock().enable_border();
-        ADVANCED_WRITER.lock().clear_buffer();
-
-        ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
-        ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
-        for _i in 0..30 {
-            ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
-        }
-        //ADVANCED_WRITER.lock().clear_buffer();
-        MODE.lock().text_init();
-        println!("");
-    });
-
-    lazy_static! {
-        pub static ref EXECUTOR: Mutex<Executor> = {
-            Mutex::new(Executor::new())
-        };
-    }
+    // interrupts::without_interrupts(|| {
+    //
+    //     MODE.lock().graphics_init();
+    //     //ADVANCED_WRITER.lock().enable_border();
+    //     ADVANCED_WRITER.lock().clear_buffer();
+    //
+    //     ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+    //     ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
+    //     for _i in 0..30 {
+    //         ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
+    //     }
+    //     //ADVANCED_WRITER.lock().clear_buffer();
+    //     MODE.lock().text_init();
+    //     println!("");
+    // });
 
     EXECUTOR.lock().spawn(Task::new(example_task()));
     EXECUTOR.lock().spawn(Task::new(keyboard::print_keypresses()));
