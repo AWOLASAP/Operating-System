@@ -145,8 +145,10 @@ impl Tetris {
             print!("Tetris started");
             ADVANCED_WRITER.lock().wipe_buffer();
             unsafe {KEYBOARD_ROUTER.force_unlock()};
-            KEYBOARD_ROUTER.lock().mode = 2;
-            TIME_ROUTER.lock().mode = 1;
+            KEYBOARD_ROUTER.lock().mode.tetris = true;
+            KEYBOARD_ROUTER.lock().mode.terminal = false;
+            TIME_ROUTER.lock().mode.tetris = true;
+            TIME_ROUTER.lock().mode.terminal = false;
             //ADVANCED_WRITER.lock().disable_blink();
         });
 
@@ -221,8 +223,10 @@ impl Tetris {
             else if key == 9 {
                 // This turns tetris off
                 unsafe {TIME_ROUTER.force_unlock()};
-                KEYBOARD_ROUTER.lock().mode = 0;
-                TIME_ROUTER.lock().mode = 0;
+                KEYBOARD_ROUTER.lock().mode.terminal = true;
+                KEYBOARD_ROUTER.lock().mode.tetris = false;
+                TIME_ROUTER.lock().mode.terminal = true;
+                TIME_ROUTER.lock().mode.tetris = false;
                 ADVANCED_WRITER.lock().wipe_buffer();
                 println!("");
                 return;

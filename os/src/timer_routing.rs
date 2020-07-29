@@ -17,29 +17,47 @@ use crate::{
  * 3 - Speaker - Song
 */
 
+pub struct Modes {
+    pub terminal: bool,
+    pub tetris: bool,
+    pub beep: bool,
+    pub song: bool,
+}
+
+impl Modes {
+    fn new() -> Modes {
+        Modes {
+            terminal: true,
+            tetris: false,
+            beep: false,
+            song: false,
+        }
+    }
+}
+
 pub struct TimeRouter {
-    pub mode: usize,
+    pub mode: Modes,
 }
 
 impl TimeRouter {
     fn new() -> TimeRouter {
-        TimeRouter { mode: 0 }
+        TimeRouter { mode: Modes::new() }
     }
 
     // Called on every timer interrupt
     pub fn handle(&mut self) {
-        if self.mode == 0 {
+        if self.mode.terminal {
             MODE.lock().blink_current();
             RNGSEED.lock().inc();
         }
-        else if self.mode == 1 {
+        if self.mode.tetris {
             TETRIS.lock().game_loop();
             RNGSEED.lock().inc();
         } 
-        else if self.mode == 2 {
+        if self.mode.beep {
             inc_speaker_timer!();
         }
-        else if self.mode == 3 {
+        if self.mode.song {
             PCSPEAKER.lock().song_loop();
         }
     }

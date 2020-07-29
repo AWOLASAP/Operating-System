@@ -2,21 +2,41 @@ use lazy_static::lazy_static;
 use crate::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
 use pc_keyboard::{layouts, DecodedKey, Keyboard, ScancodeSet1, KeyCode};
 use spin::Mutex;
-use crate::{add_command_buffer, move_command_cursor};
+use crate::{add_command_buffer, move_command_cursor, end_tet_ost};
 use crate::tetris::TETRIS;
 
 /* MODES
 0 - Terminal + sends weird stuff to screenbuffer
 1 - Screenbuffer only
 2 - Tetris - only sends tetris keybinds
+3 - Song - for quiting early
 */
+
+pub struct Modes {
+    pub terminal: bool,
+    pub screenbuffer: bool,
+    pub tetris: bool,
+    pub song: bool,
+}
+
+impl Modes {
+    fn new() -> Modes {
+        Modes {
+            terminal: true,
+            screenbuffer: false,
+            tetris: false,
+            song: false,
+        }
+    }
+}
+
 pub struct KeyboardRouter {
-    pub mode: usize,
+    pub mode: Modes,
 }
 
 impl KeyboardRouter {
     fn new() -> KeyboardRouter {
-        KeyboardRouter { mode: 0 }
+        KeyboardRouter { mode: Modes::new() }
     }
 
     pub fn handle_scancode(&mut self, scancode: u8, keyboard: &mut Keyboard<layouts::Us104Key,ScancodeSet1>) {
@@ -40,14 +60,14 @@ impl KeyboardRouter {
     }
 
     fn unicode(&self, character: char) {
-        if self.mode == 0 {
+        if self.mode.terminal {
             add_command_buffer!(character);
             print!("{}", character);
         }
-        else if self.mode == 1 {
+        else if self.mode.screenbuffer {
             print!("{}", character);
         }
-        else if self.mode == 2 {
+        if self.mode.tetris {
             // These are the tetris control keys, it's easier to pass them as integers though this solution isn't really efficent or extensible.
             if character == 'a' {
                 TETRIS.lock().set(7)
@@ -65,17 +85,22 @@ impl KeyboardRouter {
                 TETRIS.lock().set(9)
             }
         }
+        if self.mode.song {
+            if character == 'q' {
+                end_tet_ost!();
+            }
+        }
     }
 
     fn raw_key(&self, code: KeyCode) {
-        if self.mode == 1 || self.mode == 0 {
+        if self.mode.terminal || self.mode.screenbuffer {
             print!("{:?}", code);
         }
     }
 
     // You though it was move_cursor, but it was I, arrow key
     fn move_cursor(&self, dist: i8) {
-        if self.mode == 0 || self.mode == 1 {
+        if self.mode.terminal || self.mode.screenbuffer {
             if dist > 0 {
                 right();
             }
@@ -83,7 +108,7 @@ impl KeyboardRouter {
                 left();
             }
         }
-        else if self.mode == 2 {
+        else if self.mode.tetris {
             if dist > 0 {
                 TETRIS.lock().set(2)
             }
@@ -94,19 +119,19 @@ impl KeyboardRouter {
     }
 
     fn down(&self) {
-        if self.mode == 2 {
+        if self.mode.tetris {
             TETRIS.lock().set(3)
         }
     }
 
     fn up(&self) {
-        if self.mode == 2 {
+        if self.mode.tetris {
             TETRIS.lock().set(6)
         }
     }
 
     fn esc(&mut self) {
-        if self.mode == 2 {
+        if self.mode.tetris {
             TETRIS.lock().set(9)
         }
     }

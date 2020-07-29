@@ -1,6 +1,9 @@
 #![allow(non_snake_case)]
 
-use x86::io::inb; use x86::io::outb; use crate::timer_routing::TIME_ROUTER; use lazy_static::lazy_static;
+use x86::io::inb; use x86::io::outb;
+use crate::timer_routing::TIME_ROUTER;
+use crate::keyboard_routing::KEYBOARD_ROUTER;
+use lazy_static::lazy_static;
 use spin::Mutex;
 
 
@@ -63,7 +66,10 @@ impl PcSpeaker {
 
     pub fn start_song_loop(&mut self) {
         self.timer = 0;
-        TIME_ROUTER.lock().mode = 3;
+        TIME_ROUTER.lock().mode.terminal = false;
+        TIME_ROUTER.lock().mode.song = true;
+        unsafe {KEYBOARD_ROUTER.force_unlock()};
+        KEYBOARD_ROUTER.lock().mode.song = true;
     }
 
     pub fn song_loop(&mut self) {
@@ -73,7 +79,10 @@ impl PcSpeaker {
      
     pub fn stop_song_loop(&mut self) {
         unsafe {TIME_ROUTER.force_unlock()};
-        TIME_ROUTER.lock().mode = 0;
+        TIME_ROUTER.lock().mode.terminal = true;
+        TIME_ROUTER.lock().mode.song = false;
+        unsafe {KEYBOARD_ROUTER.force_unlock()};
+        KEYBOARD_ROUTER.lock().mode.song = false;
         self.no_sound();
     }
 
@@ -81,7 +90,8 @@ impl PcSpeaker {
         self.timer = 0;
         self.timer_limit = limit;
         self.timer_done = false;
-        TIME_ROUTER.lock().mode = 2;
+        TIME_ROUTER.lock().mode.terminal = false;
+        TIME_ROUTER.lock().mode.beep = true;
     }
 
     pub fn inc_timer(&mut self) {
@@ -94,7 +104,8 @@ impl PcSpeaker {
     
     pub fn stop_timer(&mut self) {
         unsafe {TIME_ROUTER.force_unlock()};
-        TIME_ROUTER.lock().mode = 0;
+        TIME_ROUTER.lock().mode.terminal = true;
+        TIME_ROUTER.lock().mode.beep = false;
         self.timer_done = true;
         self.no_sound();
     }
@@ -291,6 +302,10 @@ pub fn play_tet_ost_fn() {
     PCSPEAKER.lock().start_song_loop();
 }
 
+pub fn end_tet_ost_fn() {
+    PCSPEAKER.lock().stop_song_loop();
+}
+
 // Macro to allow beeps to be played in other files
 #[macro_export]
 macro_rules! play_beep {
@@ -305,4 +320,9 @@ macro_rules! inc_speaker_timer {
 #[macro_export]
 macro_rules! play_tet_ost {
     () => {crate::speaker::play_tet_ost_fn()};
+}
+
+#[macro_export]
+macro_rules! end_tet_ost {
+    () => {crate::speaker::end_tet_ost_fn()};
 }
