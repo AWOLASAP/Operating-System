@@ -61,6 +61,9 @@ impl UstarFileSystem {
     }
 
     // Directory based seeking functions (will handle things like ls in the future)
+    // First, call the get_id function - once your program has such an ID it can do things
+    // Like control which directory is active (at least for it)
+    // Not sure how this will handle having a parent directory deleted (yet)
     pub fn get_id(&mut self) {
         self.current_dirs.insert(self.current_dirs_tracker, root);
     }
@@ -81,19 +84,72 @@ impl UstarFileSystem {
 
     }
 
+    // If a file doesn't exist, returns None
     pub fn read_file(&self, file: String, id: u64) -> Option<Vec<u8>> {
 
     }
 
-    pub fn read_file_absolute_path(&self, path: String, id: u64) -> Option<Vec<u8>> {
+    pub fn read_file_absolute_path(&self, path: String) -> Option<Vec<u8>> {
         
     }
 
-    pub fn write_file(&self, file: String, data: Vec<u8>, id: u64) -> bool {
+    // If a file doesn't exist, running this function will create it
+    // Doesn't append to the data, but flat out replaces it - changes in allocation need to defrag
+    // Does not account for if you write nothing, you're on your own
+    pub fn write_file(&self, file: String, data: Vec<u8>, id: u64) {
 
     }
 
-    pub fn write_file_absolute_path(&self, path: String, data: Vec<u8>, id: u64) -> bool {
+    pub fn write_file_absolute_path(&self, path: String, data: Vec<u8>) {
+        
+    }
+
+    // Removes a file if it exists, does nothing if it doesn't
+    pub fn remove_file(&self, file: String, id: u64) {
+
+    }
+
+    pub fn remove_file_absolute_path(&self, path: String) {
+        
+    }
+
+    // Probably should use directory moving to implement this
+    // If it doesn't exist, nothing happens
+    pub fn rename_directory(&self, dir: String, new_name: String, id: u64) -> bool {
+
+    }
+
+    // 2nd parameter should not be complete path, but only the new name
+    pub fn rename_directory_absolute_path(&self, path: String, new_name: String) -> bool {
+        
+    }
+
+    // Creates a directory unless there exists a file or directory with a similar name
+    pub fn create_directory(&self, file: String, id: u64) -> bool {
+
+    }
+
+    pub fn create_directory_absolute_path(&self, path: String) -> bool {
+        
+    }
+
+    // Removes a directory if it exists, does nothing if it doesn't
+    pub fn remove_directory(&self, file: String, id: u64) {
+        
+    }
+
+    pub fn remove_directory_absolute_path(&self, path: String) {
+        
+    }
+
+    // 2nd parameter should be complete path, but not the first one (first one should be relative)
+    // If 1st param doesn't exist, or 2nd param already exists, it won't do anything
+    pub fn move_directory(&self, dir: String, new_path: String, id: u64) -> bool {
+
+    }
+
+    // Ignore the above - for this function, both strings should be complete paths
+    pub fn move_directory_absolute_path(&self, path: String, new_path: String) -> bool {
         
     }
 }
