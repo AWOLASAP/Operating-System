@@ -25,7 +25,7 @@ use os::task::keyboard;
 use x86_64::instructions::interrupts;
 use os::ata_block_driver;
 use alloc::vec::Vec;
-use os::ustar::File;
+use os::ustar::Directory;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -87,13 +87,45 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         MODE.lock().text_init();
         println!("");
     });*/
-    
+    /*
     let driv = ata_block_driver::AtaPio::try_new();
     let data = unsafe {driv.read_lba(0, 1)};
+    
+    for c in data.iter() {
+        print!("{}", *c as char);
+    }
 
-    let mut file = File::from_block(data, 0);
+    let mut file = Directory::from_block(data, 0);
 
-    println!("{}", file.name);
+    println!();
+
+    let data = file.to_block();
+
+    for c in data.iter() {
+        print!("{}", *c as char);
+    }
+    println!();
+
+    let mut dota = Vec::with_capacity(256);
+
+    for i in 0..256 {
+        dota.push(((data[2*i + 1] as u16) << 8) | data[2*i] as u16); 
+    }
+
+    unsafe {driv.write(0, 1, dota)};
+
+    let data = unsafe {driv.read_lba(0, 1)};
+    */
+    /*let mut file = File::from_block(data, 0);
+    let mut dota = Vec::with_capacity(256);
+    let data = file.to_block();
+
+    for i in 0..256 {
+        dota.push(((data[2*i + 1] as u16) << 8) | data[2*i] as u16); 
+    }
+
+    unsafe {driv.write(0, 1, dota)};
+    */
     /*
 
     let mut data = Vec::with_capacity(256);

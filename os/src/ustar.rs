@@ -2,12 +2,14 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 use crate::ata_block_driver::AtaPio;
 use alloc::vec::Vec;
+use alloc::vec;
 use alloc::string::String;
 use hashbrown::HashMap;
 use core::option::Option;
 use alloc::rc::Rc;
 use core::cell::RefCell;
 use core::u64;
+use alloc::format;
 
 // Note to me tomorrow - we're going to use Rc<RefCell<File>> and Directory because
 // It gives me interior mutability (RefCell), and shared ownership (Rc). This is important
@@ -15,6 +17,7 @@ use core::u64;
 // Basically I can hold references to the USTARItems in both Directories and the File master array
 // Because they kinda need to be mutable (to make defragmenting optimized and possible)
 
+// Should store all the information needed to have it be movable around disk
 trait USTARItem {
     // Handles changing filenames and stuff
     // NOTE: filenames for things like folders do matter, so make sure to change subfolders and stuff too
@@ -42,7 +45,7 @@ trait USTARItem {
 
 }
 
-struct Directory {
+pub struct Directory {
     contents: Vec<Rc<RefCell<File>>>,
     subdirectories: Vec<Rc<RefCell<Directory>>>,
 
@@ -57,7 +60,7 @@ struct Directory {
     owner_id: u64, 
     group_id: u64,
     size: u64, // Should always be 0
-    time: u64,
+    time: String,
     checksum: u64, // 256 + the sum of all the bytes in this header except the checksum field.
     type_flag: u8, // Should always be 5
     linked_name: String,
@@ -69,7 +72,7 @@ struct Directory {
 }
 
 impl Directory {
-    fn from_block(block: Vec<u8>, block_id: u64) -> Directory {
+    pub fn from_block(block: Vec<u8>, block_id: u64) -> Directory {
         // Handle name
         let mut name = String::with_capacity(100);
         for i in 0..100 {
@@ -100,20 +103,15 @@ impl Directory {
             Err(_) => 0,
         };
         // Time
-        let mut time = String::with_capacity(10);
-        // Skip over the null and 0 byte
-        for i in 125..135 {
+        let mut time = String::with_capacity(11);
+        // Skip over the null byte - storing this as a string because we don't care how it works
+        for i in 136..147 {
             let chr = match block.get(i) {
                 Some(chr) => *chr as char,
                 None => '\0',
             };
             time.push(chr);      
         }
-        let time = u64::from_str_radix(time.as_str(), 8);
-        let time = match time {
-            Ok(i) => i,
-            Err(_) => 0,
-        };
         // Header checksum
         let mut header = 0;
         // 6223-48-49-48-52-48-53-32+32+32+32+32+32+32+32+32 (example for the hello world file, convert it to octal)
@@ -178,6 +176,114 @@ impl Directory {
 
 
 
+    pub fn to_block(&mut self) -> Vec<u8> {
+        let mut block = Vec::with_capacity(512);
+
+        // Filename
+        block.extend(unsafe { self.name.as_mut_vec().iter().cloned() } );
+
+        // Mode - 0000777\0
+        let mut mode = vec![48u8, 48u8, 48u8, 48u8, 55u8, 55u8, 55u8, 0u8];
+        block.append(&mut mode);
+
+        // Owner and group ID - 0000420\0
+        let mut id = vec![48u8, 48u8, 48u8, 48u8, 52u8, 50u8, 48u8, 0u8];
+        block.append(&mut id);
+        let mut id = vec![48u8, 48u8, 48u8, 48u8, 52u8, 50u8, 48u8, 0u8];
+        block.append(&mut id);
+
+        // Size (octal numbers)
+        block.push(48);
+        let size = format!("{:o}", self.size);
+        let mut size = size.into_bytes();
+        size.reverse(); 
+        for i in (0..10).rev() {
+            let chr = match size.get(i) {
+                Some(chr) => *chr,
+                None => 48,
+            };
+            block.push(chr);
+        }
+        block.push(0);
+
+        // Time (string)
+        block.extend(unsafe { self.time.as_mut_vec().iter().cloned() } );
+        block.push(0);
+
+
+        // Checksum (octal numbers)
+        let checksum = format!("{:o}", self.checksum);
+        let mut checksum = checksum.into_bytes();
+        checksum.reverse(); 
+        for i in (0..6).rev() {
+            let chr = match checksum.get(i) {
+                Some(chr) => *chr,
+                None => 48,
+            };
+            block.push(chr);
+        }
+        block.push(0);
+        block.push(32);
+
+
+        // Type - 0 for file, 5 for folder
+        block.push(b'5'); 
+
+        // Linked name - we don't support links, so don't care about this - supposed to be 0
+        for i in 0..100 {
+            block.push(0);
+        }
+        // Ustar indicators
+        let mut ustar = vec![b'u', b's', b't', b'a', b'r', 0u8];
+        block.append(&mut ustar);
+        // 00
+        block.push(48);
+        block.push(48);
+
+        // user name
+        block.extend(unsafe { self.owner_name.as_mut_vec().iter().cloned() } );
+        // Group name
+        block.extend(unsafe { self.group_name.as_mut_vec().iter().cloned() } );
+
+        // Device major and minor number - 0000000\0
+        let mut num = vec![48u8, 48u8, 48u8, 48u8, 48u8, 48u8, 48u8, 0u8];
+        block.append(&mut num);
+        let mut num = vec![48u8, 48u8, 48u8, 48u8, 48u8, 48u8, 48u8, 0u8];
+        block.append(&mut num);
+
+        block.extend(unsafe { self.prefix.as_mut_vec().iter().cloned() } );
+
+        for i in 0..12 {
+            block.push(0);
+        }
+
+        // Regenerate the checksum - otherwise archivemount sees it as corrupted
+        let mut header = 0;
+        for (i, n) in block.iter().enumerate() {
+            if i > 147 && i < 155 {
+                header += 32;
+            }
+            else {
+                header += *n as u64;                
+            }
+        }
+
+        let checksum = format!("{:o}", header);
+        let mut checksum = checksum.into_bytes();
+        checksum.reverse(); 
+        for i in (0..6).rev() {
+            let chr = match checksum.get(i) {
+                Some(chr) => *chr,
+                None => 48,
+            };
+            block[(6 - i) + 147] =  chr;
+        }
+
+        block
+    }
+
+
+
 }
 
 pub struct File {
@@ -194,7 +300,7 @@ pub struct File {
     owner_id: u64, 
     group_id: u64,
     size: u64,
-    time: u64,
+    time: String,
     checksum: u64, // 256 + the sum of all the bytes in this header except the checksum field.
     type_flag: u8, // Should always be 0
     linked_name: String,
@@ -237,20 +343,15 @@ impl File {
             Err(_) => 0,
         };
         // Time
-        let mut time = String::with_capacity(10);
-        // Skip over the null and 0 byte
-        for i in 125..135 {
+        let mut time = String::with_capacity(11);
+        // Skip over the null byte - storing this as a string because we don't care how it works
+        for i in 136..147 {
             let chr = match block.get(i) {
                 Some(chr) => *chr as char,
                 None => '\0',
             };
             time.push(chr);      
         }
-        let time = u64::from_str_radix(time.as_str(), 8);
-        let time = match time {
-            Ok(i) => i,
-            Err(_) => 0,
-        };
         // Header checksum
         let mut header = 0;
         // 6223-48-49-48-52-48-53-32+32+32+32+32+32+32+32+32 (example for the hello world file, convert it to octal)
@@ -311,8 +412,109 @@ impl File {
         }
     }
 
-    fn to_block(&self) -> Vec<u8> {
+    pub fn to_block(&mut self) -> Vec<u8> {
+        let mut block = Vec::with_capacity(512);
 
+        // Filename
+        block.extend(unsafe { self.name.as_mut_vec().iter().cloned() } );
+
+        // Mode - 0000777\0
+        let mut mode = vec![48u8, 48u8, 48u8, 48u8, 55u8, 55u8, 55u8, 0u8];
+        block.append(&mut mode);
+
+        // Owner and group ID - 0000420\0
+        let mut id = vec![48u8, 48u8, 48u8, 48u8, 52u8, 50u8, 48u8, 0u8];
+        block.append(&mut id);
+        let mut id = vec![48u8, 48u8, 48u8, 48u8, 52u8, 50u8, 48u8, 0u8];
+        block.append(&mut id);
+
+        // Size (octal numbers)
+        block.push(48);
+        let size = format!("{:o}", self.size);
+        let mut size = size.into_bytes();
+        size.reverse(); 
+        for i in (0..10).rev() {
+            let chr = match size.get(i) {
+                Some(chr) => *chr,
+                None => 48,
+            };
+            block.push(chr);
+        }
+        block.push(0);
+
+        // Time (string)
+        block.extend(unsafe { self.time.as_mut_vec().iter().cloned() } );
+        block.push(0);
+
+
+        // Checksum (octal numbers)
+        let checksum = format!("{:o}", self.checksum);
+        let mut checksum = checksum.into_bytes();
+        checksum.reverse(); 
+        for i in (0..6).rev() {
+            let chr = match checksum.get(i) {
+                Some(chr) => *chr,
+                None => 48,
+            };
+            block.push(chr);
+        }
+        block.push(0);
+        block.push(32);
+
+
+        // Type - 0 for file, 5 for folder
+        block.push(b'0'); 
+
+        // Linked name - we don't support links, so don't care about this - supposed to be 0
+        for i in 0..100 {
+            block.push(0);
+        }
+        // Ustar indicators
+        let mut ustar = vec![b'u', b's', b't', b'a', b'r', 0u8];
+        block.append(&mut ustar);
+        // 00
+        block.push(48);
+        block.push(48);
+
+        // user name
+        block.extend(unsafe { self.owner_name.as_mut_vec().iter().cloned() } );
+        // Group name
+        block.extend(unsafe { self.group_name.as_mut_vec().iter().cloned() } );
+
+        // Device major and minor number - 0000000\0
+        let mut num = vec![48u8, 48u8, 48u8, 48u8, 48u8, 48u8, 48u8, 0u8];
+        block.append(&mut num);
+        let mut num = vec![48u8, 48u8, 48u8, 48u8, 48u8, 48u8, 48u8, 0u8];
+        block.append(&mut num);
+
+        block.extend(unsafe { self.prefix.as_mut_vec().iter().cloned() } );
+
+        for i in 0..12 {
+            block.push(0);
+        }
+        // Regenerate the checksum - otherwise archivemount sees it as corrupted
+        let mut header = 0;
+        for (i, n) in block.iter().enumerate() {
+            if i > 147 && i < 155 {
+                header += 32;
+            }
+            else {
+                header += *n as u64;                
+            }
+        }
+
+        let checksum = format!("{:o}", header);
+        let mut checksum = checksum.into_bytes();
+        checksum.reverse(); 
+        for i in (0..6).rev() {
+            let chr = match checksum.get(i) {
+                Some(chr) => *chr,
+                None => 48,
+            };
+            block[(6 - i) + 147] =  chr;
+        }
+
+        block
     }
 
     fn get_data(&self) -> Vec<u8> {
