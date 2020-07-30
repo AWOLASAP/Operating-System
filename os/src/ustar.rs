@@ -312,7 +312,7 @@ impl File {
     }
 
     fn to_block(&self) -> Vec<u8> {
-        
+
     }
 
     fn get_data(&self) -> Vec<u8> {
@@ -343,6 +343,10 @@ impl UstarFileSystem {
         // Read in all the files/directories
         // First mainly process directories to build the structure of the VFS, then place files in it
         // Initialize (read the data) for the files in the 2nd pass
+        // Well actually, do this differently
+        // Process any directories that are relative to root 
+        // Basically keep on going through, check if a path can be accessed (and thus subdirectories can be added)
+        // Can fill the files array early - probably on first run
     }
 
     pub fn defragment(&mut self) {
