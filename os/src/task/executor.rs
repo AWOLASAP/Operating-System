@@ -5,7 +5,6 @@ use core::task::{Context, Poll,Waker};
 use x86_64::instructions::interrupts::{self, enable_interrupts_and_hlt};
 use lazy_static::lazy_static;
 use spin::Mutex;
-use conquer_once::spin::OnceCell;
 use rcore_thread::{std_thread as thread};
 
 // to be able to add stuff to executor in a file add:
@@ -87,29 +86,30 @@ impl Executor {
 
     fn run_ready_tasks(& mut self) {
         // destructure `self` to avoid borrow checker errors
-        let Self {
-            tasks,
-            task_queue,
-            waker_cache,
-        } = self;
+        // let Self {
+        //     tasks,
+        //     task_queue,
+        //     waker_cache,
+        // } = self;
 
         for _x in self.tasks{
             thread::spawn(||{
-                if let Ok(task_id) = task_queue.pop(){
-                    let task = match tasks.get_mut(&task_id) {
+                let mut executor = EXECUTOR.lock();
+                if let Ok(task_id) = executor.task_queue.pop(){
+                    let task = match executor.tasks.get_mut(&task_id) {
                         Some(task) => task,
                         None => panic!(), // task no longer exists
                     };
                     // gets waker from cache or creates waker if one doesn't exist
-                    let waker = waker_cache
+                    let waker = executor.waker_cache
                         .entry(task_id)
-                        .or_insert_with(|| TaskWaker::new(task_id, task_queue.clone()));
+                        .or_insert_with(|| TaskWaker::new(task_id, executor.task_queue.clone()));
                     let mut context = Context::from_waker(waker);
                     // runs task and removes it if it's finished
                     match task.poll(&mut context) {
                         Poll::Ready(()) => {
-                            tasks.remove(&task_id);
-                            waker_cache.remove(&task_id);
+                            executor.tasks.remove(&task_id);
+                            executor.waker_cache.remove(&task_id);
                         }
                         Poll::Pending => {}
                     }
