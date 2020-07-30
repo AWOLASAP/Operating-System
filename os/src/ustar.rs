@@ -7,6 +7,7 @@ use alloc::string::String;
 use hashbrown::HashMap;
 use core::option::Option;
 use alloc::rc::Rc;
+use alloc::rc::Weak;
 use core::cell::RefCell;
 use core::u64;
 use alloc::format;
@@ -47,8 +48,11 @@ trait USTARItem {
 }
 
 pub struct Directory {
+    // Directory specific stuff
     contents: Vec<Rc<RefCell<File>>>,
     subdirectories: Vec<Rc<RefCell<Directory>>>,
+    // Not sure if gonna add, but this could be cool 
+    parent: Weak<RefCell<Directory>>,
 
     //Additional needed stuff not from the USTAR filesystem.
     // What block is this hosted on? (we need this for writing to disk)
@@ -75,6 +79,148 @@ pub struct Directory {
 }
 
 impl Directory {
+    // For when you're making a new directory going in disk
+    // Where does it go, and what is it's name (must include parent folders too)
+    fn new(block_id: u64, name: String) -> Directory {
+        // Handle name
+        let name_variable = name.into_bytes();
+        let mut name = String::with_capacity(100);
+        for i in 0..100 {
+            let chr = match name_variable.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            name.push(chr);
+        }
+        // Mode
+        let mode = String::from("100777");
+        // User and group ID
+        let owner_id = 420;
+        let group_id = 420;
+        // Size
+        let size =0;
+        let mut time = String::with_capacity(11);
+        // Skip over the null byte - storing this as a string because we don't care how it works
+        for i in 136..147 {
+            time.push('0');      
+        }
+        // Header checksum
+        let mut header = 0;
+        // You get to be headerless for a bit - until someone tries to write
+        // Type (should always be 5)
+        let type_flag = 5;
+        // Linked file name - same name as the normal
+        let linked_name = name.clone();
+        // Owner and group name
+        let mut owner_name = String::with_capacity(32);
+        owner_name.push_str("weed");
+        let mut group_name = String::with_capacity(32);
+        group_name.push_str("weed");
+        for i in 0..28 {
+            owner_name.push('\0');
+            group_name.push('\0');
+        }
+        // Device major and minor version - not parsing because it probably doesn't matter
+        let device_major_number = 0;
+        let device_minor_number = 0;
+        // Filename prefix
+        let mut filename_prefix = String::with_capacity(155);
+        for i in 345..500 {
+            filename_prefix.push('\0');
+        }
+        // Setup directory specific Variables
+        let subdirectories = Vec::new();
+        let files = Vec::new();
+        Directory { 
+            name: name,
+            mode: mode,
+            owner_id: owner_id,
+            group_id: group_id,
+            size: size,
+            time: time,
+            checksum: header,
+            type_flag: type_flag,
+            linked_name: linked_name,
+            owner_name: owner_name,
+            group_name: group_name,
+            device_minor_number: device_minor_number,
+            device_major_number: device_major_number,
+            prefix: filename_prefix,
+
+            block_id: block_id,
+            write: false,
+
+            subdirectories: subdirectories,
+            contents: files,
+            parent: Weak::new(),
+        }
+    }
+
+    // For when you need a new directory not backed by disk.
+    fn new_directory(name: String) -> Directory {
+        // Mode
+        let mode = String::from("100777");
+        // User and group ID
+        let owner_id = 420;
+        let group_id = 420;
+        // Size
+        let size = 0;
+        // Time
+        let time = String::from("");
+        let header = 0;
+        // Type (should always be 5)
+        let type_flag = 5;
+        // Linked file name - same name as the normal
+        let linked_name = name.clone();
+        // Owner and group name
+        let mut owner_name = String::with_capacity(32);
+        owner_name.push_str("weed");
+        let mut group_name = String::with_capacity(32);
+        group_name.push_str("weed");
+        for i in 0..28 {
+            owner_name.push('\0');
+            group_name.push('\0');
+        }
+        // Device major and minor version - not parsing because it probably doesn't matter
+        let device_major_number = 0;
+        let device_minor_number = 0;
+        // Filename prefix
+        let mut filename_prefix = String::with_capacity(155);
+        for i in 345..500 {
+            filename_prefix.push('\0');
+        }
+        // Setup directory specific Variables
+        let subdirectories = Vec::new();
+        let files = Vec::new();
+
+        // block_id of  u64::MAX signals that we don't want it to exist on disk
+        let block_id = u64::MAX;
+        Directory { 
+            name: name,
+            mode: mode,
+            owner_id: owner_id,
+            group_id: group_id,
+            size: size,
+            time: time,
+            checksum: header,
+            type_flag: type_flag,
+            linked_name: linked_name,
+            owner_name: owner_name,
+            group_name: group_name,
+            device_minor_number: device_minor_number,
+            device_major_number: device_major_number,
+            prefix: filename_prefix,
+
+            block_id: block_id,
+            write: false,
+
+            subdirectories: subdirectories,
+            contents: files,
+            parent: Weak::new(),
+        }
+    }
+
+    // Only should be used for initialization from the disk
     pub fn from_block(block: Vec<u8>, block_id: u64) -> Directory {
         // Handle name
         let mut name = String::with_capacity(100);
@@ -175,6 +321,7 @@ impl Directory {
 
             subdirectories: subdirectories,
             contents: files,
+            parent: Weak::new(),
         }
     }
 
@@ -465,6 +612,82 @@ pub struct File {
 }
 
 impl File {
+    // For when you're making a new file going in disk
+    // Where does it go, and what is it's name (must include parent folders too)
+    fn new(block_id: u64, name: String) -> File {
+        // Handle name
+        let name_variable = name.into_bytes();
+        let mut name = String::with_capacity(100);
+        for i in 0..100 {
+            let chr = match name_variable.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            name.push(chr);
+        }
+        // Mode
+        let mode = String::from("100777");
+        // User and group ID
+        let owner_id = 420;
+        let group_id = 420;
+        // Size
+        let size =0;
+        let mut time = String::with_capacity(11);
+        // Skip over the null byte - storing this as a string because we don't care how it works
+        for i in 136..147 {
+            time.push('0');      
+        }
+        // Header checksum
+        let mut header = 0;
+        // You get to be headerless for a bit - until someone tries to write
+        // Type (should always be 5)
+        let type_flag = 5;
+        // Linked file name - same name as the normal
+        let linked_name = name.clone();
+        // Owner and group name
+        let mut owner_name = String::with_capacity(32);
+        owner_name.push_str("weed");
+        let mut group_name = String::with_capacity(32);
+        group_name.push_str("weed");
+        for i in 0..28 {
+            owner_name.push('\0');
+            group_name.push('\0');
+        }
+        // Device major and minor version - not parsing because it probably doesn't matter
+        let device_major_number = 0;
+        let device_minor_number = 0;
+        // Filename prefix
+        let mut filename_prefix = String::with_capacity(155);
+        for i in 345..500 {
+            filename_prefix.push('\0');
+        }
+        // Setup directory specific Variables
+        let mut data = Vec::new();
+        File { 
+            name: name,
+            mode: mode,
+            owner_id: owner_id,
+            group_id: group_id,
+            size: size,
+            time: time,
+            checksum: header,
+            type_flag: type_flag,
+            linked_name: linked_name,
+            owner_name: owner_name,
+            group_name: group_name,
+            device_minor_number: device_minor_number,
+            device_major_number: device_major_number,
+            prefix: filename_prefix,
+
+            block_id: block_id,
+            write: false,
+
+            data: data,
+        }
+    }
+
+
+
     pub fn from_block(block: Vec<u8>, block_id: u64) -> File {
         // Handle name
         let mut name = String::with_capacity(100);
