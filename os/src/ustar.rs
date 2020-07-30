@@ -178,7 +178,100 @@ impl Directory {
         }
     }
 
-
+    pub fn reinit_from_block(&mut self, block: Vec<u8>, block_id: u64) {
+        // Handle name
+        let mut name = String::with_capacity(100);
+        for i in 0..100 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            name.push(chr);
+        }
+        // Mode
+        let mode = String::from("100777");
+        // User and group ID
+        let owner_id = 420;
+        let group_id = 420;
+        // Size
+        let mut size = String::with_capacity(10);
+        // Skip over the null and 0 byte
+        for i in 125..135 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            size.push(chr);      
+        }
+        let size = u64::from_str_radix(size.as_str(), 8);
+        let size = match size {
+            Ok(i) => i,
+            Err(_) => 0,
+        };
+        // Time
+        let mut time = String::with_capacity(11);
+        // Skip over the null byte - storing this as a string because we don't care how it works
+        for i in 136..147 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            time.push(chr);      
+        }
+        // Header checksum
+        let mut header = 0;
+        // 6223-48-49-48-52-48-53-32+32+32+32+32+32+32+32+32 (example for the hello world file, convert it to octal)
+        for (i, n) in block.iter().enumerate() {
+            if i > 147 && i < 155 {
+                header += 32;
+            }
+            else {
+                header += *n as u64;                
+            }
+        }
+        // Type (should always be 5)
+        let type_flag = 5;
+        // Linked file name - same name as the normal
+        let linked_name = name.clone();
+        // Owner and group name
+        let mut owner_name = String::with_capacity(32);
+        owner_name.push_str("weed");
+        let mut group_name = String::with_capacity(32);
+        group_name.push_str("weed");
+        for i in 0..28 {
+            owner_name.push('\0');
+            group_name.push('\0');
+        }
+        // Device major and minor version - not parsing because it probably doesn't matter
+        let device_major_number = 0;
+        let device_minor_number = 0;
+        // Filename prefix
+        let mut filename_prefix = String::with_capacity(155);
+        for i in 345..500 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            filename_prefix.push(chr);
+        }
+        // Setup directory specific Variables
+        self.name = name;
+        self.mode = mode;
+        self.owner_id = owner_id;
+        self.group_id = group_id;
+        self.time = time;
+        self.size = size;
+        self.checksum = header;
+        self.type_flag = type_flag;
+        self.linked_name = linked_name;
+        self.owner_name = owner_name;
+        self.group_name = group_name;
+        self.device_minor_number = device_minor_number;
+        self.device_major_number = device_major_number;
+        self.prefix = filename_prefix;
+        self.block_id = block_id;
+        self.write = false;
+    }
 
     pub fn to_block(&mut self) -> Vec<u8> {
         let mut block = Vec::with_capacity(512);
