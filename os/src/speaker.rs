@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use crate::println;
 use x86::io::inb;
 use x86::io::outb;
 use crate::timer_routing::TIME_ROUTER;
@@ -23,7 +22,7 @@ pub struct PcSpeaker {
 }
 
 impl PcSpeaker {
-    pub fn new() -> PcSpeaker { 
+    pub fn new() -> PcSpeaker {
         PcSpeaker{
             timer: 0,
             timer_limit: 0,
@@ -34,7 +33,7 @@ impl PcSpeaker {
     }
 
     pub fn play_sound(&mut self, frequence: i32) {
-        // Make sure nothing is playing before      
+        // Make sure nothing is playing before
         self.no_sound();
 
         // Set the PIT to the desired frequency
@@ -49,7 +48,7 @@ impl PcSpeaker {
             outb(0x43, 0xb6);
             outb(0x42, (self.div) as u8);
             outb(0x42, (self.div >> 8) as u8);
-        }    
+        }
 
         // And play the sound using the PC speaker
         unsafe { self.tmp = inb(0x61).into(); }
@@ -61,7 +60,7 @@ impl PcSpeaker {
     // Make it shutup
     pub fn no_sound(&mut self) {
         unsafe { self.tmp = (inb(0x61) & 0xFC) as i32; }
-        
+
         unsafe { outb(0x61, self.tmp as u8); }
     }
 
@@ -74,7 +73,7 @@ impl PcSpeaker {
         self.timer += 1;
         self.tet_ost();
     }
-     
+
     pub fn stop_song_loop(&mut self) {
         unsafe {TIME_ROUTER.force_unlock()};
         TIME_ROUTER.lock().mode = 0;
@@ -95,7 +94,7 @@ impl PcSpeaker {
             self.no_sound();
         }
     }
-    
+
     pub fn stop_timer(&mut self) {
         unsafe {TIME_ROUTER.force_unlock()};
         TIME_ROUTER.lock().mode = 0;

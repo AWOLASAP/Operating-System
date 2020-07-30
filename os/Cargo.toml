@@ -17,6 +17,7 @@ uart_16550 = "0.2.0"
 pic8259_simple = "0.2.0"
 pc-keyboard = "0.5.0"
 vga = { git = "https://github.com/otisdog8/vga" }
+rcore-thread = { git = "https://github.com/rcore-os/rcore-thread" }
 libm = "0.2.1"
 linked_list_allocator = "0.8.0"
 rand_core = "0.5.0"

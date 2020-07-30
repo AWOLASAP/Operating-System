@@ -1,7 +1,6 @@
 use lazy_static::lazy_static;
 use spin::Mutex;
 use crate::{
-    tetris::TETRIS,
     rng::RNGSEED,
     vga_buffer::MODE,
     inc_speaker_timer,
