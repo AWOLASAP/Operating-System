@@ -1,10 +1,13 @@
 use lazy_static::lazy_static;
 use spin::Mutex;
-use os::ata_block_driver::AtaPio;
+use crate::ata_block_driver::AtaPio;
 use alloc::vec::Vec;
 use alloc::string::String;
 use hashbrown::HashMap;
 use core::option::Option;
+use alloc::rc::Rc;
+use core::cell::RefCell;
+use core::u64;
 
 // Note to me tomorrow - we're going to use Rc<RefCell<File>> and Directory because
 // It gives me interior mutability (RefCell), and shared ownership (Rc). This is important
@@ -40,8 +43,8 @@ trait USTARItem {
 }
 
 struct Directory {
-    contents: Vec<File>,
-    subdirectories: Vec<Directory>,
+    contents: Vec<Rc<RefCell<File>>>,
+    subdirectories: Vec<Rc<RefCell<Directory>>>,
 
     //Additional needed stuff not from the USTAR filesystem.
     // What block is this hosted on? (we need this for writing to disk)
@@ -66,15 +69,118 @@ struct Directory {
 }
 
 impl Directory {
-    fn from_block(block: Vec<u8>, block_id: u64) -> File {
+    fn from_block(block: Vec<u8>, block_id: u64) -> Directory {
+        // Handle name
+        let mut name = String::with_capacity(100);
+        for i in 0..100 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            name.push(chr);
+        }
+        // Mode
+        let mode = String::from("100777");
+        // User and group ID
+        let owner_id = 420;
+        let group_id = 420;
+        // Size
+        let mut size = String::with_capacity(10);
+        // Skip over the null and 0 byte
+        for i in 125..135 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            size.push(chr);      
+        }
+        let size = u64::from_str_radix(size.as_str(), 8);
+        let size = match size {
+            Ok(i) => i,
+            Err(_) => 0,
+        };
+        // Time
+        let mut time = String::with_capacity(10);
+        // Skip over the null and 0 byte
+        for i in 125..135 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            time.push(chr);      
+        }
+        let time = u64::from_str_radix(time.as_str(), 8);
+        let time = match time {
+            Ok(i) => i,
+            Err(_) => 0,
+        };
+        // Header checksum
+        let mut header = 0;
+        // 6223-48-49-48-52-48-53-32+32+32+32+32+32+32+32+32 (example for the hello world file, convert it to octal)
+        for (i, n) in block.iter().enumerate() {
+            if i > 147 && i < 155 {
+                header += 32;
+            }
+            else {
+                header += *n as u64;                
+            }
+        }
+        // Type (should always be 5)
+        let type_flag = 5;
+        // Linked file name - same name as the normal
+        let linked_name = name.clone();
+        // Owner and group name
+        let mut owner_name = String::with_capacity(32);
+        owner_name.push_str("weed");
+        let mut group_name = String::with_capacity(32);
+        group_name.push_str("weed");
+        for i in 0..28 {
+            owner_name.push('\0');
+            group_name.push('\0');
+        }
+        // Device major and minor version - not parsing because it probably doesn't matter
+        let device_major_number = 0;
+        let device_minor_number = 0;
+        // Filename prefix
+        let mut filename_prefix = String::with_capacity(155);
+        for i in 345..500 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            filename_prefix.push(chr);
+        }
+        // Setup directory specific Variables
+        let subdirectories = Vec::new();
+        let files = Vec::new();
+        Directory { 
+            name: name,
+            mode: mode,
+            owner_id: owner_id,
+            group_id: group_id,
+            size: size,
+            time: time,
+            checksum: header,
+            type_flag: type_flag,
+            linked_name: linked_name,
+            owner_name: owner_name,
+            group_name: group_name,
+            device_minor_number: device_minor_number,
+            device_major_number: device_major_number,
+            prefix: filename_prefix,
 
+            block_id: block_id,
+
+            subdirectories: subdirectories,
+            contents: files,
+        }
     }
 
 
 
 }
 
-struct File {
+pub struct File {
     data: Vec<u8>,
 
     //Additional needed stuff not from the USTAR filesystem.
@@ -83,7 +189,7 @@ struct File {
 
     // Stuff needed by the USTAR filesystem
     // https://wiki.osdev.org/USTAR
-    name: String,
+    pub name: String,
     mode: String,
     owner_id: u64, 
     group_id: u64,
@@ -100,34 +206,132 @@ struct File {
 }
 
 impl File {
-    fn from_block(block: Vec<u8>, block_id: u64) -> File {
+    pub fn from_block(block: Vec<u8>, block_id: u64) -> File {
         // Handle name
-        let name = String::with_capacity(100);
+        let mut name = String::with_capacity(100);
         for i in 0..100 {
             let chr = match block.get(i) {
-                Some(chr) => chr as char,
-                None => 'a',
+                Some(chr) => *chr as char,
+                None => '\0',
             };
+            name.push(chr);
+        }
+        // Mode
+        let mode = String::from("100777");
+        // User and group ID
+        let owner_id = 420;
+        let group_id = 420;
+        // Size
+        let mut size = String::with_capacity(10);
+        // Skip over the null and 0 byte
+        for i in 125..135 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            size.push(chr);      
+        }
+        let size = u64::from_str_radix(size.as_str(), 8);
+        let size = match size {
+            Ok(i) => i,
+            Err(_) => 0,
+        };
+        // Time
+        let mut time = String::with_capacity(10);
+        // Skip over the null and 0 byte
+        for i in 125..135 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            time.push(chr);      
+        }
+        let time = u64::from_str_radix(time.as_str(), 8);
+        let time = match time {
+            Ok(i) => i,
+            Err(_) => 0,
+        };
+        // Header checksum
+        let mut header = 0;
+        // 6223-48-49-48-52-48-53-32+32+32+32+32+32+32+32+32 (example for the hello world file, convert it to octal)
+        for (i, n) in block.iter().enumerate() {
+            if i > 147 && i < 155 {
+                header += 32;
+            }
+            else {
+                header += *n as u64;                
+            }
+        }
+        // Type (should always be 0)
+        let type_flag = 0;
+        // Linked file name - same name as the normal
+        let linked_name = name.clone();
+        // Owner and group name
+        let mut owner_name = String::with_capacity(32);
+        owner_name.push_str("weed");
+        let mut group_name = String::with_capacity(32);
+        group_name.push_str("weed");
+        for i in 0..28 {
+            owner_name.push('\0');
+            group_name.push('\0');
+        }
+        // Device major and minor version - not parsing because it probably doesn't matter
+        let device_major_number = 0;
+        let device_minor_number = 0;
+        // Filename prefix
+        let mut filename_prefix = String::with_capacity(155);
+        for i in 345..500 {
+            let chr = match block.get(i) {
+                Some(chr) => *chr as char,
+                None => '\0',
+            };
+            filename_prefix.push(chr);
+        }
+        // Setup empty data
+        let mut data = Vec::new();
+        File {
+            name: name,
+            mode: mode,
+            owner_id: owner_id,
+            group_id: group_id,
+            size: size,
+            time: time,
+            checksum: header,
+            type_flag: type_flag,
+            linked_name: linked_name,
+            owner_name: owner_name,
+            group_name: group_name,
+            device_minor_number: device_minor_number,
+            device_major_number: device_major_number,
+            prefix: filename_prefix,
+
+            block_id: block_id,
+
+            data: data,
         }
     }
 
-    fn get_data(&self) -> Vec<u8> {
+    fn to_block(&self) -> Vec<u8> {
+        
+    }
 
+    fn get_data(&self) -> Vec<u8> {
+        self.data.clone()
     }
     // This handles size 
-    fn set_data(&mut self, size: Vec<u8>) {
-
+    fn set_data(&mut self, data: Vec<u8>) {
+        self.data = data.clone();
     }
 }
 
 struct USTARFileSystem {
     block_driver: AtaPio,
-    files: Vec<USTARItem>,
+    files: Vec<Rc<RefCell<USTARItem>>>,
     current_dirs: HashMap<u64, Directory>,
     current_dirs_tracker: u64,
     root: Directory,
 }
-
+/*
 impl UstarFileSystem {
     fn new() -> USTARFileSystem {
         USTARFileSystem {
@@ -137,6 +341,8 @@ impl UstarFileSystem {
 
     pub fn init(&mut self) {
         // Read in all the files/directories
+        // First mainly process directories to build the structure of the VFS, then place files in it
+        // Initialize (read the data) for the files in the 2nd pass
     }
 
     pub fn defragment(&mut self) {
@@ -254,3 +460,4 @@ lazy_static! {
         Mutex::new(UstarFileSystem::new())
     };
 }
+*/

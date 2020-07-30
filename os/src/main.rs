@@ -25,6 +25,7 @@ use os::task::keyboard;
 use x86_64::instructions::interrupts;
 use os::ata_block_driver;
 use alloc::vec::Vec;
+use os::ustar::File;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -87,12 +88,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         println!("");
     });*/
     
-    /*let driv = ata_block_driver::AtaPio::try_new();
+    let driv = ata_block_driver::AtaPio::try_new();
     let data = unsafe {driv.read_lba(0, 1)};
 
-    for c in data.iter() {
-        print!("{}", *c as char);
-    }
+    let mut file = File::from_block(data, 0);
+
+    println!("{}", file.name);
+    /*
 
     let mut data = Vec::with_capacity(256);
 
@@ -107,9 +109,8 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     for c in dota.iter() {
         print!("{}", *c as char);
     }
-    */
-
-
+    
+*/
     let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
