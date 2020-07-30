@@ -26,6 +26,7 @@ trait USTARItem {
     fn set_name(&mut self, name: String);
     fn set_prefix(&mut self, prefix: String);
     fn get_name_and_prefix(&self) -> String;
+    //fn set_name_and_prefix(&mut self, combined: String);
 
 
     fn should_write(&mut self);
@@ -34,7 +35,7 @@ trait USTARItem {
     // Get writable representation - this is how the driver actually applies changes to disk
     // Driver should auto handle writing the vector/using the right number of sectors, but 
     // care should still be made to making it a correct multiple
-    fn get_writable_representation(&self) -> Vec<u8>;
+    fn get_writable_representation(&mut self) -> Vec<u8>;
     
 
     // Gets and sets the block ID - do this RARELY, probably only during initialization of the
@@ -52,6 +53,8 @@ pub struct Directory {
     //Additional needed stuff not from the USTAR filesystem.
     // What block is this hosted on? (we need this for writing to disk)
     block_id: u64,
+    // Should we write this entire file to disk?
+    write: bool,
 
     // Stuff needed by the USTAR filesystem
     // https://wiki.osdev.org/USTAR
@@ -168,6 +171,7 @@ impl Directory {
             prefix: filename_prefix,
 
             block_id: block_id,
+            write: false,
 
             subdirectories: subdirectories,
             contents: files,
@@ -268,7 +272,9 @@ impl Directory {
             }
         }
 
+        self.checksum = header; 
         let checksum = format!("{:o}", header);
+        
         let mut checksum = checksum.into_bytes();
         checksum.reverse(); 
         for i in (0..6).rev() {
@@ -282,8 +288,60 @@ impl Directory {
         block
     }
 
+}
 
+impl USTARItem for Directory {
+    fn get_name(&self) -> String {
+        return self.name.clone();
+    }
 
+    fn set_name(&mut self, name: String) {
+        self.name = name.clone();
+        self.name.reserve_exact(100 - self.name.len());
+        while self.name.len() < 100 {
+            self.name.push('\0');
+        }
+    }
+
+    fn get_name_and_prefix(&self) -> String {
+        return format!("{}{}", self.name, self.prefix);
+    }
+
+    fn set_prefix(&mut self, prefix: String) {
+        self.prefix = prefix.clone();
+        self.prefix.reserve_exact(100 - self.prefix.len());
+        while self.prefix.len() < 100 {
+            self.prefix.push('\0');
+        }
+    }
+
+    /*fn set_name_and_prefix(&mut self, combined: String) {
+        self.name = name.clone();
+        self.name.reserve_exact(100 - self.name.len());
+        while self.name.len() < 100 {
+            self.name.push('\0');
+        }
+    }*/
+
+    fn should_write(&mut self) {
+        self.write = true;
+    }
+
+    fn get_should_write(&self) -> bool {
+        self.write
+    }
+
+    fn get_writable_representation(&mut self) -> Vec<u8> {
+        self.to_block()
+    }
+
+    fn get_block_id(&self) -> u64 {
+        self.block_id
+    }
+
+    fn set_block_id(&mut self, block_id: u64) {
+        self.block_id = block_id;
+    }
 }
 
 pub struct File {
@@ -292,6 +350,8 @@ pub struct File {
     //Additional needed stuff not from the USTAR filesystem.
     // What block is this hosted on? (we need this for writing to disk)
     block_id: u64,
+    // Should we write this entire file to disk?
+    write: bool,
 
     // Stuff needed by the USTAR filesystem
     // https://wiki.osdev.org/USTAR
@@ -407,6 +467,7 @@ impl File {
             prefix: filename_prefix,
 
             block_id: block_id,
+            write: false,
 
             data: data,
         }
@@ -503,7 +564,9 @@ impl File {
             }
         }
 
+        self.checksum = header; 
         let checksum = format!("{:o}", header);
+        
         let mut checksum = checksum.into_bytes();
         checksum.reverse(); 
         for i in (0..6).rev() {
@@ -523,6 +586,67 @@ impl File {
     // This handles size 
     fn set_data(&mut self, data: Vec<u8>) {
         self.data = data.clone();
+        self.size = data.len() as u64;
+    }
+}
+
+impl USTARItem for File {
+    fn get_name(&self) -> String {
+        return self.name.clone();
+    }
+
+    fn set_name(&mut self, name: String) {
+        self.name = name.clone();
+        self.name.reserve_exact(100 - self.name.len());
+        while self.name.len() < 100 {
+            self.name.push('\0');
+        }
+    }
+
+    fn get_name_and_prefix(&self) -> String {
+        return format!("{}{}", self.name, self.prefix);
+    }
+
+    fn set_prefix(&mut self, prefix: String) {
+        self.prefix = prefix.clone();
+        self.prefix.reserve_exact(100 - self.prefix.len());
+        while self.prefix.len() < 100 {
+            self.prefix.push('\0');
+        }
+    }
+
+    /*fn set_name_and_prefix(&mut self, combined: String) {
+        self.name = name.clone();
+        self.name.reserve_exact(100 - self.name.len());
+        while self.name.len() < 100 {
+            self.name.push('\0');
+        }
+    }*/
+
+    fn should_write(&mut self) {
+        self.write = true;
+    }
+
+    fn get_should_write(&self) -> bool {
+        self.write
+    }
+
+    fn get_writable_representation(&mut self) -> Vec<u8> {
+        let mut res = Vec::with_capacity((512 + self.size + 512 - (self.size % 512)) as usize);
+        res.extend(self.to_block());
+        res.extend(self.data.clone());
+        for i in 0..(512 - (self.size % 512)) {
+            res.push(0);
+        }
+        res
+    }
+
+    fn get_block_id(&self) -> u64 {
+        self.block_id
+    }
+
+    fn set_block_id(&mut self, block_id: u64) {
+        self.block_id = block_id;
     }
 }
 
@@ -533,7 +657,7 @@ struct USTARFileSystem {
     current_dirs_tracker: u64,
     root: Directory,
 }
-/*
+
 impl UstarFileSystem {
     fn new() -> USTARFileSystem {
         USTARFileSystem {
@@ -549,6 +673,9 @@ impl UstarFileSystem {
         // Process any directories that are relative to root 
         // Basically keep on going through, check if a path can be accessed (and thus subdirectories can be added)
         // Can fill the files array early - probably on first run
+        // Actually another thing we need to keep track of 
+        // There might be a world where we can create directories not backed by disk - this makes sense - fill in the 
+        // Disk info as we get it - just add a method to the directory that lets us mutate it based on the entry if found
     }
 
     pub fn defragment(&mut self) {
@@ -666,4 +793,3 @@ lazy_static! {
         Mutex::new(UstarFileSystem::new())
     };
 }
-*/
