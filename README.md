@@ -33,7 +33,7 @@ The UX is simple at its finest. It include text output, text input, as well as P
 - http://osblog.stephenmarz.com/index.html
 
 ## People Involved
-- [otisdog8](github.com/otisdog8)
-- [AWOLASAP](github.com/AWOLASAP)
-- [Alex-x90](github.com/Alex-x90)
-- [Lolshoc](github.com/Lolshoc)
+- [otisdog8](https://github.com/otisdog8)
+- [AWOLASAP](https://github.com/AWOLASAP)
+- [Alex-x90](https://github.com/Alex-x90)
+- [Lolshoc](https://github.com/Lolshoc)
