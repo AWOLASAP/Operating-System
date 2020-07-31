@@ -31,3 +31,9 @@ The UX is simple at its finest. It include text output, text input, as well as P
 - Git/Github
 - https://os.phil-opp.com/
 - http://osblog.stephenmarz.com/index.html
+
+## People Involved
+@otisdog8
+@AWOLASAP
+@Alex-x90
+@Lolshoc
