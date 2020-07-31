@@ -92,24 +92,25 @@ impl Executor {
         //     waker_cache,
         // } = self;
 
-        for _x in self.tasks{
+        for _ in self.tasks{
+
             thread::spawn(||{
-                let mut executor = EXECUTOR.lock();
-                if let Ok(task_id) = executor.task_queue.pop(){
-                    let task = match executor.tasks.get_mut(&task_id) {
+                // let executor = Arc::new(EXECUTOR.lock());
+                if let Ok(task_id) = EXECUTOR.lock().task_queue.pop(){
+                    let task = match EXECUTOR.lock().tasks.get_mut(&task_id) {
                         Some(task) => task,
                         None => panic!(), // task no longer exists
                     };
                     // gets waker from cache or creates waker if one doesn't exist
-                    let waker = executor.waker_cache
+                    let waker = EXECUTOR.lock().waker_cache
                         .entry(task_id)
-                        .or_insert_with(|| TaskWaker::new(task_id, executor.task_queue.clone()));
+                        .or_insert_with(|| TaskWaker::new(task_id, EXECUTOR.lock().task_queue.clone()));
                     let mut context = Context::from_waker(waker);
                     // runs task and removes it if it's finished
                     match task.poll(&mut context) {
                         Poll::Ready(()) => {
-                            executor.tasks.remove(&task_id);
-                            executor.waker_cache.remove(&task_id);
+                            EXECUTOR.lock().tasks.remove(&task_id);
+                            EXECUTOR.lock().waker_cache.remove(&task_id);
                         }
                         Poll::Pending => {}
                     }
