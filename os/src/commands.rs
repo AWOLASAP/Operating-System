@@ -3,8 +3,8 @@ use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
 use spin::Mutex;
-use crate::vga_buffer::MODE;
-use crate::vga_buffer::BUFFER_HEIGHT;
+use crate::vga_buffer::{MODE, BUFFER_HEIGHT, ADVANCED_WRITER};
+use vga::colors::Color16;
 use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
@@ -125,10 +125,21 @@ impl CommandRunner {
     // Plays the game Tetris
     pub fn tetris(&self) {
         // Run tetris if in the gterm mode
-        if MODE.lock().text == true {
+        if MODE.lock().text {
             println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
         } else {
             TETRIS.lock().init();
+        }
+    }
+
+    pub fn logo(&self) {
+        if MODE.lock().text {
+            println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
+        } else {
+            ADVANCED_WRITER.lock().clear_buffer();
+
+            ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+            ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
         }
     }
 
@@ -155,6 +166,8 @@ impl CommandRunner {
             self.tet_ost_help();
         } else if args == String::from("clear").as_str() {
             self.clear_help();
+        } else if args == String::from("logo").as_str() {
+            self.logo_help();
         } else if args == String::from("help").as_str() {
             self.help_help();
         }
@@ -172,6 +185,7 @@ impl CommandRunner {
         println!("beep");
         println!("tet-ost");
         println!("clear");
+        println!("logo");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
     }
@@ -240,6 +254,13 @@ impl CommandRunner {
         println!("No defined arguments, everything after clear will be ignored.");
     }
 
+    // Describes and displays options for the logo command
+    fn logo_help(&self) {
+        println!("\nCommand: logo");
+        println!("Prints boot logo to terminal, REQUIRES Graphics Mode.");
+        println!("No defined arguments, everything after logo will be ignored.");
+    }
+
     // Describes and displays options for the help command
     fn help_help(&self) {
         println!("\nCommand: help");
@@ -305,6 +326,7 @@ impl CommandRunner {
                 "beep" => self.beep(args),
                 "tet-ost" => self.tet_ost(args),
                 "clear" => self.clear(),
+                "logo" => self.logo(),
                 "yes" => self.yes(),
                 _ => println!("\nInvalid Command: {}", command),
             }
