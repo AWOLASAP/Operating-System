@@ -110,6 +110,9 @@ impl CommandRunner {
         println!("Text mode activated");
     }
 
+    // mode command
+    // prints out the current mode,
+    // either text mode or graphical
     pub fn mode(&self) {
         if MODE.lock().text {
             println!("\nText mode is active");
@@ -143,6 +146,8 @@ impl CommandRunner {
         println!("yes");
     }
 
+    // beep command
+    // Calls the pcspeaker and plays a beep for 2 cycles
     pub fn beep(&self, args: &str) {
         if args == " "{
             println!("\nWhat frequency do you want the beep?");
@@ -151,18 +156,25 @@ impl CommandRunner {
             play_beep!(freq, 2);
         }
     }
-    
+
+    // tet-ost command
+    // Plays the Tetris sound track through the pcspeaker
     pub fn tet_ost(&self, args: &str) {
         let num: i32 = args.parse().unwrap_or(1);
         play_tet_ost!(num);
     }
     
+    // clear command
+    // Clears the screen by writing a bunch on new lines
     pub fn clear(&self) {
         for line in 0..BUFFER_HEIGHT {
             println!();
         }
     }
-    
+   
+    // yes command
+    // Continuously prints y to get rid of those pesky 
+    // "Would you like to do X [y/N]" messages
     pub fn yes(&self) {
         loop {
             println!("y");
@@ -205,6 +217,7 @@ impl CommandRunner {
         self.index = 0;
     }
 
+    // Split the command buffer into its various parts
     pub fn split_buffer(&self) -> (Vec<&str>, Vec<&str>) {
         // Variables for the various parts of the command_buffer
         let mut commands = Vec::new();
@@ -258,6 +271,7 @@ macro_rules! add_command_buffer {
     ($c: expr) => {crate::commands::add_command_buffer_fn($c)};
 }
 
+// Macro for moving the command cursor
 #[macro_export]
 macro_rules! move_command_cursor {
     ($c: expr) => {crate::commands::move_command_cursor_fn($c)};

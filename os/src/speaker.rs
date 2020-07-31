@@ -23,7 +23,9 @@ pub struct PcSpeaker {
     tmp: i32,
 }
 
+// Class to handle playing sounds through the PC speaker
 impl PcSpeaker {
+    // Creates a new class with default values
     pub fn new() -> PcSpeaker { 
         PcSpeaker{
             timer: 0,
@@ -36,38 +38,44 @@ impl PcSpeaker {
         }
     }
 
+    // play a frequency through the PC speaker.
     pub fn play_sound(&mut self, frequence: i32) {
-        // Make sure nothing is playing before      
+        // Make sure nothing is playing beforehand
         self.no_sound();
 
         // Set the PIT to the desired frequency
-        // If `frequence` is 0, stop the function
+        // If `frequence` is 0, stop the function since nothing should be played
+        // 1193180 is the frequency of the PIT
         if frequence == 0 {
             return;
         } else {
             self.div = 1193180 / frequence;
         }
 
+        // Write to the IO ports that are connected to the PIT
+        // First tell the PIT what values we want, e.g. channel 2, etc.
+        // then the high value, and lastly the low value
         unsafe {
             outb(0x43, 0xb6);
             outb(0x42, (self.div) as u8);
             outb(0x42, (self.div >> 8) as u8);
         }    
 
-        // And play the sound using the PC speaker
+        // Tell the PIT to start
         unsafe { self.tmp = inb(0x61).into(); }
         if self.tmp != (self.tmp | 3) {
             unsafe { outb(0x61, self.tmp as u8| 3); }
         }
     }
 
-    // Make it shutup
+    // Make it shutup by writing to the IO port to stop
     pub fn no_sound(&mut self) {
         unsafe { self.tmp = (inb(0x61) & 0xFC) as i32; }
         
         unsafe { outb(0x61, self.tmp as u8); }
     }
 
+    // Start the loop for the Tetris song
     pub fn start_song_loop(&mut self, repeat: i32) {
         self.timer = 0;
         self.current_run += 1;
@@ -78,11 +86,13 @@ impl PcSpeaker {
         KEYBOARD_ROUTER.lock().mode.song = true;
     }
 
+    // This is what is called by TIME_ROUTER every loop
     pub fn song_loop(&mut self) {
         self.timer += 1;
         self.tet_ost();
     }
      
+    // Stop the song loop
     pub fn stop_song_loop(&mut self, force: bool) {
         unsafe {TIME_ROUTER.force_unlock()};
         TIME_ROUTER.lock().mode.terminal = true;
@@ -100,6 +110,7 @@ impl PcSpeaker {
         }
     }
 
+    // Start the timer used for simple beeps
     pub fn start_timer(&mut self, limit: i32) {
         self.timer = 0;
         self.timer_limit = limit;
@@ -108,6 +119,7 @@ impl PcSpeaker {
         TIME_ROUTER.lock().mode.beep = true;
     }
 
+    // Increment the simple timer
     pub fn inc_timer(&mut self) {
         self.timer += 1;
         if self.timer >= self.timer_limit {
@@ -116,6 +128,7 @@ impl PcSpeaker {
         }
     }
     
+    // Stop the simple timer
     pub fn stop_timer(&mut self) {
         unsafe {TIME_ROUTER.force_unlock()};
         TIME_ROUTER.lock().mode.terminal = true;
@@ -124,6 +137,8 @@ impl PcSpeaker {
         self.no_sound();
     }
 
+    // All of the frequencies/notes of the Tetris soundtrack,
+    // note just lead notes are played, no bass
     pub fn tet_ost(&mut self) {
         let _R   =     0;
         let _C0  = 16.35;
@@ -308,14 +323,17 @@ pub fn beep(freq: i32, len: i32) {
     //set_PIT_2(old_frequency);
 }
 
+// Increment the timer used for simple beeps
 pub fn inc_speaker_timer_fn() {
     PCSPEAKER.lock().inc_timer();
 }
 
+// Play the Tetris soundtrack
 pub fn play_tet_ost_fn(num: i32) {
     PCSPEAKER.lock().start_song_loop(num);
 }
 
+// Stop the Tetris soundtrack
 pub fn end_tet_ost_fn() {
     PCSPEAKER.lock().stop_song_loop(true);
 }
@@ -326,16 +344,19 @@ macro_rules! play_beep {
     ($f: expr, $l: expr) => {crate::speaker::beep($f, $l)};
 }
 
+// Macro to allow incrementing the speaker timer in other files
 #[macro_export]
 macro_rules! inc_speaker_timer {
     () => {crate::speaker::inc_speaker_timer_fn()};
 }
 
+// Macro to allow playing the Tetris soundtrack in other files
 #[macro_export]
 macro_rules! play_tet_ost {
     ($i: expr) => {crate::speaker::play_tet_ost_fn($i)};
 }
 
+// Macro to allow stopping the Tetris soundtrack in other files
 #[macro_export]
 macro_rules! end_tet_ost {
     () => {crate::speaker::end_tet_ost_fn()};
