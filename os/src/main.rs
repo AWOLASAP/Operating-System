@@ -72,7 +72,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     test_main();
     
     
-    /*interrupts::without_interrupts(|| {
+    interrupts::without_interrupts(|| {
 
         MODE.lock().graphics_init();
         //ADVANCED_WRITER.lock().enable_border();
@@ -86,7 +86,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         //ADVANCED_WRITER.lock().clear_buffer();
         MODE.lock().text_init();
         println!("");
-    });*/
+    });
     /*
     let driv = ata_block_driver::AtaPio::try_new();
     let data = unsafe {driv.read_lba(0, 1)};

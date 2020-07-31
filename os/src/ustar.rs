@@ -1,19 +1,19 @@
 use lazy_static::lazy_static;
-use spin::Mutex;
+use spin::{Mutex};
 use crate::ata_block_driver::AtaPio;
 use alloc::vec::Vec;
 use alloc::vec;
 use alloc::string::String;
 use hashbrown::HashMap;
 use core::option::Option;
-use alloc::rc::Rc;
-use alloc::rc::Weak;
-use core::cell::RefCell;
+use alloc::sync::Arc;
+use alloc::sync::Weak;
 use core::u64;
 use alloc::format;
+use crate::alloc::string::ToString;
 
-// Note to me tomorrow - we're going to use Rc<RefCell<File>> and Directory because
-// It gives me interior mutability (RefCell), and shared ownership (Rc). This is important
+// Note to me tomorrow - we're going to use Arc<Mutex<File>> and Directory because
+// It gives me interior mutability (Mutex), and shared ownership (Arc). This is important
 // because it lets me change it at different times for different reasons to do different things. 
 // Basically I can hold references to the USTARItems in both Directories and the File master array
 // Because they kinda need to be mutable (to make defragmenting optimized and possible)
@@ -49,10 +49,11 @@ trait USTARItem {
 
 pub struct Directory {
     // Directory specific stuff
-    contents: Vec<Rc<RefCell<File>>>,
-    subdirectories: Vec<Rc<RefCell<Directory>>>,
+    contents: Vec<Arc<Mutex<File>>>,
+    subdirectories: Vec<Arc<Mutex<Directory>>>,
     // Not sure if gonna add, but this could be cool 
-    parent: Weak<RefCell<Directory>>,
+    // Makes cd .. much easier.
+    parent: Weak<Mutex<Directory>>,
 
     //Additional needed stuff not from the USTAR filesystem.
     // What block is this hosted on? (we need this for writing to disk)
@@ -966,21 +967,30 @@ impl USTARItem for File {
     }
 }
 
-struct USTARFileSystem {
+pub struct USTARFileSystem {
     block_driver: AtaPio,
-    files: Vec<Rc<RefCell<USTARItem>>>,
-    current_dirs: HashMap<u64, Directory>,
+    files: Vec<Arc<Mutex<dyn USTARItem + Send + Sync>>>,
+    current_dirs: HashMap<u64, Arc<Mutex<Directory>>>,
     current_dirs_tracker: u64,
     root: Directory,
 }
 
-impl UstarFileSystem {
+impl USTARFileSystem {
     fn new() -> USTARFileSystem {
-        USTARFileSystem {
+        let driver = AtaPio::try_new();
+        let files = Vec::new();
+        let current_dirs = HashMap::new();
 
-        }   
+        USTARFileSystem {
+            block_driver: driver,
+            files: files,
+            current_dirs: current_dirs,
+            current_dirs_tracker: 0,
+            root: Directory::new_directory("/".to_string()),
+        }
     }
 
+    /*
     pub fn init(&mut self) {
         // Read in all the files/directories
         // First mainly process directories to build the structure of the VFS, then place files in it
@@ -1102,10 +1112,12 @@ impl UstarFileSystem {
     pub fn move_directory_absolute_path(&self, path: String, new_path: String) -> bool {
         
     }
+*/
+
 }
 
 lazy_static! {
-    pub static ref USTARFS: Mutex<UstarFileSystem> = {
-        Mutex::new(UstarFileSystem::new())
+    pub static ref USTARFS: Mutex<USTARFileSystem> = {
+        Mutex::new(USTARFileSystem::new())
     };
 }
