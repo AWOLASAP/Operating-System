@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use lazy_static::lazy_static;
 use spin::{Mutex};
 use crate::ata_block_driver::AtaPio;
@@ -990,19 +992,123 @@ impl USTARFileSystem {
         }
     }
 
-    /*
+    
     pub fn init(&mut self) {
-        // Read in all the files/directories
-        // First mainly process directories to build the structure of the VFS, then place files in it
-        // Initialize (read the data) for the files in the 2nd pass
-        // Well actually, do this differently
-        // Process any directories that are relative to root 
-        // Basically keep on going through, check if a path can be accessed (and thus subdirectories can be added)
-        // Can fill the files array early - probably on first run
-        // Actually another thing we need to keep track of 
-        // There might be a world where we can create directories not backed by disk - this makes sense - fill in the 
-        // Disk info as we get it - just add a method to the directory that lets us mutate it based on the entry if found
+        unsafe {
+            // Read in all the files/directories
+            // First mainly process directories to build the structure of the VFS, then place files in it
+            // Initialize (read the data) for the files in the 2nd pass
+            // Well actually, do this differently
+            // Process any directories that are relative to root 
+            // Basically keep on going through, check if a path can be accessed (and thus subdirectories can be added)
+            // Can fill the files array early - probably on first run
+            // Actually another thing we need to keep track of 
+            // There might be a world where we can create directories not backed by disk - this makes sense - fill in the 
+            // Disk info as we get it - just add a method to the directory that lets us mutate it based on the entry if found
+            // End planning comment block
+
+            // Main file acquiescence loop
+            let mut end = false;
+            let mut counter: u32 = 0;
+            while !end {
+                let block = self.block_driver.read_lba(counter, 1);
+
+                if self.check_magic_value(&block) {
+                    let type_flag = self.get_typeflag_(&block);
+                    if type_flag == 0 {
+                        // Most of this handles the size of the file
+                        let mut file = File::from_block(block, counter as u64);
+                        counter += 1;
+                        let mut size = file.size;
+                        if size % 512 == 0 {
+                            size = size / 512; 
+                        }
+                        else {
+                            size = (size - size & 512) / 512 + 1; 
+                        }
+                        let size_orig = size;
+                        let mut blocks_written = 0;
+                        if size % 255 == 0 {
+                            blocks_written = size / 255; 
+                        }
+                        else {
+                            blocks_written = (size - size & 255) / 255 + 1; 
+                        }
+                        let mut data = Vec::new();
+                        for i in 0..blocks_written {
+                            if size >= 255 {
+                                data.append(&mut self.block_driver.read_lba(counter, 255));
+                                size -= 255
+                            }
+                            else {
+                                data.append(&mut self.block_driver.read_lba(counter, size as u8));
+                            }
+                        }
+                        counter += size_orig as u32;
+                        data.truncate(file.size as usize);
+                        file.set_data(data);
+                        // Should handle things like generating the directory structure and putting it in the block vector
+                        self.place_file_in_vfs(file);
+                    }
+                    else if type_flag == 5 {
+                        let mut folder = Directory::from_block(block, counter as u64);
+                        counter += 1;
+                        self.place_folder_in_vfs(folder);
+                    }
+                    else {
+                        // Unsupported type - hope that it's only one block
+                        counter += 1;
+                    }
+                }
+                else {
+                    end = true;
+                }
+
+            }
+            // Somehow sort the thing
+        }
     }
+
+    fn check_magic_value(&self, block: &Vec<u8>) -> bool {
+        let val = [b'u', b's', b't', b'a', b'r', 0, b'0', b'0'];
+        let mut magic = true;
+        for i in 257..265 {
+            if (*block)[i] == val[i - 257] {
+                
+            }
+            else {
+                magic = false;
+            }
+        }
+        magic
+    }
+
+    fn get_typeflag_(&self, block: &Vec<u8>) -> u8 {
+        (*block)[156]
+    }
+
+    fn split_path(&self, path: &String) -> Vec<String> {
+        let mut result =  Vec::new();
+        for i in (*path).split('/') {
+            result.push(i.clone().to_string());
+        }
+
+        result
+    }
+
+    fn place_file_in_vfs(&mut self, file: File) {
+
+    }
+
+    fn place_folder_in_vfs(&mut self, folder: Directory) {
+
+    }
+
+    fn generate_path_if_does_not_exist(&mut self, path: String) {
+        
+    }
+
+    /*
 
     pub fn defragment(&mut self) {
         // Remove all files named defragment, than move the rest of the files (blockwise), so that it's still valid USTAR
