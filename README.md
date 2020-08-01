@@ -43,6 +43,6 @@ If you just want to run the operating system on actual hardware, you will need t
 
 However, there is the option of using QEMU, which is the platform we do the majority of developing/testing on. Just install QEMU on your system (if your on Windows you will need to add it to your PATH), and run the following command:
 
-'''bash
+```bash
 qemu-system-x86_64 -drive format=raw,file=path/to/bootimage-os.bin -soundhw pcspk
-'''
+```
