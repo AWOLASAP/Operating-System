@@ -1,14 +1,14 @@
 # Operating-System
 
 ## What's This?
-This operating system is a group effort project for the North West Advanced Programming Workshop (NWAPW). It is a simple text-based operating system with some graphics as well. Written in Rust, this operating system takes from and builds on various projects that have been done before.
+This operating system is a project for the [North West Advanced Programming Workshop](http://nwapw.org/). It is a simple text-based operating system with some graphics as well. Written in Rust, this operating system takes from and builds on various projects that have been done before.
 
 ### Core Features
-- Boots via QEMU or real hardware
-- VGA text mode
+- Boots via QEMU or on real hardware
+- VGA text mode and simple 2D graphics
 - Keyboard support
 - Custom Shell
-- Tetris
+- Tetris!
 - Filesystem
 - PC Speaker Audio
 
@@ -21,7 +21,7 @@ This operating system is a group effort project for the North West Advanced Prog
 - ACPI implementation
 
 ### Core UX
-The UX is simple at its finest. It include text output, text input, as well as PC speaker output.
+The UX is simple at its finest. It includes text output, text input, as well as PC speaker output and some 2D graphics.
 
 ## Tools We Used
 - Rust
@@ -58,4 +58,5 @@ To run:
 ```
 cargo run
 ```
+
 
