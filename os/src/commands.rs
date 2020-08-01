@@ -9,6 +9,7 @@ use crate::vga_buffer::MODE;
 use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
+use crate::ustar::USTARFS;
 
 // Init a CommandRunner class to run commands for the user
 lazy_static! {
@@ -18,6 +19,7 @@ lazy_static! {
 // CommandRunner really only needs a place to store the commands
 pub struct CommandRunner{
     command_buffer: String,
+    dir_id: u64,
 }
 
 // Implementation of CommandRunner. 
@@ -29,8 +31,13 @@ impl CommandRunner {
     pub fn new(string: String) -> CommandRunner {
         CommandRunner{
             command_buffer: String::new(),
+            dir_id: 0,
         }
 
+    }
+
+    pub fn init(&mut self) {
+        self.dir_id = USTARFS.lock().get_id();
     }
 
     // Add a character to the command buffer. 
@@ -115,6 +122,15 @@ impl CommandRunner {
                 println!("gterm");
                 println!("tterm");
                 println!("tetris");
+            }
+            else if "ls" == command {
+                println!("");
+                for i in USTARFS.lock().list_files(self.dir_id) {
+                    println!("{}", i);
+                }                
+                for i in USTARFS.lock().list_subdirectories(self.dir_id) {
+                    println!("{}", i);
+                }
             }
             else {
                 println!("\nInvalid Command!");

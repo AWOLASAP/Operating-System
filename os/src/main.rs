@@ -26,6 +26,8 @@ use x86_64::instructions::interrupts;
 use os::ata_block_driver;
 use alloc::vec::Vec;
 use os::ustar::Directory;
+use os::ustar::USTARFS;
+use os::commands::COMMANDRUNNER;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -83,10 +85,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         for _i in 0..30 {
             ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
         }
-        //ADVANCED_WRITER.lock().clear_buffer();
-        MODE.lock().text_init();
+        ADVANCED_WRITER.lock().clear_buffer();
+        //MODE.lock().text_init();
         println!("");
     });
+    USTARFS.lock().init();
+    USTARFS.lock().print_root();
+    COMMANDRUNNER.lock().init();
     /*
     let driv = ata_block_driver::AtaPio::try_new();
     let data = unsafe {driv.read_lba(0, 1)};

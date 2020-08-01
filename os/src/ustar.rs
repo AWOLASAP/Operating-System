@@ -13,6 +13,7 @@ use alloc::sync::Weak;
 use core::u64;
 use alloc::format;
 use crate::alloc::string::ToString;
+use crate::println;
 
 // Note to me tomorrow - we're going to use Arc<Mutex<File>> and Directory because
 // It gives me interior mutability (Mutex), and shared ownership (Arc). This is important
@@ -89,11 +90,11 @@ impl Directory {
         let name_variable = name.into_bytes();
         let mut name = String::with_capacity(100);
         for i in 0..100 {
-            let chr = match name_variable.get(i) {
-                Some(chr) => *chr as char,
-                None => '\0',
+            match name_variable.get(i) {
+                Some(chr) => name.push(*chr as char),
+                None => (),
             };
-            name.push(chr);
+            
         }
         // Mode
         let mode = String::from("100777");
@@ -157,6 +158,7 @@ impl Directory {
             contents: files,
             parent: Weak::new(),
         }
+        
     }
 
     // For when you need a new directory not backed by disk.
@@ -232,7 +234,9 @@ impl Directory {
                 Some(chr) => *chr as char,
                 None => '\0',
             };
-            name.push(chr);
+            if chr != '\0' {
+                name.push(chr);
+            }
         }
         // Mode
         let mode = String::from("100777");
@@ -336,7 +340,9 @@ impl Directory {
                 Some(chr) => *chr as char,
                 None => '\0',
             };
-            name.push(chr);
+            if chr != '\0' {
+                name.push(chr);
+            }
         }
         // Mode
         let mode = String::from("100777");
@@ -531,6 +537,20 @@ impl Directory {
         block
     }
 
+
+    fn get_short_name(&self) -> String {
+        let possibilities = self.name.split('/');
+        let mut result = "";
+        for i in possibilities {
+            if i.len() > 0 {
+                result = i;
+            }
+        }
+        let mut result = result.to_string();
+        result.push('/');
+        result
+    }
+
 }
 
 impl USTARItem for Directory {
@@ -622,11 +642,11 @@ impl File {
         let name_variable = name.into_bytes();
         let mut name = String::with_capacity(100);
         for i in 0..100 {
-            let chr = match name_variable.get(i) {
-                Some(chr) => *chr as char,
-                None => '\0',
+            match name_variable.get(i) {
+                Some(chr) => name.push(*chr as char),
+                None => (),
             };
-            name.push(chr);
+            
         }
         // Mode
         let mode = String::from("100777");
@@ -699,7 +719,9 @@ impl File {
                 Some(chr) => *chr as char,
                 None => '\0',
             };
-            name.push(chr);
+            if chr != '\0' {
+                name.push(chr);
+            }
         }
         // Mode
         let mode = String::from("100777");
@@ -797,6 +819,10 @@ impl File {
 
         // Filename
         block.extend(unsafe { self.name.as_mut_vec().iter().cloned() } );
+        // Made it so that white space is not part of the representation of a file
+        while block.len() < 100 {
+            block.push(0);
+        }
 
         // Mode - 0000777\0
         let mut mode = vec![48u8, 48u8, 48u8, 48u8, 55u8, 55u8, 55u8, 0u8];
@@ -907,6 +933,15 @@ impl File {
         self.data = data.clone();
         self.size = data.len() as u64;
     }
+
+    fn get_short_name(&self) -> String {
+        let possibilities = self.name.split('/');
+        let mut result = "";
+        for i in possibilities {
+            result = i;
+        }
+        result.to_string()
+    }
 }
 
 impl USTARItem for File {
@@ -974,7 +1009,7 @@ pub struct USTARFileSystem {
     files: Vec<Arc<Mutex<dyn USTARItem + Send + Sync>>>,
     current_dirs: HashMap<u64, Arc<Mutex<Directory>>>,
     current_dirs_tracker: u64,
-    root: Directory,
+    root: Arc<Mutex<Directory>>,
 }
 
 impl USTARFileSystem {
@@ -988,7 +1023,7 @@ impl USTARFileSystem {
             files: files,
             current_dirs: current_dirs,
             current_dirs_tracker: 0,
-            root: Directory::new_directory("/".to_string()),
+            root: Arc::new(Mutex::new(Directory::new_directory("/".to_string()))),
         }
     }
 
@@ -1054,6 +1089,7 @@ impl USTARFileSystem {
                         let mut folder = Directory::from_block(block, counter as u64);
                         counter += 1;
                         self.place_folder_in_vfs(folder);
+
                     }
                     else {
                         // Unsupported type - hope that it's only one block
@@ -1084,7 +1120,7 @@ impl USTARFileSystem {
     }
 
     fn get_typeflag_(&self, block: &Vec<u8>) -> u8 {
-        (*block)[156]
+        (*block)[156] - 48
     }
 
     fn split_path(&self, path: &String) -> Vec<String> {
@@ -1092,21 +1128,112 @@ impl USTARFileSystem {
         for i in (*path).split('/') {
             result.push(i.clone().to_string());
         }
+        if result[result.len() - 1].len() == 0 {
+            result.pop();
+        }
+        if result.len() > 0 {
+            if result[0].len() == 0 {
+                result.remove(0);
+            }
+        }
 
         result
     }
 
     fn place_file_in_vfs(&mut self, file: File) {
-
+        let parent_dir = self.generate_path_if_does_not_exist(&(file.name));
+        let file = Arc::new(Mutex::new(file));
+        parent_dir.lock().contents.push(Arc::clone(&file));
+        self.files.push(file);
     }
 
-    fn place_folder_in_vfs(&mut self, folder: Directory) {
-
+    fn place_folder_in_vfs(&mut self, mut folder: Directory) {
+       let parent_dir = self.generate_path_if_does_not_exist(&(folder.name));
+       // Check if subfolder exists - if so, update it instead of replacing it 
+       let mut parent = parent_dir.lock();
+       for i in parent.subdirectories.iter() {
+           if folder.name == i.lock().name {
+               i.lock().reinit_from_block(folder.to_block(), folder.block_id);
+               let result = Arc::clone(i);
+               self.files.push(result);
+               return
+           }
+       }
+       let folder = Arc::new(Mutex::new(folder));
+       parent.subdirectories.push(Arc::clone(&folder));
+       self.files.push(folder);
     }
 
-    fn generate_path_if_does_not_exist(&mut self, path: String) {
-        
+    // Returns the parent directory of the given path. Will always return the parent directory. Even if it doesn't exist (because it creates it)
+
+    fn generate_path_if_does_not_exist(&mut self, path: &String) -> Arc<Mutex<Directory>> {
+        let mut decomposed = self.split_path(&path);
+        decomposed.pop();
+        let mut current_dir = Arc::clone(&self.root);
+        for i in decomposed.iter() {
+            //Check if child directory exists
+            let mut success = false;
+
+            let current_dir_clone = Arc::clone(&current_dir);
+            {
+                let subdirs = &current_dir_clone.lock().subdirectories;
+            
+                for d in subdirs.iter() {
+                    let mut child_path = self.split_path(&d.lock().name);
+                    let last_item = match child_path.pop() {
+                        Some(item) => item,
+                        None => "".to_string(),
+                    };
+
+                    if *i == last_item {
+                        success = true;
+                        current_dir = Arc::clone(d);
+                        break;
+                    }
+                }
+            }
+            if success {
+                // Do nothing - we've already moved the current dir
+            }
+            else {
+                let current_dir_clone = Arc::clone(&current_dir);
+                let mut current_dir_clone = current_dir_clone.lock();
+                let current_name = &current_dir_clone.name;
+                let current_name = format!("{}{}/", current_name, *i);
+                let directory = Directory::new_directory(current_name);
+                let directory = Arc::new(Mutex::new(directory));
+                let new_directory = Arc::clone(&directory);
+                current_dir_clone.subdirectories.push(directory);
+                current_dir = new_directory;
+
+                // Do something - create a non-disk backed directory and add it to the current_dir
+            }
+        }
+
+        current_dir
     }
+
+    pub fn print_root(&self) {
+        self.print_folder_recursive(Arc::clone(&self.root));
+    }
+
+    fn print_folder_recursive(&self, folder: Arc<Mutex<Directory>>) {
+        let folder = folder.lock();
+        print!("Printing folder: {}", folder.name);
+        if folder.block_id == u64::MAX {
+            println!("   Is not backed");
+        }
+        else {
+            println!("   Is backed");
+        }
+        for i in folder.contents.iter() {
+            println!("{}", i.lock().get_short_name());
+        }
+        for i in folder.subdirectories.iter() {
+            self.print_folder_recursive(Arc::clone(i));
+        }
+    }
+
 
     /*
 
@@ -1130,26 +1257,41 @@ impl USTARFileSystem {
     // Not sure how this will handle having a parent directory deleted (yet)
     // Absolute paths need to start with a /
     // Relative paths cannot start with a /
-    pub fn get_id(&mut self) {
-        self.current_dirs.insert(self.current_dirs_tracker, self.root);
+    */
+
+    pub fn get_id(&mut self) -> u64 {
+        self.current_dirs_tracker += 1;
+        self.current_dirs.insert(self.current_dirs_tracker, self.root.clone());
+        self.current_dirs_tracker
     }
 
+    
     pub fn list_files(&self, id: u64) -> Vec<String> {
-
+        let current_dir = self.current_dirs[&id].lock();
+        let mut result = Vec::with_capacity(current_dir.contents.len());
+        for i in current_dir.contents.iter() {
+            result.push(i.lock().get_short_name());
+        }
+        result
     }
 
     pub fn list_subdirectories(&self, id: u64) -> Vec<String> {
-
+        let current_dir = self.current_dirs[&id].lock();
+        let mut result = Vec::with_capacity(current_dir.subdirectories.len());
+        for i in current_dir.subdirectories.iter() {
+            result.push(i.lock().get_short_name());
+        }
+        result
     }
+    
+    //pub fn change_directory(&mut self, directory: String, id: u64) -> bool {
+//
+  //  }
 
-    pub fn change_directory(&mut self, directory: String, id: u64) -> bool {
+    //pub fn change_directory_absolute_path(&mut self, path: String, id: u64) -> bool {
 
-    }
-
-    pub fn change_directory_absolute_path(&mut self, path: String, id: u64) -> bool {
-
-    }
-
+//    }
+    /*
     // If a file doesn't exist, returns None
     pub fn read_file(&self, file: String, id: u64) -> Option<Vec<u8>> {
 
