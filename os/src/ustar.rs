@@ -1017,6 +1017,8 @@ impl USTARFileSystem {
         let driver = AtaPio::try_new();
         let files = Vec::new();
         let current_dirs = HashMap::new();
+        let root = Arc::new(Mutex::new(Directory::new_directory("/".to_string())));
+        root.lock().parent = Arc::downgrade(&root);
 
         USTARFileSystem {
             block_driver: driver,
@@ -1159,6 +1161,7 @@ impl USTARFileSystem {
                return
            }
        }
+       folder.parent = Arc::downgrade(&parent_dir);
        let folder = Arc::new(Mutex::new(folder));
        parent.subdirectories.push(Arc::clone(&folder));
        self.files.push(folder);
@@ -1200,7 +1203,9 @@ impl USTARFileSystem {
                 let mut current_dir_clone = current_dir_clone.lock();
                 let current_name = &current_dir_clone.name;
                 let current_name = format!("{}{}/", current_name, *i);
-                let directory = Directory::new_directory(current_name);
+                let mut directory = Directory::new_directory(current_name);
+                // Using current_dir because current_dir_clone is unlocked
+                directory.parent = Arc::downgrade(&current_dir);
                 let directory = Arc::new(Mutex::new(directory));
                 let new_directory = Arc::clone(&directory);
                 current_dir_clone.subdirectories.push(directory);
@@ -1284,6 +1289,20 @@ impl USTARFileSystem {
         result
     }
     
+    pub fn up_directory(&mut self, id: u64) {
+        let current_dirs = match self.current_dirs.remove_entry(&id) {
+            Some((_, current_dirs)) => current_dirs,
+            None => return,
+        };
+        let current_dir = current_dirs.lock();
+        let optional_weak = &current_dir.parent.upgrade();
+        let upgraded_pointer = match optional_weak {
+            Some(upgrade) => upgrade,
+            None => &self.root,
+        };
+        self.current_dirs.insert(id, Arc::clone(upgraded_pointer));
+    }
+
     pub fn change_directory(&mut self, directory: String, id: u64) -> bool {
         let current_dirs = match self.current_dirs.remove_entry(&id) {
             Some((_, current_dirs)) => current_dirs,
@@ -1300,9 +1319,11 @@ impl USTARFileSystem {
 
             if directory == last_item {
                 self.current_dirs.insert(id, Arc::clone(d));
+                return true;
             }
         }
-        true
+        self.current_dirs.insert(id, Arc::clone(&current_dirs));
+        false
     }
 
     //pub fn change_directory_absolute_path(&mut self, path: String, id: u64) -> bool {

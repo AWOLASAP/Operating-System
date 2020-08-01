@@ -134,7 +134,12 @@ impl CommandRunner {
                 }
             }
             else if "cd" == command {
-                USTARFS.lock().change_directory(args.to_string(), self.dir_id);
+                if args == ".." {
+                    USTARFS.lock().up_directory(self.dir_id);
+                }
+                else {
+                    USTARFS.lock().change_directory(args.to_string(), self.dir_id);                    
+                }
             }
             else {
                 println!("\nInvalid Command!");
