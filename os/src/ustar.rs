@@ -47,7 +47,8 @@ trait USTARItem {
     fn get_block_id(&self) -> u64;
     fn set_block_id(&mut self, block_id: u64);
 
-
+    // Gets the size - important for writing 
+    fn get_size(&self) -> u64;
 }
 
 pub struct Directory {
@@ -434,6 +435,10 @@ impl Directory {
 
         // Filename
         block.extend(unsafe { self.name.as_mut_vec().iter().cloned() } );
+        // Made it so that white space is not part of the representation of a file
+        while block.len() < 100 {
+            block.push(0);
+        }
 
         // Mode - 0000777\0
         let mut mode = vec![48u8, 48u8, 48u8, 48u8, 55u8, 55u8, 55u8, 0u8];
@@ -605,7 +610,12 @@ impl USTARItem for Directory {
     fn set_block_id(&mut self, block_id: u64) {
         self.block_id = block_id;
     }
+
+    fn get_size(&self) -> u64 {
+        self.size
+    }
 }
+
 
 pub struct File {
     data: Vec<u8>,
@@ -1002,6 +1012,10 @@ impl USTARItem for File {
     fn set_block_id(&mut self, block_id: u64) {
         self.block_id = block_id;
     }
+
+    fn get_size(&self) -> u64 {
+        self.size
+    }
 }
 
 pub struct USTARFileSystem {
@@ -1057,11 +1071,12 @@ impl USTARFileSystem {
                         let mut file = File::from_block(block, counter as u64);
                         counter += 1;
                         let mut size = file.size;
+
                         if size % 512 == 0 {
                             size = size / 512; 
                         }
                         else {
-                            size = (size - size & 512) / 512 + 1; 
+                            size = (size - size % 512) / 512 + 1; 
                         }
                         let size_orig = size;
                         let mut blocks_written = 0;
@@ -1069,9 +1084,9 @@ impl USTARFileSystem {
                             blocks_written = size / 255; 
                         }
                         else {
-                            blocks_written = (size - size & 255) / 255 + 1; 
+                            blocks_written = (size - size % 255) / 255 + 1; 
                         }
-                        let mut data = Vec::new();
+                        let mut data = Vec::with_capacity(size_orig as usize);
                         for i in 0..blocks_written {
                             if size >= 255 {
                                 data.append(&mut self.block_driver.read_lba(counter, 255));
@@ -1245,11 +1260,44 @@ impl USTARFileSystem {
     pub fn defragment(&mut self) {
         // Remove all files named defragment, than move the rest of the files (blockwise), so that it's still valid USTAR
     }
-
-    fn write(&mut self) {
+    */
+    pub fn write(&mut self) {
         //Write any changes
-    }
+        for i in self.files.iter() {
+            let mut item = i.lock();
+            if item.get_should_write() {
+                let mut data = item.get_writable_representation();
+                while data.len() % 512 != 0 {
+                    data.push(0);
+                }
+                print!("{}", item.get_name());
+                let mut size = data.len();
+                let mut id = item.get_block_id();
+                println!("{}", size);
+                if size % 512 == 0 {
+                    size = size / 512; 
+                }
+                else {
+                    size = (size - size % 512) / 512 + 1; 
+                }
+                let size_orig = size;
+                // Each write request/sector
+                for i in 0..size {
+                    let mut data_to_write = Vec::with_capacity(256);
+                    for j in 0..256 {
+                        data_to_write.push(((data[i*512 + j*2 + 1] as u16) << 8) | data[i*512 + j*2] as u16); 
+                    } 
+                    unsafe { self.block_driver.write(id as u32, 1, data_to_write)};
+                    id += 1;
+                }
 
+
+
+
+            }
+        }
+    }
+    /*
     // Features to add - 
     // Copy
     // Move
@@ -1263,6 +1311,12 @@ impl USTARFileSystem {
     // Absolute paths need to start with a /
     // Relative paths cannot start with a /
     */
+
+    pub fn set_all_files_to_write(&mut self) {
+        for i in self.files.iter() {
+            i.lock().should_write();
+        }
+    }
 
     pub fn get_id(&mut self) -> u64 {
         self.current_dirs_tracker += 1;
