@@ -1079,6 +1079,8 @@ impl USTARFileSystem {
                             size = (size - size % 512) / 512 + 1; 
                         }
                         let size_orig = size;
+                        // This code let us read more than one block in at a time, but it was causing corruption/errors, which I do not like
+                        /*
                         let mut blocks_written = 0;
                         if size % 255 == 0 {
                             blocks_written = size / 255; 
@@ -1086,17 +1088,25 @@ impl USTARFileSystem {
                         else {
                             blocks_written = (size - size % 255) / 255 + 1; 
                         }
+                        */
                         let mut data = Vec::with_capacity(size_orig as usize);
+
+                        for i in 0..size {
+                            data.append(&mut self.block_driver.read_lba(counter, 1));
+                            counter = counter + 1;
+                        }
+                        /*
                         for i in 0..blocks_written {
                             if size >= 255 {
-                                data.append(&mut self.block_driver.read_lba(counter, 255));
-                                size -= 255
+                                data.append(&mut self.block_driver.read_lba(counter, 1));
+                                size -= 1;
                             }
                             else {
                                 data.append(&mut self.block_driver.read_lba(counter, size as u8));
                             }
                         }
                         counter += size_orig as u32;
+                        */
                         data.truncate(file.size as usize);
                         file.set_data(data);
                         // Should handle things like generating the directory structure and putting it in the block vector
@@ -1261,6 +1271,7 @@ impl USTARFileSystem {
         // Remove all files named defragment, than move the rest of the files (blockwise), so that it's still valid USTAR
     }
     */
+
     pub fn write(&mut self) {
         //Write any changes
         for i in self.files.iter() {
@@ -1291,9 +1302,6 @@ impl USTARFileSystem {
                     id += 1;
                 }
 
-
-
-
             }
         }
     }
@@ -1320,7 +1328,7 @@ impl USTARFileSystem {
 
     pub fn get_id(&mut self) -> u64 {
         self.current_dirs_tracker += 1;
-        self.current_dirs.insert(self.current_dirs_tracker, self.root.clone());
+        self.current_dirs.insert(self.current_dirs_tracker, Arc::clone(&self.root));
         self.current_dirs_tracker
     }
 
@@ -1380,9 +1388,19 @@ impl USTARFileSystem {
         false
     }
 
-    //pub fn change_directory_absolute_path(&mut self, path: String, id: u64) -> bool {
+    pub fn change_directory_absolute_path(&mut self, path: String, id: u64) -> bool {
+        self.current_dirs.remove_entry(&id);
+        self.current_dirs.insert(id, Arc::clone(&self.root));
 
-    //}
+        let split_path = self.split_path(&path);
+        for i in split_path.iter() {
+            if !self.change_directory(i.to_string(), id) {
+                return false;
+            }
+        }
+
+        true
+    }
     
     // If a file doesn't exist, returns None
     pub fn read_file(&self, file: String, id: u64) -> Option<Vec<u8>> {
