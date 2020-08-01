@@ -1,6 +1,6 @@
 # Operating-System
 
-## What Is This?
+## What's This?
 This operating system is a group effort project for the North West Advanced Programming Workshop (NWAPW). It is a simple text-based operating system with some graphics as well. Written in Rust, this operating system takes from and builds on various projects that have been done before.
 
 ### Core Features
@@ -37,3 +37,12 @@ The UX is simple at its finest. It include text output, text input, as well as P
 - [AWOLASAP](https://github.com/AWOLASAP)
 - [Alex-x90](https://github.com/Alex-x90)
 - [Lolshoc](https://github.com/Lolshoc)
+
+## How to run
+If you just want to run the operating system on actual hardware, you will need the .bin file which can be found via the release page (TODO)
+
+However, there is the option of using QEMU, which is the platform we do the majority of developing/testing on. Just install QEMU on your system (if your on Windows you will need to add it to your PATH), and run the following command:
+
+'''bash
+qemu-system-x86_64 -drive format=raw,file=path/to/bootimage-os.bin -soundhw pcspk
+'''
