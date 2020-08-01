@@ -46,3 +46,16 @@ However, there is the option of using QEMU, which is the platform we do the majo
 ```bash
 qemu-system-x86_64 -drive format=raw,file=path/to/bootimage-os.bin -soundhw pcspk
 ```
+
+If you would like to build this or add on to this project, you first will need [Rust](https://www.rust-lang.org/tools/install). There is also a .bat and .sh file located in the 'os' directory which you can run to install all the necessary rust components. After that its just simple rust commands:
+
+To build:
+```
+cargo build
+```
+
+To run:
+```
+cargo run
+```
+
