@@ -10,6 +10,7 @@ use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
 use crate::ustar::USTARFS;
+use crate::alloc::string::ToString;
 
 // Init a CommandRunner class to run commands for the user
 lazy_static! {
@@ -131,6 +132,9 @@ impl CommandRunner {
                 for i in USTARFS.lock().list_subdirectories(self.dir_id) {
                     println!("{}", i);
                 }
+            }
+            else if "cd" == command {
+                USTARFS.lock().change_directory(args.to_string(), self.dir_id);
             }
             else {
                 println!("\nInvalid Command!");

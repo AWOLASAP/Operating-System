@@ -1284,13 +1284,30 @@ impl USTARFileSystem {
         result
     }
     
-    //pub fn change_directory(&mut self, directory: String, id: u64) -> bool {
-//
-  //  }
+    pub fn change_directory(&mut self, directory: String, id: u64) -> bool {
+        let current_dirs = match self.current_dirs.remove_entry(&id) {
+            Some((_, current_dirs)) => current_dirs,
+            None => return false,
+        };
+        let current_dir = current_dirs.lock();
+        let subdirs = &current_dir.subdirectories;
+        for d in subdirs.iter() {
+            let mut child_path = self.split_path(&d.lock().name);
+            let last_item = match child_path.pop() {
+                Some(item) => item,
+                None => "".to_string(),
+            };
+
+            if directory == last_item {
+                self.current_dirs.insert(id, Arc::clone(d));
+            }
+        }
+        true
+    }
 
     //pub fn change_directory_absolute_path(&mut self, path: String, id: u64) -> bool {
 
-//    }
+    //}
     /*
     // If a file doesn't exist, returns None
     pub fn read_file(&self, file: String, id: u64) -> Option<Vec<u8>> {
