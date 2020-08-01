@@ -143,6 +143,17 @@ impl CommandRunner {
                     }
                 }
             }
+            else if "cat" == command {
+                let data = match USTARFS.lock().read_file(args.to_string(), self.dir_id) {
+                    Some(data) => data,
+                    None => Vec::new(),
+                };
+                println!("");
+                for i in data.iter() {
+                    print!("{}", *i as char);
+                }
+                println!("");
+            }
             else {
                 println!("\nInvalid Command!");
             }

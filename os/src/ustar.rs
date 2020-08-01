@@ -1329,12 +1329,18 @@ impl USTARFileSystem {
     //pub fn change_directory_absolute_path(&mut self, path: String, id: u64) -> bool {
 
     //}
-    /*
+    
     // If a file doesn't exist, returns None
     pub fn read_file(&self, file: String, id: u64) -> Option<Vec<u8>> {
-
+        let current_dir = self.current_dirs[&id].lock();
+        for i in current_dir.contents.iter() {
+            if i.lock().get_short_name() == file {
+                return Some(i.lock().get_data());
+            }
+        }
+        None
     }
-
+    /*
     pub fn read_file_absolute_path(&self, path: String) -> Option<Vec<u8>> {
         
     }
