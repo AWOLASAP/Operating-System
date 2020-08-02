@@ -134,19 +134,7 @@ impl CommandRunner {
                 }
             }
             else if "cd" == command {
-                if match args.split('/').next() {Some(val) => val.len(), None => 0} == 0 {
-                    USTARFS.lock().change_directory_absolute_path(args.to_string(), self.dir_id);
-                }
-                else {
-                    for i in args.split('/') {
-                        if i == ".." {
-                            USTARFS.lock().up_directory(self.dir_id);
-                        }
-                        else {
-                            USTARFS.lock().change_directory(i.to_string(), self.dir_id);                    
-                        }
-                    }
-                }
+                USTARFS.lock().change_directory(args.to_string(), self.dir_id);
             }
             else if "cat" == command {
                 if match args.split('/').next() {Some(val) => val.len(), None => 0} == 0 {

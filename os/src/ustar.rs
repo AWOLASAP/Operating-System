@@ -1053,7 +1053,7 @@ impl USTARFileSystem {
             block_driver: driver,
             files: files,
             current_dirs: current_dirs,
-            current_dirs_tracker: 0,
+            current_dirs_tracker: 1,
             root: Arc::new(Mutex::new(Directory::new_directory("/".to_string()))),
             block_used_ptr: 0,
         }
@@ -1284,9 +1284,6 @@ impl USTARFileSystem {
         }
     }
 
-
-    
-
     pub fn defragment(&mut self) {
         // Remove all files named defrag than move the rest of the files (blockwise), so that it's still valid USTAR
         self.write();
@@ -1399,7 +1396,143 @@ impl USTARFileSystem {
         }
         result
     }
+
+    // Checks if a file path is relative or absolute
+    fn is_absolute(&self, path: &str) -> bool {
+        (match path.split('/').next() {Some(val) => val.len(), None => 0} == 0)
+    }
+
+    fn resolve_directory_absolute(&self, path: String) -> Option<Arc<Mutex<Directory>>> {
+        let mut current_dir = Arc::clone(&self.root);
+        for i in self.split_path(&path).iter() {
+            let newref = Arc::clone(&current_dir);
+            let subdirs = &newref.lock().subdirectories;
+            let mut changed = false;
+            for d in subdirs.iter() {
+                let mut child_path = self.split_path(&d.lock().name);
+                let last_item = match child_path.pop() {
+                    Some(item) => item,
+                    None => "".to_string(),
+                };
     
+                if *i == last_item {
+                    let d_clone = Arc::clone(d);
+                    changed = true;
+                    current_dir = d_clone;
+                    break;
+                }
+            }         
+            if !changed {
+                return None;
+            }
+        }
+        Some(current_dir)    
+    }
+
+    fn resolve_directory_relative(&self, path: String, id: u64) -> Option<Arc<Mutex<Directory>>> {
+        let mut current_dir = Arc::clone(match self.current_dirs.get(&id) {
+            Some(current_dir) => current_dir,
+            None => &self.root,
+        });
+        for i in self.split_path(&path).iter() {
+            if i == ".." {
+                let parent_dir = current_dir.lock().parent.upgrade();
+                let parent = match parent_dir {
+                    Some(p) => p,
+                    None => Arc::clone(&self.root),
+                };
+                current_dir = parent;
+            }
+            else if i == "." {
+                // Do nothing - this is the same path
+            }
+            else {
+                let newref = Arc::clone(&current_dir);
+                let subdirs = &newref.lock().subdirectories;
+                let mut changed = false;
+                for d in subdirs.iter() {
+                    let mut child_path = self.split_path(&d.lock().name);
+                    let last_item = match child_path.pop() {
+                        Some(item) => item,
+                        None => "".to_string(),
+                    };
+        
+                    if *i == last_item {
+                        let d_clone = Arc::clone(d);
+                        changed = true;
+                        current_dir = d_clone;
+                        break;
+                    }
+                }         
+                if !changed {
+                    return None;
+                }
+            }
+        }
+        Some(current_dir)
+    }
+
+    fn resolve_directory(&mut self, path: String, id: Option<u64>) -> Option<Arc<Mutex<Directory>>> {
+        if self.is_absolute(&path) {
+            self.resolve_directory_absolute(path)
+        }
+        else {
+            let id = match id {
+                Some(id) => id,
+                None => self.get_id(),
+            };
+            self.resolve_directory_relative(path,id)
+        }
+    }
+
+    fn split_last_and_first(&self, path: String) -> (String, String) {
+        let mut split = self.split_path(&path);
+        let mut part1 = String::new();
+        let name = match split.pop() {
+            Some(i) => i,
+            None => "".to_string(),
+        };
+        for i in split.iter() {
+            part1.push_str(i);
+        }
+        (part1, name)
+    }
+    
+    fn resolve_file(&mut self, path: String, id: Option<u64>) -> Option<Arc<Mutex<File>>> {
+        let (path, file) = self.split_last_and_first(path);
+        if self.is_absolute(&path) {
+            let parent_dir = match self.resolve_directory_absolute(path) {
+                Some(thing) => thing,
+                None => return None,
+            };
+            let parent = parent_dir.lock();
+            for i in parent.contents.iter() {
+                if i.lock().get_short_name() == file {
+                    return Some(Arc::clone(i));
+                }
+            }
+            None
+        }
+        else {
+            let id = match id {
+                Some(id) => id,
+                None => self.get_id(),
+            };
+            let parent_dir = match self.resolve_directory_relative(path,id) {
+                Some(thing) => thing,
+                None => return None,
+            };
+            let parent = parent_dir.lock();
+            for i in parent.contents.iter() {
+                if i.lock().get_short_name() == file {
+                    return Some(Arc::clone(i));
+                }
+            }
+            None
+        }
+    }
+    
+
     pub fn up_directory(&mut self, id: u64) {
         let current_dirs = match self.current_dirs.remove_entry(&id) {
             Some((_, current_dirs)) => current_dirs,
@@ -1415,40 +1548,21 @@ impl USTARFileSystem {
     }
 
     pub fn change_directory(&mut self, directory: String, id: u64) -> bool {
+        let dir_to_change = self.resolve_directory(directory, Some(id));
         let current_dirs = match self.current_dirs.remove_entry(&id) {
             Some((_, current_dirs)) => current_dirs,
             None => return false,
         };
-        let current_dir = current_dirs.lock();
-        let subdirs = &current_dir.subdirectories;
-        for d in subdirs.iter() {
-            let mut child_path = self.split_path(&d.lock().name);
-            let last_item = match child_path.pop() {
-                Some(item) => item,
-                None => "".to_string(),
-            };
-
-            if directory == last_item {
-                self.current_dirs.insert(id, Arc::clone(d));
-                return true;
-            }
+        match dir_to_change {
+            Some(dir) => {
+                self.current_dirs.insert(id, Arc::clone(&dir));
+                true
+            },
+            None => {
+                self.current_dirs.insert(id, Arc::clone(&current_dirs));
+                false
+            },
         }
-        self.current_dirs.insert(id, Arc::clone(&current_dirs));
-        false
-    }
-
-    pub fn change_directory_absolute_path(&mut self, path: String, id: u64) -> bool {
-        self.current_dirs.remove_entry(&id);
-        self.current_dirs.insert(id, Arc::clone(&self.root));
-
-        let split_path = self.split_path(&path);
-        for i in split_path.iter() {
-            if !self.change_directory(i.to_string(), id) {
-                return false;
-            }
-        }
-
-        true
     }
     
     // If a file doesn't exist, returns None
