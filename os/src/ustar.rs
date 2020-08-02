@@ -1494,16 +1494,44 @@ impl USTARFileSystem {
         self.write();
         true
     }
-    /*
-    pub fn create_directory_absolute_path(&self, path: String) -> bool {
-        
+    
+    pub fn create_directory_absolute_path(&mut self, path: String) -> bool {
+        let id = self.get_id();
+        self.change_directory_absolute_path(path.to_string(), id);
+        let mut string = self.split_path(&path);
+        let name = match string.pop() {
+            Some(i) => i,
+            None => "".to_string(),
+        };
+        self.create_directory(name, id)    
     }
-
+    
     // Removes a directory if it exists, does nothing if it doesn't
-    pub fn remove_directory(&self, file: String, id: u64) {
-        
-    }
+    pub fn remove_directory(&mut self, file: String, id: u64) {
+        let current_dirs = &self.current_dirs[&id];
+        let mut current_dir = current_dirs.lock();
+        let mut subdirs = &mut current_dir.subdirectories;
+        for (i, d) in subdirs.iter().enumerate() {
+            let mut child_path = self.split_path(&d.lock().name);
+            let last_item = match child_path.pop() {
+                Some(item) => item,
+                None => "".to_string(),
+            };
 
+            if file == last_item {
+                d.lock().name = "defrag".to_string();
+                // Need to do this to prevent compiler complaints
+                drop(d);
+                subdirs.remove(i);
+                drop(current_dir);
+                self.write();
+                return
+            }
+        }
+        drop(current_dir);
+        self.write();
+    }
+    /*
     pub fn remove_directory_absolute_path(&self, path: String) {
         
     }

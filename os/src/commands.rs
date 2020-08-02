@@ -176,6 +176,10 @@ impl CommandRunner {
                 USTARFS.lock().create_directory(args.to_string(), self.dir_id);
 
             }
+            else if "rmdir" == command {
+                USTARFS.lock().remove_directory(args.to_string(), self.dir_id);
+
+            }
             else {
                 println!("\nInvalid Command!");
             }
