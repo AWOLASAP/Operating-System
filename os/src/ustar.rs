@@ -1024,6 +1024,7 @@ pub struct USTARFileSystem {
     current_dirs: HashMap<u64, Arc<Mutex<Directory>>>,
     current_dirs_tracker: u64,
     root: Arc<Mutex<Directory>>,
+    block_used_ptr: u64,
 }
 
 impl USTARFileSystem {
@@ -1040,6 +1041,7 @@ impl USTARFileSystem {
             current_dirs: current_dirs,
             current_dirs_tracker: 0,
             root: Arc::new(Mutex::new(Directory::new_directory("/".to_string()))),
+            block_used_ptr: 0,
         }
     }
 
@@ -1128,6 +1130,7 @@ impl USTARFileSystem {
                 }
 
             }
+            self.block_used_ptr = counter as u64;
             // Somehow sort the thing
         }
     }
@@ -1281,10 +1284,8 @@ impl USTARFileSystem {
                 while data.len() % 512 != 0 {
                     data.push(0);
                 }
-                print!("{}", item.get_name());
                 let mut size = data.len();
                 let mut id = item.get_block_id();
-                println!("{}", size);
                 if size % 512 == 0 {
                     size = size / 512; 
                 }
@@ -1412,11 +1413,18 @@ impl USTARFileSystem {
         }
         None
     }
-    /*
-    pub fn read_file_absolute_path(&self, path: String) -> Option<Vec<u8>> {
-        
+    
+    pub fn read_file_absolute_path(&mut self, path: String) -> Option<Vec<u8>> {
+        let id = self.get_id();
+        self.change_directory_absolute_path(path.to_string(), id);
+        let mut string = self.split_path(&path);
+        let name = match string.pop() {
+            Some(i) => i,
+            None => "".to_string(),
+        };
+        self.read_file(name, id)
     }
-
+    /*
     // If a file doesn't exist, running this function will create it
     // Doesn't append to the data, but flat out replaces it - changes in allocation need to defrag
     // Does not account for if you write nothing, you're on your own
@@ -1447,12 +1455,46 @@ impl USTARFileSystem {
     pub fn rename_directory_absolute_path(&self, path: String, new_name: String) -> bool {
         
     }
-
+    */
     // Creates a directory unless there exists a file or directory with a similar name
-    pub fn create_directory(&self, file: String, id: u64) -> bool {
-
+    pub fn create_directory(&mut self, file: String, id: u64) -> bool {
+        let mut file = file.replace("/", "");
+        file.push('/');
+        let current_dir_arc = &self.current_dirs[&id];
+        let mut current_dir = current_dir_arc.lock();
+        for i in current_dir.contents.iter() {
+            if i.lock().get_short_name() == file {
+                if i.lock().block_id != u64::MAX {
+                    return false;
+                }
+            }
+        }
+        for i in current_dir.subdirectories.iter() {
+            if i.lock().get_short_name() == file {
+                return false;
+            }
+        }
+        // Check if subfolder exists - if so, update it instead of replacing it 
+        let mut folder = Directory::new(self.block_used_ptr, format!("{}{}", current_dir.name, file));
+        self.block_used_ptr += 1;
+        for i in current_dir.subdirectories.iter() {
+            if folder.name == i.lock().name {
+                i.lock().reinit_from_block(folder.to_block(), folder.block_id);
+                let result = Arc::clone(i);
+                self.files.push(result);
+                return true;
+            }
+        }
+        folder.should_write();
+        folder.parent = Arc::downgrade(&current_dir_arc);
+        let folder = Arc::new(Mutex::new(folder));
+        current_dir.subdirectories.push(Arc::clone(&folder));
+        self.files.push(folder);
+        drop(current_dir);
+        self.write();
+        true
     }
-
+    /*
     pub fn create_directory_absolute_path(&self, path: String) -> bool {
         
     }

@@ -149,15 +149,32 @@ impl CommandRunner {
                 }
             }
             else if "cat" == command {
-                let data = match USTARFS.lock().read_file(args.to_string(), self.dir_id) {
-                    Some(data) => data,
-                    None => Vec::new(),
-                };
-                println!("");
-                for i in data.iter() {
-                    print!("{}", *i as char);
+                if match args.split('/').next() {Some(val) => val.len(), None => 0} == 0 {
+                    let data = match USTARFS.lock().read_file_absolute_path(args.to_string()) {
+                        Some(data) => data,
+                        None => Vec::new(),
+                    };
+                    println!("");
+                    for i in data.iter() {
+                        print!("{}", *i as char);
+                    }
+                    println!("");                }
+                else {
+                    let data = match USTARFS.lock().read_file(args.to_string(), self.dir_id) {
+                        Some(data) => data,
+                        None => Vec::new(),
+                    };
+                    println!("");
+                    for i in data.iter() {
+                        print!("{}", *i as char);
+                    }
+                    println!("");
                 }
-                println!("");
+
+            }
+            else if "mkdir" == command {
+                USTARFS.lock().create_directory(args.to_string(), self.dir_id);
+
             }
             else {
                 println!("\nInvalid Command!");
