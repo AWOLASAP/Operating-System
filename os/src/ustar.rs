@@ -34,7 +34,7 @@ trait USTARItem {
 
 
     fn should_write(&mut self);
-    fn get_should_write(&self) -> bool;
+    fn get_should_write(&mut self) -> bool;
 
     // Get writable representation - this is how the driver actually applies changes to disk
     // Driver should auto handle writing the vector/using the right number of sectors, but 
@@ -595,9 +595,17 @@ impl USTARItem for Directory {
         self.write = true;
     }
 
-    fn get_should_write(&self) -> bool {
-        self.write
+
+    fn get_should_write(&mut self) -> bool {
+        if self.write {
+            self.write = false;
+            return true;
+        }
+        else {
+            return false;
+        }
     }
+
 
     fn get_writable_representation(&mut self) -> Vec<u8> {
         self.to_block()
@@ -991,8 +999,14 @@ impl USTARItem for File {
         self.write = true;
     }
 
-    fn get_should_write(&self) -> bool {
-        self.write
+    fn get_should_write(&mut self) -> bool {
+        if self.write {
+            self.write = false;
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
     fn get_writable_representation(&mut self) -> Vec<u8> {
@@ -1112,13 +1126,16 @@ impl USTARFileSystem {
                         data.truncate(file.size as usize);
                         file.set_data(data);
                         // Should handle things like generating the directory structure and putting it in the block vector
-                        self.place_file_in_vfs(file);
+                        if file.name != "defrag" {
+                            self.place_file_in_vfs(file);
+                        }
                     }
                     else if type_flag == 5 {
                         let mut folder = Directory::from_block(block, counter as u64);
                         counter += 1;
-                        self.place_folder_in_vfs(folder);
-
+                        if folder.name != "defrag" {
+                            self.place_folder_in_vfs(folder);
+                        }
                     }
                     else {
                         // Unsupported type - hope that it's only one block
@@ -1268,12 +1285,37 @@ impl USTARFileSystem {
     }
 
 
-    /*
+    
 
     pub fn defragment(&mut self) {
-        // Remove all files named defragment, than move the rest of the files (blockwise), so that it's still valid USTAR
+        // Remove all files named defrag than move the rest of the files (blockwise), so that it's still valid USTAR
+        self.write();
+        let mut counter = 0;
+        for i in self.files.iter() {
+            let mut item = i.lock();
+            if item.get_name() != "defrag" {
+                item.set_block_id(counter);
+                let mut size = item.get_size();
+                if size % 512 == 0 {
+                    size = size / 512; 
+                }
+                else {
+                    size = (size - size % 512) / 512 + 1; 
+                }
+                size += 1;
+                // Good for debugging
+                //println!("Defragging {} with size {}", item.get_name(), size);
+                counter += size;
+                item.should_write();
+            }
+            else {
+
+            }
+        }
+        self.block_used_ptr = counter;
+        self.write();
     }
-    */
+    
 
     pub fn write(&mut self) {
         //Write any changes
@@ -1293,6 +1335,8 @@ impl USTARFileSystem {
                     size = (size - size % 512) / 512 + 1; 
                 }
                 let size_orig = size;
+                // Good for debugging
+                //println!("Writing {} at {} with size {}", item.get_name(), id, size);
                 // Each write request/sector
                 for i in 0..size {
                     let mut data_to_write = Vec::with_capacity(256);
@@ -1305,6 +1349,9 @@ impl USTARFileSystem {
 
             }
         }
+        // Write two null 
+        unsafe { self.block_driver.write(self.block_used_ptr as u32, 1, Vec::new())};
+        unsafe { self.block_driver.write(self.block_used_ptr as u32 + 1, 1, Vec::new())};
     }
     /*
     // Features to add - 
@@ -1319,6 +1366,7 @@ impl USTARFileSystem {
     // Not sure how this will handle having a parent directory deleted (yet)
     // Absolute paths need to start with a /
     // Relative paths cannot start with a /
+    // Maybe a path parser would be a good idea
     */
 
     pub fn set_all_files_to_write(&mut self) {
@@ -1491,6 +1539,7 @@ impl USTARFileSystem {
         current_dir.subdirectories.push(Arc::clone(&folder));
         self.files.push(folder);
         drop(current_dir);
+        self.block_used_ptr += 1;
         self.write();
         true
     }
@@ -1506,12 +1555,26 @@ impl USTARFileSystem {
         self.create_directory(name, id)    
     }
     
+    fn remove_directory_recursive(&mut self, folder: Arc<Mutex<Directory>>) {
+        let mut folder = folder.lock();
+        folder.name = "defrag".to_string();
+        folder.should_write();
+        for i in folder.contents.iter() {
+            i.lock().name = "defrag".to_string();
+            i.lock().should_write();
+        }
+        for i in folder.subdirectories.iter() {
+            println!("{}", i.lock().name);
+            self.remove_directory_recursive(Arc::clone(i));
+        }
+    }
+
     // Removes a directory if it exists, does nothing if it doesn't
     pub fn remove_directory(&mut self, file: String, id: u64) {
-        let current_dirs = &self.current_dirs[&id];
+        let current_dirs = Arc::clone(&(self).current_dirs[&id]);
         let mut current_dir = current_dirs.lock();
-        let mut subdirs = &mut current_dir.subdirectories;
-        for (i, d) in subdirs.iter().enumerate() {
+        let mut subdirectories =  &mut current_dir.subdirectories;
+        for (i, d) in subdirectories.iter().enumerate() {
             let mut child_path = self.split_path(&d.lock().name);
             let last_item = match child_path.pop() {
                 Some(item) => item,
@@ -1520,11 +1583,14 @@ impl USTARFileSystem {
 
             if file == last_item {
                 d.lock().name = "defrag".to_string();
+                d.lock().should_write();
+                let d_clone = Arc::clone(&d);
                 // Need to do this to prevent compiler complaints
-                drop(d);
-                subdirs.remove(i);
+                subdirectories.remove(i);
                 drop(current_dir);
+                self.remove_directory_recursive(d_clone);
                 self.write();
+
                 return
             }
         }

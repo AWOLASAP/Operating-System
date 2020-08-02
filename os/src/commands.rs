@@ -178,7 +178,12 @@ impl CommandRunner {
             }
             else if "rmdir" == command {
                 USTARFS.lock().remove_directory(args.to_string(), self.dir_id);
-
+            }
+            else if "defrag" == command {
+                USTARFS.lock().defragment();
+            }
+            else if "write" == command {
+                USTARFS.lock().write();
             }
             else {
                 println!("\nInvalid Command!");

@@ -203,6 +203,7 @@ impl AtaPio {
         // https://wiki.osdev.org/ATA_read/write_sectors#Read_in_LBA_mode
 
         assert!(sectors > 0);
+        let data: u8 = Self::read_status();
 
         // Send bits 24-27 of LBA, drive number and LBA mode
         let mut port = UnsafePort::<u8>::new(PORT_LBA3);
@@ -269,6 +270,7 @@ impl AtaPio {
     // Make the fs driver do the hard job of converting Vec<u8> to Vec<u16>
     pub unsafe fn write(&self, lba: u32, sectors: u8, data: Vec<u16>) {
         // https://wiki.osdev.org/ATA_read/write_sectors#Read_in_LBA_mode
+        Self::wait_ready();
 
         assert!(sectors > 0);
 
@@ -316,6 +318,8 @@ impl AtaPio {
                 data_port.write(word);
             }
         }
+
+
 
     }
 }

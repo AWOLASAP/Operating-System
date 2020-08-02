@@ -90,8 +90,8 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         println!("");
     });
     USTARFS.lock().init();
-    USTARFS.lock().set_all_files_to_write();
-    USTARFS.lock().write();
+    //USTARFS.lock().set_all_files_to_write();
+    //USTARFS.lock().write();
     //USTARFS.lock().print_root();
     COMMANDRUNNER.lock().init();
     /*
