@@ -154,31 +154,53 @@ impl CommandRunner {
     // help command.
     // Lists all available commands 
     pub fn help(&self, args: &str) {
-        if args == String::from("").as_str() {
+        if args == "" {
             self.basic_help();
-        } else if args == String::from("print-buffer").as_str() {
+        } else if args == "print-buffer" {
             self.print_buffer_help();
-        } else if args == String::from("echo").as_str() {
+        } else if args == "echo" {
             self.echo_help();
-        } else if args == String::from("gterm").as_str() {
+        } else if args == "gterm" {
             self.gterm_help();
-        } else if args == String::from("tterm").as_str() {
+        } else if args == "tterm" {
             self.tterm_help()
-        } else if args == String::from("mode").as_str() {
+        } else if args == "mode" {
             self.mode_help();
-        } else if args == String::from("tetris").as_str() {
+        } else if args == "tetris" {
             self.tetris_help();
-        } else if args == String::from("beep").as_str() {
+        } else if args == "beep" {
             self.beep_help();
-        } else if args == String::from("tet-ost").as_str() {
+        } else if args == "tet-ost" {
             self.tet_ost_help();
-        } else if args == String::from("clear").as_str() {
+        } else if args == "clear" {
             self.clear_help();
-        } else if args == String::from("logo").as_str() {
+        } else if args == "logo" {
             self.logo_help();
-        } else if args == String::from("help").as_str() {
+        } else if args == "ls" {
+            self.ls_help();
+        } else if args == "dir" {
+            self.dir_help();
+        } else if args == "cd" {
+            self.cd_help();
+        } else if args == "cat" {
+            self.cat_help();
+        } else if args == "mkdir" {
+            self.mkdir_help();
+        } else if args == "rmdir" {
+            self.rmdir_help();
+        } else if args == "defrag" {
+            self.defrag_help();
+        } else if args == "write" {
+            self.write_help();
+        } else if args == "touch" {
+            self.touch_help();
+        } else if args == "rm" {
+            self.rm_help();
+        } else if args == "touchhello" {
+            self.touchhello_help();
+        } else if args == "help" {
             self.help_help();
-        } else if args == String::from("exit").as_str() {
+        } else if args == "exit" {
             self.shut_down_help();
         }
     }
@@ -186,16 +208,27 @@ impl CommandRunner {
     // Prints all the possible commands and prompts user how to learn more about each command
     fn basic_help(&self) {
         println!("\nList of available commands:");
-        println!("print-buffer");
-        println!("echo");
-        println!("gterm");
+        print!("print-buffer, ");
+        print!("echo, ");
+        print!("gterm, ");
         println!("tterm");
-        println!("mode");
-        println!("tetris");
-        println!("beep");
+        print!("mode, ");
+        print!("tetris, ");
+        print!("beep, ");
         println!("tet-ost");
-        println!("clear");
-        println!("logo");
+        print!("clear, ");
+        print!("logo, ");
+        print!("ls, ");
+        println!("dir");
+        print!("cd, ");
+        print!("cat, ");
+        print!("mkdir, ");
+        println!("rmdir");
+        print!("defrag, ");
+        print!("write, ");
+        print!("touch, ");
+        println!("rm");
+        print!("touchhello, ");
         println!("exit");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
@@ -270,6 +303,84 @@ impl CommandRunner {
         println!("\nCommand: logo");
         println!("Prints boot logo to terminal, REQUIRES Graphics Mode.");
         println!("No defined arguments, everything after logo will be ignored.");
+    }
+
+    // Describes and displays options for the ls command
+    fn ls_help(&self) {
+        println!("\nCommand: ls");
+        println!("Lists all of the files and directories in the current directory.");
+        println!("No defined arguments, everything after ls will be ignored.");
+    }
+
+    // Describes and displays options for the dir command
+    fn dir_help(&self) {
+        println!("\nCommand: dir");
+        println!("Lists all of the files and directories in the current directory.");
+        println!("No defined arguments, everything after dir will be ignored.");
+    }
+
+    // Describes and displays options for the cd command
+    fn cd_help(&self) {
+        println!("\nCommand: cd");
+        println!("Changes into the specified directory.");
+        println!("One defined argument, the path to the target directory.");
+        println!("To move up in the tree, use '..'");
+    }
+
+    // Describes and displays options for the mkdir command
+    fn mkdir_help(&self) {
+        println!("\nCommand: mkdir");
+        println!("Creates a directory of the given name.");
+        println!("One defined argument, the name of the new directory.");
+    }
+
+    // Describes and displays options for the rmdir command
+    fn rmdir_help(&self) {
+        println!("\nCommand: rmdir");
+        println!("Deletes the specified directory.");
+        println!("One defined argument, the name of the directory to be deleted.");
+    }
+
+    // Describes and displays options for the defrag command
+    fn defrag_help(&self) {
+        println!("\nCommand: defrag");
+        println!("Runs a defragmentation process on system memory, cleaning up memory.");
+        println!("No defined arguments, everything after defrag will be ignored.");
+    }
+
+    // Describes and displays options for the rm command
+    fn rm_help(&self) {
+        println!("\nCommand: rm");
+        println!("Deletes the specified file.");
+        println!("One defined argument, the name of the file to be deleted.");
+    }
+
+    // Describes and displays options for the touchhello command
+    fn touchhello_help(&self) {
+        println!("\nCommand: touchhello");
+        println!("Creates a file of the specified name containing 'Hello World!'");
+        println!("One defined argument, the name of the new file.");
+    }
+
+    // Describes and displays options for the cat command
+    fn cat_help(&self) {
+        println!("\nCommand: cat");
+        println!("Prints the contents of the specified file to the terminal.");
+        println!("One defined argument, the path to the target file.");
+    }
+
+    // Describes and displays options for the write command
+    fn write_help(&self) {
+        println!("\nCommand: write");
+        println!("Writes the current changes.");
+        println!("No defined arguments, everything after write will be ignored.");
+    }
+
+    // Describes and displays options for the write command
+    fn touch_help(&self) {
+        println!("\nCommand: touch");
+        println!("Creates an empty file of the given name.");
+        println!("One defined argument, the name of the target file.");
     }
 
     // Describes and displays options for the help command
@@ -349,7 +460,7 @@ impl CommandRunner {
         USTARFS.lock().remove_directory(args.to_string(), Some(self.dir_id));
     }
 
-    pub fn defrag(&self, args: &str) {
+    pub fn defrag(&self) {
         USTARFS.lock().defragment();
     }
 
@@ -374,13 +485,14 @@ impl CommandRunner {
         println!("");               
 }
 
-    pub fn write(&self, args: &str) {
+    pub fn write(&self) {
         USTARFS.lock().write();
     }
 
     pub fn touch(&self, args: &str) {
         USTARFS.lock().write_file(args.to_string(), Vec::new(), Some(self.dir_id));
     }
+
     // shutdown command
     // shuts down the operating system
     // ONLY WORKS ON QEMU NOT ON REAL HARDWARE!
@@ -413,12 +525,13 @@ impl CommandRunner {
                 "logo" => self.logo(),
                 "yes" => self.yes(),
                 "ls" => self.ls(),
+                "dir" => self.ls(),
                 "cd" => self.cd(args),
                 "cat" => self.cat(args),
                 "mkdir" => self.mkdir(args),
                 "rmdir" => self.rmdir(args),
-                "defrag" => self.defrag(args),
-                "write" => self.write(args),
+                "defrag" => self.defrag(),
+                "write" => self.write(),
                 "touch" => self.touch(args),
                 "rm" => self.rm(args),
                 "touchhello" => self.touchhello(args),
