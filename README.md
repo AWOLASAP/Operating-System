@@ -18,9 +18,9 @@ This operating system is a project for the [North West Advanced Programming Work
 The UX is simple at its finest. It includes text output, text input, as well as PC speaker output and some 2D graphics.
 
 ## How to run
-If you just want to run the operating system on actual hardware, you will need the .bin file which can be found via the release page (TODO). It can then be installed onto a usb drive with something like 'dd' or Balana Etcher, and booted to from a machine.
+If you just want to run the operating system on actual hardware, you will need the .bin file which can be found via the releases page. It can then be installed onto a usb drive with something like 'dd' or Balana Etcher, and booted to from a machine.
 
-However, there is the option of using QEMU, which is the platform we do the majority of developing/testing on. Just install QEMU on your system (if your on Windows you will need to add it to your PATH), and run the following command:
+However, there is the option of using [QEMU](https://www.qemu.org/), which is the platform we do the majority of developing/testing on. Just install QEMU on your system (if your on Windows you will need to add it to your PATH), and run the following command:
 
 ```bash
 qemu-system-x86_64 -drive format=raw,file=path/to/bootimage-os.bin -soundhw pcspk
