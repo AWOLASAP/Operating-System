@@ -3,7 +3,7 @@ use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
 use spin::Mutex;
-use crate::vga_buffer::{MODE, BUFFER_HEIGHT, ADVANCED_WRITER};
+use crate::vga_buffer::{MODE, BUFFER_HEIGHT, BUFFER_HEIGHT_ADVANCED, ADVANCED_WRITER};
 use vga::colors::Color16;
 use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
@@ -289,8 +289,14 @@ impl CommandRunner {
     // clear command
     // Clears the screen by writing a bunch on new lines
     pub fn clear(&self) {
-        for line in 0..BUFFER_HEIGHT {
-            println!();
+        if MODE.lock().text {
+            for line in 0..BUFFER_HEIGHT {
+                println!();
+            }
+        } else {
+            for line in 0..BUFFER_HEIGHT_ADVANCED {
+                println!();
+            }
         }
     }
    

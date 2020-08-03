@@ -62,7 +62,7 @@ struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
-const BUFFER_HEIGHT_ADVANCED: usize = 60;
+pub const BUFFER_HEIGHT_ADVANCED: usize = 60;
 const BUFFER_WIDTH_ADVANCED: usize = 80;
 
 #[derive(Copy, Clone)]
@@ -446,7 +446,7 @@ impl AdvancedWriter {
                 if index2 > self.get_width() {
                     continue;
                 }
-                if character_new.ascii_character != 0 && (character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code){
+                if character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code {
                     self.draw_character((index2 + offset) * 8, (index1 + offset) * 8, *character_new)
                 }
             }
