@@ -171,6 +171,8 @@ impl CommandRunner {
             self.logo_help();
         } else if args == String::from("help").as_str() {
             self.help_help();
+        } else if args == String::from("exit").as_str() {
+            self.shut_down_help();
         }
     }
 
@@ -187,6 +189,7 @@ impl CommandRunner {
         println!("tet-ost");
         println!("clear");
         println!("logo");
+        println!("exit");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
     }
@@ -267,6 +270,13 @@ impl CommandRunner {
         println!("\nCommand: help");
         println!("Displays information about terminal commands.");
         println!("One defined argument: optional command.");
+    }
+
+    // Describes and displays options for the exit command
+    fn shut_down_help(&self) {
+        println!("\nCommand: exit");
+        println!("Shuts down the system.");
+        println!("No defined arguments, everything after exit will be ignored.");
     }
 
     // beep command
