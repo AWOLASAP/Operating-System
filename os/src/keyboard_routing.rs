@@ -17,6 +17,8 @@ pub struct Modes {
     pub screenbuffer: bool,
     pub tetris: bool,
     pub song: bool,
+    pub textedit: bool,
+    pub brainf: bool,
 }
 
 impl Modes {
@@ -26,6 +28,8 @@ impl Modes {
             screenbuffer: false,
             tetris: false,
             song: false,
+            textedit: false,
+            brainf: false,
         }
     }
 }
