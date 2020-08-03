@@ -8,10 +8,11 @@ use vga::colors::Color16;
 use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
+use crate::ustar::USTARFS;
+use crate::alloc::string::ToString;
 use crate::play_beep;
 use crate::play_tet_ost;
 use x86::io::outw;
-
 
 // Init a CommandRunner class to run commands for the user
 lazy_static! {
@@ -21,6 +22,7 @@ lazy_static! {
 // CommandRunner really only needs a place to store the commands
 pub struct CommandRunner{
     command_buffer: String,
+    dir_id: u64,
     index: usize,
 }
 
@@ -33,9 +35,14 @@ impl CommandRunner {
     pub fn new(string: String) -> CommandRunner {
         CommandRunner{
             command_buffer: String::new(),
+            dir_id: 0,
             index: 0,
         }
 
+    }
+
+    pub fn init(&mut self) {
+        self.dir_id = USTARFS.lock().get_id();
     }
 
     // Add a character to the command buffer. 
@@ -320,6 +327,60 @@ impl CommandRunner {
         }
     }
 
+    pub fn ls(&self) {
+        println!("");
+        for i in USTARFS.lock().list_files(self.dir_id) {
+            println!("{}", i);
+        }                
+        for i in USTARFS.lock().list_subdirectories(self.dir_id) {
+            println!("{}", i);
+        }
+    }
+
+    pub fn cd(&self, args: &str) {
+        USTARFS.lock().change_directory(args.to_string(), self.dir_id);
+    }
+
+    pub fn mkdir(&self, args: &str) {
+        USTARFS.lock().create_directory(args.to_string(), self.dir_id);
+    }
+
+    pub fn rmdir(&self, args: &str) {
+        USTARFS.lock().remove_directory(args.to_string(), Some(self.dir_id));
+    }
+
+    pub fn defrag(&self, args: &str) {
+        USTARFS.lock().defragment();
+    }
+
+    pub fn rm(&self, args: &str) {
+        USTARFS.lock().remove_file(args.to_string(), Some(self.dir_id));
+    }
+
+    pub fn touchhello(&self, args: &str) {
+        let data = String::from("Hello World!");
+        let data = data.into_bytes();
+        USTARFS.lock().write_file(args.to_string(), data, Some(self.dir_id));    }
+
+    pub fn cat(&self, args: &str) {
+        let data = match USTARFS.lock().read_file(args.to_string(), Some(self.dir_id)) {
+            Some(data) => data,
+            None => Vec::new(),
+        };
+        println!("");
+        for i in data.iter() {
+            print!("{}", *i as char);
+        }
+        println!("");               
+}
+
+    pub fn write(&self, args: &str) {
+        USTARFS.lock().write();
+    }
+
+    pub fn touch(&self, args: &str) {
+        USTARFS.lock().write_file(args.to_string(), Vec::new(), Some(self.dir_id));
+    }
     // shutdown command
     // shuts down the operating system
     // ONLY WORKS ON QEMU NOT ON REAL HARDWARE!
@@ -338,7 +399,6 @@ impl CommandRunner {
         for command in commands {
             // Get the corresponding args for the current command
             let args = args_list[index];
-
             match command {
                 "print-buffer" => self.print_buffer(),
                 "echo" => self.echo(args),
@@ -352,6 +412,17 @@ impl CommandRunner {
                 "clear" => self.clear(),
                 "logo" => self.logo(),
                 "yes" => self.yes(),
+                "ls" => self.ls(),
+                "cd" => self.cd(args),
+                "cat" => self.cat(args),
+                "mkdir" => self.mkdir(args),
+                "rmdir" => self.rmdir(args),
+                "defrag" => self.defrag(args),
+                "write" => self.write(args),
+                "touch" => self.touch(args),
+                "rm" => self.rm(args),
+                "touchhello" => self.touchhello(args),
+
                 "exit" => self.shut_down(),
                 _ => println!("\nInvalid Command: {}", command),
             }

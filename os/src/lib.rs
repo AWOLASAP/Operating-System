@@ -10,6 +10,9 @@
 extern crate rlibc;
 extern crate alloc;
 
+#[macro_use]
+extern crate bitflags;
+
 use core::panic::PanicInfo;
 
 // defines the modules in the project
@@ -25,6 +28,8 @@ pub mod rng;
 pub mod keyboard_routing;
 pub mod timer_routing;
 pub mod tetris;
+pub mod ata_block_driver;
+pub mod ustar;
 pub mod speaker;
 
 // defines the Testable trait
