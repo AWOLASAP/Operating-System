@@ -85,10 +85,8 @@ impl KeyboardRouter {
                 TETRIS.lock().set(9)
             }
         }
-        if self.mode.song {
-            if character == 'q' {
-                end_tet_ost!();
-            }
+        if self.mode.song && character == 'q' {
+            end_tet_ost!();
         }
     }
 

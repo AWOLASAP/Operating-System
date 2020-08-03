@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use lazy_static::lazy_static;
 use spin::{Mutex};
 use crate::ata_block_driver::AtaPio;
@@ -88,12 +90,8 @@ impl Directory {
         // Handle name
         let name_variable = name.into_bytes();
         let mut name = String::with_capacity(100);
-        for i in 0..100 {
-            match name_variable.get(i) {
-                Some(chr) => name.push(*chr as char),
-                None => (),
-            };
-            
+        for i in name_variable {
+            name.push(i as char);            
         }
         // Mode
         let mode = String::from("100777");
@@ -104,11 +102,11 @@ impl Directory {
         let size =0;
         let mut time = String::with_capacity(11);
         // Skip over the null byte - storing this as a string because we don't care how it works
-        for i in 136..147 {
+        for _ in 136..147 {
             time.push('0');      
         }
         // Header checksum
-        let mut header = 0;
+        let header = 0;
         // You get to be headerless for a bit - until someone tries to write
         // Type (should always be 5)
         let type_flag = 5;
@@ -119,7 +117,7 @@ impl Directory {
         owner_name.push_str("weed");
         let mut group_name = String::with_capacity(32);
         group_name.push_str("weed");
-        for i in 0..28 {
+        for _ in 0..28 {
             owner_name.push('\0');
             group_name.push('\0');
         }
@@ -128,32 +126,32 @@ impl Directory {
         let device_minor_number = 0;
         // Filename prefix
         let mut filename_prefix = String::with_capacity(155);
-        for i in 345..500 {
+        for _ in 345..500 {
             filename_prefix.push('\0');
         }
         // Setup directory specific Variables
         let subdirectories = Vec::new();
         let files = Vec::new();
         Directory { 
-            name: name,
-            mode: mode,
-            owner_id: owner_id,
-            group_id: group_id,
-            size: size,
-            time: time,
+            name,
+            mode,
+            owner_id,
+            group_id,
+            size,
+            time,
             checksum: header,
-            type_flag: type_flag,
-            linked_name: linked_name,
-            owner_name: owner_name,
-            group_name: group_name,
-            device_minor_number: device_minor_number,
-            device_major_number: device_major_number,
+            type_flag,
+            linked_name,
+            owner_name,
+            group_name,
+            device_minor_number,
+            device_major_number,
             prefix: filename_prefix,
 
-            block_id: block_id,
+            block_id,
             write: false,
 
-            subdirectories: subdirectories,
+            subdirectories,
             contents: files,
             parent: Weak::new(),
         }
@@ -181,7 +179,7 @@ impl Directory {
         owner_name.push_str("weed");
         let mut group_name = String::with_capacity(32);
         group_name.push_str("weed");
-        for i in 0..28 {
+        for _ in 0..28 {
             owner_name.push('\0');
             group_name.push('\0');
         }
@@ -190,7 +188,7 @@ impl Directory {
         let device_minor_number = 0;
         // Filename prefix
         let mut filename_prefix = String::with_capacity(155);
-        for i in 345..500 {
+        for _ in 345..500 {
             filename_prefix.push('\0');
         }
         // Setup directory specific Variables
@@ -200,25 +198,25 @@ impl Directory {
         // block_id of  u64::MAX signals that we don't want it to exist on disk
         let block_id = u64::MAX;
         Directory { 
-            name: name,
-            mode: mode,
-            owner_id: owner_id,
-            group_id: group_id,
-            size: size,
-            time: time,
+            name,
+            mode,
+            owner_id,
+            group_id,
+            size,
+            time,
             checksum: header,
-            type_flag: type_flag,
-            linked_name: linked_name,
-            owner_name: owner_name,
-            group_name: group_name,
-            device_minor_number: device_minor_number,
-            device_major_number: device_major_number,
+            type_flag,
+            linked_name,
+            owner_name,
+            group_name,
+            device_minor_number,
+            device_major_number,
             prefix: filename_prefix,
 
-            block_id: block_id,
+            block_id,
             write: false,
 
-            subdirectories: subdirectories,
+            subdirectories,
             contents: files,
             parent: Weak::new(),
         }
@@ -287,7 +285,7 @@ impl Directory {
         owner_name.push_str("weed");
         let mut group_name = String::with_capacity(32);
         group_name.push_str("weed");
-        for i in 0..28 {
+        for _ in 0..28 {
             owner_name.push('\0');
             group_name.push('\0');
         }
@@ -307,25 +305,25 @@ impl Directory {
         let subdirectories = Vec::new();
         let files = Vec::new();
         Directory { 
-            name: name,
-            mode: mode,
-            owner_id: owner_id,
-            group_id: group_id,
-            size: size,
-            time: time,
+            name,
+            mode,
+            owner_id,
+            group_id,
+            size,
+            time,
             checksum: header,
-            type_flag: type_flag,
-            linked_name: linked_name,
-            owner_name: owner_name,
-            group_name: group_name,
-            device_minor_number: device_minor_number,
-            device_major_number: device_major_number,
+            type_flag,
+            linked_name,
+            owner_name,
+            group_name,
+            device_minor_number,
+            device_major_number,
             prefix: filename_prefix,
 
-            block_id: block_id,
+            block_id,
             write: false,
 
-            subdirectories: subdirectories,
+            subdirectories,
             contents: files,
             parent: Weak::new(),
         }
@@ -393,7 +391,7 @@ impl Directory {
         owner_name.push_str("weed");
         let mut group_name = String::with_capacity(32);
         group_name.push_str("weed");
-        for i in 0..28 {
+        for _ in 0..28 {
             owner_name.push('\0');
             group_name.push('\0');
         }
@@ -428,6 +426,7 @@ impl Directory {
         self.write = false;
     }
 
+    #[allow(clippy::all)]
     pub fn to_block(&mut self) -> Vec<u8> {
         let mut block = Vec::with_capacity(512);
 
@@ -486,7 +485,7 @@ impl Directory {
         block.push(b'5'); 
 
         // Linked name - we don't support links, so don't care about this - supposed to be 0
-        for i in 0..100 {
+        for _ in 0..100 {
             block.push(0);
         }
         // Ustar indicators
@@ -509,7 +508,7 @@ impl Directory {
 
         block.extend(unsafe { self.prefix.as_mut_vec().iter().cloned() } );
 
-        for i in 0..12 {
+        for _ in 0..12 {
             block.push(0);
         }
 
@@ -545,7 +544,7 @@ impl Directory {
         let possibilities = self.name.split('/');
         let mut result = "";
         for i in possibilities {
-            if i.len() > 0 {
+            if !i.is_empty() {
                 result = i;
             }
         }
@@ -558,7 +557,7 @@ impl Directory {
 
 impl USTARItem for Directory {
     fn get_name(&self) -> String {
-        return self.name.clone();
+        self.name.clone()
     }
 
     fn set_name(&mut self, name: String) {
@@ -597,10 +596,10 @@ impl USTARItem for Directory {
     fn get_should_write(&mut self) -> bool {
         if self.write {
             self.write = false;
-            return true;
+            true
         }
         else {
-            return false;
+            false
         }
     }
 
@@ -657,12 +656,8 @@ impl File {
         // Handle name
         let name_variable = name.into_bytes();
         let mut name = String::with_capacity(100);
-        for i in 0..100 {
-            match name_variable.get(i) {
-                Some(chr) => name.push(*chr as char),
-                None => (),
-            };
-            
+        for i in name_variable {
+            name.push(i as char);
         }
         // Mode
         let mode = String::from("100777");
@@ -673,11 +668,11 @@ impl File {
         let size =0;
         let mut time = String::with_capacity(11);
         // Skip over the null byte - storing this as a string because we don't care how it works
-        for i in 136..147 {
+        for _ in 136..147 {
             time.push('0');      
         }
         // Header checksum
-        let mut header = 0;
+        let header = 0;
         // You get to be headerless for a bit - until someone tries to write
         // Type (should always be 5)
         let type_flag = 5;
@@ -688,7 +683,7 @@ impl File {
         owner_name.push_str("weed");
         let mut group_name = String::with_capacity(32);
         group_name.push_str("weed");
-        for i in 0..28 {
+        for _ in 0..28 {
             owner_name.push('\0');
             group_name.push('\0');
         }
@@ -697,31 +692,31 @@ impl File {
         let device_minor_number = 0;
         // Filename prefix
         let mut filename_prefix = String::with_capacity(155);
-        for i in 345..500 {
+        for _ in 345..500 {
             filename_prefix.push('\0');
         }
         // Setup directory specific Variables
-        let mut data = Vec::new();
+        let data = Vec::new();
         File { 
-            name: name,
-            mode: mode,
-            owner_id: owner_id,
-            group_id: group_id,
-            size: size,
-            time: time,
+            name,
+            mode,
+            owner_id,
+            group_id,
+            size,
+            time,
             checksum: header,
-            type_flag: type_flag,
-            linked_name: linked_name,
-            owner_name: owner_name,
-            group_name: group_name,
-            device_minor_number: device_minor_number,
-            device_major_number: device_major_number,
+            type_flag,
+            linked_name,
+            owner_name,
+            group_name,
+            device_minor_number,
+            device_major_number,
             prefix: filename_prefix,
 
-            block_id: block_id,
+            block_id,
             write: false,
 
-            data: data,
+            data,
         }
     }
 
@@ -789,7 +784,7 @@ impl File {
         owner_name.push_str("weed");
         let mut group_name = String::with_capacity(32);
         group_name.push_str("weed");
-        for i in 0..28 {
+        for _ in 0..28 {
             owner_name.push('\0');
             group_name.push('\0');
         }
@@ -806,30 +801,31 @@ impl File {
             filename_prefix.push(chr);
         }
         // Setup empty data
-        let mut data = Vec::new();
+        let data = Vec::new();
         File {
-            name: name,
-            mode: mode,
-            owner_id: owner_id,
-            group_id: group_id,
-            size: size,
-            time: time,
+            name,
+            mode,
+            owner_id,
+            group_id,
+            size,
+            time,
             checksum: header,
-            type_flag: type_flag,
-            linked_name: linked_name,
-            owner_name: owner_name,
-            group_name: group_name,
-            device_minor_number: device_minor_number,
-            device_major_number: device_major_number,
+            type_flag,
+            linked_name,
+            owner_name,
+            group_name,
+            device_minor_number,
+            device_major_number,
             prefix: filename_prefix,
 
-            block_id: block_id,
+            block_id,
             write: false,
 
-            data: data,
+            data,
         }
     }
 
+    #[allow(clippy::all)]
     pub fn to_block(&mut self) -> Vec<u8> {
         let mut block = Vec::with_capacity(512);
 
@@ -888,7 +884,7 @@ impl File {
         block.push(b'0'); 
 
         // Linked name - we don't support links, so don't care about this - supposed to be 0
-        for i in 0..100 {
+        for _ in 0..100 {
             block.push(0);
         }
         // Ustar indicators
@@ -911,7 +907,7 @@ impl File {
 
         block.extend(unsafe { self.prefix.as_mut_vec().iter().cloned() } );
 
-        for i in 0..12 {
+        for _ in 0..12 {
             block.push(0);
         }
         // Regenerate the checksum - otherwise archivemount sees it as corrupted
@@ -962,7 +958,7 @@ impl File {
 
 impl USTARItem for File {
     fn get_name(&self) -> String {
-        return self.name.clone();
+        self.name.clone()
     }
 
     fn set_name(&mut self, name: String) {
@@ -1000,10 +996,10 @@ impl USTARItem for File {
     fn get_should_write(&mut self) -> bool {
         if self.write {
             self.write = false;
-            return true;
+            true
         }
         else {
-            return false;
+            false
         }
     }
 
@@ -1057,8 +1053,8 @@ impl USTARFileSystem {
 
         USTARFileSystem {
             block_driver: driver,
-            files: files,
-            current_dirs: current_dirs,
+            files,
+            current_dirs,
             current_dirs_tracker: 1,
             root: Arc::new(Mutex::new(Directory::new_directory("/".to_string()))),
             block_used_ptr: 0,
@@ -1095,7 +1091,7 @@ impl USTARFileSystem {
                         let mut size = file.size;
 
                         if size % 512 == 0 {
-                            size = size / 512; 
+                            size /= 512; 
                         }
                         else {
                             size = (size - size % 512) / 512 + 1; 
@@ -1113,9 +1109,9 @@ impl USTARFileSystem {
                         */
                         let mut data = Vec::with_capacity(size_orig as usize);
 
-                        for i in 0..size {
+                        for _ in 0..size {
                             data.append(&mut self.block_driver.read_lba(counter, 1));
-                            counter = counter + 1;
+                            counter += 1;
                         }
                         /*
                         for i in 0..blocks_written {
@@ -1137,7 +1133,7 @@ impl USTARFileSystem {
                         }
                     }
                     else if type_flag == 5 {
-                        let mut folder = Directory::from_block(block, counter as u64);
+                        let folder = Directory::from_block(block, counter as u64);
                         counter += 1;
                         if folder.name != "defrag" {
                             self.place_folder_in_vfs(folder);
@@ -1158,6 +1154,7 @@ impl USTARFileSystem {
         }
     }
 
+    #[allow(clippy::all)]
     fn check_magic_value(&self, block: &Vec<u8>) -> bool {
         let val = [b'u', b's', b't', b'a', b'r', 0, b'0', b'0'];
         let mut magic = true;
@@ -1172,6 +1169,7 @@ impl USTARFileSystem {
         magic
     }
 
+    #[allow(clippy::all)]
     fn get_typeflag_(&self, block: &Vec<u8>) -> u8 {
         (*block)[156] - 48
     }
@@ -1218,7 +1216,7 @@ impl USTARFileSystem {
 
     // Returns the parent directory of the given path. Will always return the parent directory. Even if it doesn't exist (because it creates it)
 
-    fn generate_path_if_does_not_exist(&mut self, path: &String) -> Arc<Mutex<Directory>> {
+    fn generate_path_if_does_not_exist(&mut self, path: &str) -> Arc<Mutex<Directory>> {
         let mut decomposed = self.split_path(&path);
         decomposed.pop();
         let mut current_dir = Arc::clone(&self.root);
@@ -1335,7 +1333,6 @@ impl USTARFileSystem {
                 else {
                     size = (size - size % 512) / 512 + 1; 
                 }
-                let size_orig = size;
                 // Good for debugging
                 //println!("Writing {} at {} with size {}", item.get_name(), id, size);
                 // Each write request/sector
@@ -1580,7 +1577,7 @@ impl USTARFileSystem {
     // If a file doesn't exist, returns None
     pub fn read_file(&mut self, file: String, id: Option<u64>) -> Option<Vec<u8>> {
         let file = self.resolve_file(file, id);
-        let file_data = match file {
+        match file {
             Some(file) => return Some(file.lock().get_data()),
             None => return None,
         };
@@ -1594,18 +1591,16 @@ impl USTARFileSystem {
         let file = self.resolve_file(file, id);
         let mut file_data = match file {
             Some(file) => {
-                let mut new_file = File::from_block(file.lock().to_block(), self.block_used_ptr);
                 self.remove_file(file_string, id);
-                new_file
+                File::from_block(file.lock().to_block(), self.block_used_ptr)
             },
             None => {
-                let mut new_file = File::new(self.block_used_ptr, file_string);
-                new_file
+                File::new(self.block_used_ptr, file_string)
             },
         };
         let mut size = data.len();
         if size % 512 == 0 {
-            size = size / 512; 
+            size /= 512; 
         }
         else {
             size = (size - size % 512) / 512 + 1; 
@@ -1632,7 +1627,7 @@ impl USTARFileSystem {
     // Removes a file if it exists, does nothing if it doesn't
     pub fn remove_file(&mut self, file: String, id: Option<u64>) {
         if let Some(file) =  self.resolve_file(file, id) {
-            let (first, last) = self.split_last_and_first(file.lock().name.to_string());
+            let (first, _) = self.split_last_and_first(file.lock().name.to_string());
             if let Some(directory) = self.resolve_directory( first, id) {
                 file.lock().name = "defrag".to_string();
                 file.lock().should_write();

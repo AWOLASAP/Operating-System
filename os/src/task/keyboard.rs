@@ -27,7 +27,7 @@ pub async fn print_keypresses() {
 // adds new keypresses to the queue to be dealt with
 pub(crate) fn add_scancode(scancode: u8) {
     if let Ok(queue) = SCANCODE_QUEUE.try_get() {
-        if let Err(_) = queue.push(scancode) {
+        if queue.push(scancode).is_err() {
             println!("WARNING: scancode queue full; dropping keyboard input");
         }else{
             // after pusing the scancode to queue the waker will notify the executor
@@ -40,6 +40,12 @@ pub(crate) fn add_scancode(scancode: u8) {
 
 pub struct ScancodeStream {
     _private: (),
+}
+
+impl Default for ScancodeStream {
+    fn default() -> ScancodeStream {
+        ScancodeStream::new()
+    }
 }
 
 // initializes scancode stream and returns an error if it's tried again

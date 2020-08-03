@@ -23,6 +23,13 @@ pub struct PcSpeaker {
     tmp: i32,
 }
 
+
+impl Default for PcSpeaker {
+    fn default() -> PcSpeaker {
+        PcSpeaker::new()
+    }
+}
+
 // Class to handle playing sounds through the PC speaker
 impl PcSpeaker {
     // Creates a new class with default values
@@ -251,27 +258,27 @@ impl PcSpeaker {
         let _B8  = 7902.13;
         match self.timer {
 
-            003 => self.play_sound(_E5 as i32),
-            009 => self.play_sound(_B4 as i32),
-            012 => self.play_sound(_C5 as i32),
-            015 => self.play_sound(_D5 as i32),
-            021 => self.play_sound(_C5 as i32),
-            024 => self.play_sound(_B4 as i32),
-            027 => self.play_sound(_A4 as i32),
-            033 => self.play_sound(_A4 as i32),
-            036 => self.play_sound(_C5 as i32),
-            039 => self.play_sound(_E5 as i32),
-            045 => self.play_sound(_D5 as i32),
-            048 => self.play_sound(_C5 as i32),
-            051 => self.play_sound(_B4 as i32),
-            057 => self.play_sound(_B4 as i32),
-            060 => self.play_sound(_C5 as i32),
-            063 => self.play_sound(_D5 as i32),
-            069 => self.play_sound(_E5 as i32),
-            075 => self.play_sound(_C5 as i32),
-            081 => self.play_sound(_A4 as i32),
-            087 => self.play_sound(_A4 as i32),
-            093 => self.play_sound(_R  as i32),
+            3 => self.play_sound(_E5 as i32),
+            9 => self.play_sound(_B4 as i32),
+            12 => self.play_sound(_C5 as i32),
+            15 => self.play_sound(_D5 as i32),
+            21 => self.play_sound(_C5 as i32),
+            24 => self.play_sound(_B4 as i32),
+            27 => self.play_sound(_A4 as i32),
+            33 => self.play_sound(_A4 as i32),
+            36 => self.play_sound(_C5 as i32),
+            39 => self.play_sound(_E5 as i32),
+            45 => self.play_sound(_D5 as i32),
+            48 => self.play_sound(_C5 as i32),
+            51 => self.play_sound(_B4 as i32),
+            57 => self.play_sound(_B4 as i32),
+            60 => self.play_sound(_C5 as i32),
+            63 => self.play_sound(_D5 as i32),
+            69 => self.play_sound(_E5 as i32),
+            75 => self.play_sound(_C5 as i32),
+            81 => self.play_sound(_A4 as i32),
+            87 => self.play_sound(_A4 as i32),
+            93 => self.play_sound(_R  as i32),
             105 => self.play_sound(_D5 as i32),
             111 => self.play_sound(_F5 as i32),
             114 => self.play_sound(_A5 as i32),

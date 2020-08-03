@@ -9,6 +9,9 @@ pub struct BootInfoFrameAllocator {
 
 impl BootInfoFrameAllocator {
     // initializes the frame allocator
+    ///# Safety
+    /// 
+    /// Doesn't matter
     pub unsafe fn init(memory_map: &'static MemoryMap) -> Self {
         BootInfoFrameAllocator {
             memory_map,
@@ -36,6 +39,9 @@ unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
 }
 
 // creates the offset page table by finding the active level 4 table
+    ///# Safety
+    /// 
+    /// Doesn't matter
 pub unsafe fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
     let level_4_table = active_level_4_table(physical_memory_offset);
     OffsetPageTable::new(level_4_table, physical_memory_offset)
