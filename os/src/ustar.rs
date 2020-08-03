@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use lazy_static::lazy_static;
 use spin::{Mutex};
 use crate::ata_block_driver::AtaPio;
@@ -1010,10 +1008,18 @@ impl USTARItem for File {
     }
 
     fn get_writable_representation(&mut self) -> Vec<u8> {
-        let mut res = Vec::with_capacity((512 + self.size + 512 - (self.size % 512)) as usize);
+        let mut size = self.size + 512;
+        if size % 512 == 0 {
+            size /= 512; 
+        }
+        else {
+            size = (size - size % 512) / 512 + 1; 
+        }
+        size *= 512;
+        let mut res = Vec::with_capacity(size as usize);
         res.extend(self.to_block());
         res.extend(self.data.clone());
-        for i in 0..(512 - (self.size % 512)) {
+        while res.capacity() != res.len() {
             res.push(0);
         }
         res
@@ -1170,18 +1176,16 @@ impl USTARFileSystem {
         (*block)[156] - 48
     }
 
-    fn split_path(&self, path: &String) -> Vec<String> {
+    fn split_path(&self, path: &str) -> Vec<String> {
         let mut result =  Vec::new();
         for i in (*path).split('/') {
-            result.push(i.clone().to_string());
+            result.push(i.to_string());
         }
-        if result[result.len() - 1].len() == 0 {
+        if result[result.len() - 1].is_empty() {
             result.pop();
         }
-        if result.len() > 0 {
-            if result[0].len() == 0 {
-                result.remove(0);
-            }
+        if !result.is_empty() && result[0].is_empty() {
+            result.remove(0);
         }
 
         result
@@ -1294,7 +1298,7 @@ impl USTARFileSystem {
                 item.set_block_id(counter);
                 let mut size = item.get_size();
                 if size % 512 == 0 {
-                    size = size / 512; 
+                    size /= 512; 
                 }
                 else {
                     size = (size - size % 512) / 512 + 1; 
@@ -1326,7 +1330,7 @@ impl USTARFileSystem {
                 let mut size = data.len();
                 let mut id = item.get_block_id();
                 if size % 512 == 0 {
-                    size = size / 512; 
+                    size /= 512; 
                 }
                 else {
                     size = (size - size % 512) / 512 + 1; 
@@ -1486,6 +1490,7 @@ impl USTARFileSystem {
     }
 
     fn split_last_and_first(&self, path: String) -> (String, String) {
+        let abs = self.is_absolute(&path);
         let mut split = self.split_path(&path);
         let mut part1 = String::new();
         let name = match split.pop() {
@@ -1496,12 +1501,18 @@ impl USTARFileSystem {
             part1.push_str(i);
             part1.push_str("/");
         }
+        if abs {
+            let mut res = String::from("/");
+            res.push_str(&part1);
+            return (res, name);
+
+        }
         (part1, name)
     }
     
     fn resolve_file(&mut self, path: String, id: Option<u64>) -> Option<Arc<Mutex<File>>> {
         let (path, file) = self.split_last_and_first(path);
-        if self.is_absolute(&path) {
+        if self.is_absolute(&path) && !path.is_empty() {
             let parent_dir = match self.resolve_directory_absolute(path) {
                 Some(thing) => thing,
                 None => return None,
@@ -1533,7 +1544,7 @@ impl USTARFileSystem {
         }
     }
     
-
+    // Kept for backwards compatability
     pub fn up_directory(&mut self, id: u64) {
         let current_dirs = match self.current_dirs.remove_entry(&id) {
             Some((_, current_dirs)) => current_dirs,
@@ -1574,23 +1585,74 @@ impl USTARFileSystem {
             None => return None,
         };
     }
-    /*
+    
     // If a file doesn't exist, running this function will create it
     // Doesn't append to the data, but flat out replaces it - changes in allocation need to defrag
     // Does not account for if you write nothing, you're on your own
-    pub fn write_file(&self, file: String, data: Vec<u8>, id: u64) {
+    pub fn write_file(&mut self, file: String, data: Vec<u8>, id: Option<u64>) {
+        let file_string = file.to_string();
+        let file = self.resolve_file(file, id);
+        let mut file_data = match file {
+            Some(file) => {
+                let mut new_file = File::from_block(file.lock().to_block(), self.block_used_ptr);
+                self.remove_file(file_string, id);
+                new_file
+            },
+            None => {
+                let mut new_file = File::new(self.block_used_ptr, file_string);
+                new_file
+            },
+        };
+        let mut size = data.len();
+        if size % 512 == 0 {
+            size = size / 512; 
+        }
+        else {
+            size = (size - size % 512) / 512 + 1; 
+        }
+        self.block_used_ptr += size as u64 + 1;
+        file_data.set_data(data);
+        file_data.should_write();
+        self.place_file_in_vfs(file_data);
+        self.write();
+    }
+    /*
+    pub fn move_file(&self, file: String, data: Vec<u8>, id: u64) {
 
     }
 
-    pub fn write_file_absolute_path(&self, path: String, data: Vec<u8>) {
-        
+    pub fn copy_file(&self, file: String, data: Vec<u8>, id: u64) {
+
     }
 
+    pub fn rename_file(&self, file: String, data: Vec<u8>, id: u64) {
+
+    }
+    */
     // Removes a file if it exists, does nothing if it doesn't
-    pub fn remove_file(&self, file: String, id: u64) {
-
+    pub fn remove_file(&mut self, file: String, id: Option<u64>) {
+        if let Some(file) =  self.resolve_file(file, id) {
+            /*let (first, last) = self.split_last_and_first(file.lock().name.to_string());
+            if let Some(directory) = self.resolve_directory( first, id) {
+                file.lock().name = "defrag".to_string();
+                file.lock().should_write();
+                println!("{}", file.lock().size);
+                let contents =  &mut directory.lock().contents;
+                for (i, d) in contents.iter().enumerate() {
+                    if d.lock().name == "defrag" {
+                        contents.remove(i);
+                        break;
+                    }
+                }
+                self.write();
+            }*/
+            file.lock().name = "defrag".to_string();
+            file.lock().should_write();
+            println!("{}", file.lock().get_writable_representation().len());
+            self.write();
+        }
     }
-
+    /*
     pub fn remove_file_absolute_path(&self, path: String) {
         
     }
@@ -1608,15 +1670,16 @@ impl USTARFileSystem {
     */
     // Creates a directory unless there exists a file or directory with a similar name
     pub fn create_directory(&mut self, file: String, id: u64) -> bool {
+        if self.is_absolute(&file) {
+            return self.create_directory_absolute_path(file);
+        }
         let mut file = file.replace("/", "");
         file.push('/');
         let current_dir_arc = &self.current_dirs[&id];
         let mut current_dir = current_dir_arc.lock();
         for i in current_dir.contents.iter() {
-            if i.lock().get_short_name() == file {
-                if i.lock().block_id != u64::MAX {
-                    return false;
-                }
+            if i.lock().get_short_name() == file && i.lock().block_id != u64::MAX {
+                return false;
             }
         }
         for i in current_dir.subdirectories.iter() {
@@ -1626,7 +1689,6 @@ impl USTARFileSystem {
         }
         // Check if subfolder exists - if so, update it instead of replacing it 
         let mut folder = Directory::new(self.block_used_ptr, format!("{}{}", current_dir.name, file));
-        self.block_used_ptr += 1;
         for i in current_dir.subdirectories.iter() {
             if folder.name == i.lock().name {
                 i.lock().reinit_from_block(folder.to_block(), folder.block_id);
@@ -1646,16 +1708,18 @@ impl USTARFileSystem {
         true
     }
     
-    /*pub fn create_directory_absolute_path(&mut self, path: String) -> bool {
+    pub fn create_directory_absolute_path(&mut self, path: String) -> bool {
         let id = self.get_id();
-        self.change_directory_absolute_path(path.to_string(), id);
+        let dir = self.generate_path_if_does_not_exist(&path);
+        self.current_dirs.remove_entry(&id);
+        self.current_dirs.insert(id, dir);
         let mut string = self.split_path(&path);
         let name = match string.pop() {
             Some(i) => i,
             None => "".to_string(),
         };
         self.create_directory(name, id)    
-    }*/
+    }
     
     fn remove_directory_recursive(&mut self, folder: Arc<Mutex<Directory>>) {
         let mut folder = folder.lock();
@@ -1672,49 +1736,58 @@ impl USTARFileSystem {
     }
 
     // Removes a directory if it exists, does nothing if it doesn't
-    pub fn remove_directory(&mut self, file: String, id: u64) {
-        let current_dirs = Arc::clone(&(self).current_dirs[&id]);
-        let mut current_dir = current_dirs.lock();
-        let mut subdirectories =  &mut current_dir.subdirectories;
-        for (i, d) in subdirectories.iter().enumerate() {
-            let mut child_path = self.split_path(&d.lock().name);
-            let last_item = match child_path.pop() {
-                Some(item) => item,
-                None => "".to_string(),
-            };
-
-            if file == last_item {
-                d.lock().name = "defrag".to_string();
-                d.lock().should_write();
-                let d_clone = Arc::clone(&d);
-                // Need to do this to prevent compiler complaints
-                subdirectories.remove(i);
-                drop(current_dir);
-                self.remove_directory_recursive(d_clone);
-                self.write();
-
-                return
+    pub fn remove_directory(&mut self, file: String, id: Option<u64>) {
+        if let Some(dir) =  self.resolve_directory(file, id) {
+            dir.lock().name = "defrag".to_string();
+            dir.lock().should_write();
+            let upgraded = dir.lock().parent.upgrade();
+            if let Some(parent) = upgraded {
+                let subdirs =  &mut parent.lock().subdirectories;
+                for (i, d) in subdirs.iter().enumerate() {
+                    if d.lock().name == "defrag" {
+                        subdirs.remove(i);
+                        break;
+                    }
+                }
             }
+            self.remove_directory_recursive(dir);
+            self.write();
         }
-        drop(current_dir);
-        self.write();
-    }
-    /*
-    pub fn remove_directory_absolute_path(&self, path: String) {
-        
     }
 
     // 2nd parameter should be complete path, but not the first one (first one should be relative)
     // If 1st param doesn't exist, or 2nd param already exists, it won't do anything
-    pub fn move_directory(&self, dir: String, new_path: String, id: u64) -> bool {
+    // TODO: Later
+    pub fn move_directory(&mut self, dir: String, new_path: String, id: Option<u64>) -> bool {
+        let dir = self.resolve_directory(dir, id);
+        let mut parent_move_dir = self.resolve_directory(new_path.to_string(), id);
+        if Option::is_none(&dir)  {
+            return false;
+        }
+        if self.is_absolute(&new_path) {
+            let (last, first) = self.split_last_and_first(new_path);
+            parent_move_dir = self.resolve_directory(last, id);
+        }
+        else if self.split_path(&new_path).len() == 1 {
+            // If length is one, it's a single path thing
+        }
+        else {
+            let (last, first) = self.split_last_and_first(new_path);
+            parent_move_dir = self.resolve_directory(last, id);
+            // Length more, which means it's a "compound" path
+        }
+
+
+        true
+    }
+
+    pub fn copy_directory(&mut self, path: String, new_path: String) {
 
     }
 
-    // Ignore the above - for this function, both strings should be complete paths
-    pub fn move_directory_absolute_path(&self, path: String, new_path: String) -> bool {
-        
+    pub fn rename_directory(&mut self, path: String, new_path: String) {
+
     }
-*/
 
 }
 

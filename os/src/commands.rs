@@ -153,13 +153,24 @@ impl CommandRunner {
 
             }
             else if "rmdir" == command {
-                USTARFS.lock().remove_directory(args.to_string(), self.dir_id);
+                USTARFS.lock().remove_directory(args.to_string(), Some(self.dir_id));
             }
             else if "defrag" == command {
                 USTARFS.lock().defragment();
             }
             else if "write" == command {
                 USTARFS.lock().write();
+            }
+            else if "touch" == command {
+                USTARFS.lock().write_file(args.to_string(), Vec::new(), Some(self.dir_id));
+            }
+            else if "rm" == command {
+                USTARFS.lock().remove_file(args.to_string(), Some(self.dir_id));
+            }
+            else if "touchhello" == command {
+                let data = String::from("Hello World!");
+                let data = data.into_bytes();
+                USTARFS.lock().write_file(args.to_string(), data, Some(self.dir_id));
             }
             else {
                 println!("\nInvalid Command!");
