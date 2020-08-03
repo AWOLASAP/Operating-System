@@ -3,8 +3,8 @@ use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
 use spin::Mutex;
-use crate::vga_buffer::MODE;
-use crate::vga_buffer::BUFFER_HEIGHT;
+use crate::vga_buffer::{MODE, BUFFER_HEIGHT, ADVANCED_WRITER};
+use vga::colors::Color16;
 use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
 use crate::tetris::TETRIS;
@@ -125,25 +125,147 @@ impl CommandRunner {
     // Plays the game Tetris
     pub fn tetris(&self) {
         // Run tetris if in the gterm mode
-        if MODE.lock().text == true {
+        if MODE.lock().text {
             println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
         } else {
             TETRIS.lock().init();
         }
     }
 
+    pub fn logo(&self) {
+        if MODE.lock().text {
+            println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
+        } else {
+            ADVANCED_WRITER.lock().clear_buffer();
+
+            ADVANCED_WRITER.lock().draw_rect((0, 0), (640, 480), Color16::Blue);
+            ADVANCED_WRITER.lock().draw_logo(320, 240, 30);
+        }
+    }
+
     // help command.
     // Lists all available commands 
-    pub fn help(&self) {
+    pub fn help(&self, args: &str) {
+        if args == String::from("").as_str() {
+            self.basic_help();
+        } else if args == String::from("print-buffer").as_str() {
+            self.print_buffer_help();
+        } else if args == String::from("echo").as_str() {
+            self.echo_help();
+        } else if args == String::from("gterm").as_str() {
+            self.gterm_help();
+        } else if args == String::from("tterm").as_str() {
+            self.tterm_help()
+        } else if args == String::from("mode").as_str() {
+            self.mode_help();
+        } else if args == String::from("tetris").as_str() {
+            self.tetris_help();
+        } else if args == String::from("beep").as_str() {
+            self.beep_help();
+        } else if args == String::from("tet-ost").as_str() {
+            self.tet_ost_help();
+        } else if args == String::from("clear").as_str() {
+            self.clear_help();
+        } else if args == String::from("logo").as_str() {
+            self.logo_help();
+        } else if args == String::from("help").as_str() {
+            self.help_help();
+        }
+    }
+
+    // Prints all the possible commands and prompts user how to learn more about each command
+    fn basic_help(&self) {
         println!("\nList of available commands:");
         println!("print-buffer");
         println!("echo");
         println!("gterm");
         println!("tterm");
+        println!("mode");
         println!("tetris");
+        println!("beep");
         println!("tet-ost");
         println!("clear");
-        println!("yes");
+        println!("logo");
+        println!("\nFor specific options try 'help <command name>'\n");
+        println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
+    }
+
+    // Describes and displays options for the print_buffer command
+    fn print_buffer_help(&self) {
+        println!("\nCommand: print-buffer");
+        println!("Prints the contents of the command buffer to the terminal.");
+        println!("No defined arguments, everything after print-buffer will be added to command buffer and printed out.");
+    }
+
+    // Describes and displays options for the echo command
+    fn echo_help(&self) {
+        println!("\nCommand: echo");
+        println!("Prints whatever comes after the command to the terminal.");
+        println!("No defined arguments, everything after echo will be 'echoed' to the terminal");
+    }
+
+    // Describes and displays options for the gterm command
+    fn gterm_help(&self) {
+        println!("\nCommand: gterm");
+        println!("Changes display into Graphics Mode.");
+        println!("No defined arguments, everything after gterm will be ignored");
+    }
+
+    // Describes and displays options for the tterm command
+    fn tterm_help(&self) {
+        println!("\nCommand: tterm");
+        println!("Changes display into Text Mode.");
+        println!("No defined arguments, everything after tterm will be ignored.");
+    }
+
+    // Describes and displays options for the mode command
+    fn mode_help(&self) {
+        println!("\nCommand: mode");
+        println!("Prints the current display mode (gterm vs tterm).");
+        println!("No defined arguments, everything after mode will be ignored.");
+    }
+
+    // Describes and displays options for the tetris command
+    fn tetris_help(&self) {
+        println!("\nCommand: tetris");
+        println!("Starts a game of tetris, REQUIRES Graphics Mode.");
+        println!("No defined arguments, everything after tetris will be ignored.");
+        println!("To exit, press 'p'");
+    }
+
+    // Describes and displays options for the beep command
+    fn beep_help(&self) {
+        println!("\nCommand: beep");
+        println!("Plays a sound on the PC speaker.");
+        println!("One defined argument: the frequency of the sound - defaults to 0");
+    }
+
+    // Describes and displays options for the tet-ost command
+    fn tet_ost_help(&self) {
+        println!("\nCommand: tet-ost");
+        println!("Plays the tetris theme song.");
+        println!("One defined argument: number of times to repeat (for infinitely repeating enter 0) - defaults to 1");
+    }
+
+    // Describes and displays options for the clear command
+    fn clear_help(&self) {
+        println!("\nCommand: clear");
+        println!("Clears the terminal.");
+        println!("No defined arguments, everything after clear will be ignored.");
+    }
+
+    // Describes and displays options for the logo command
+    fn logo_help(&self) {
+        println!("\nCommand: logo");
+        println!("Prints boot logo to terminal, REQUIRES Graphics Mode.");
+        println!("No defined arguments, everything after logo will be ignored.");
+    }
+
+    // Describes and displays options for the help command
+    fn help_help(&self) {
+        println!("\nCommand: help");
+        println!("Displays information about terminal commands.");
+        println!("One defined argument: optional command.");
     }
 
     // beep command
@@ -200,10 +322,11 @@ impl CommandRunner {
                 "tterm" => self.tterm(),
                 "mode" => self.mode(),
                 "tetris" => self.tetris(),
-                "help" => self.help(),
+                "help" => self.help(args),
                 "beep" => self.beep(args),
                 "tet-ost" => self.tet_ost(args),
                 "clear" => self.clear(),
+                "logo" => self.logo(),
                 "yes" => self.yes(),
                 _ => println!("\nInvalid Command: {}", command),
             }
