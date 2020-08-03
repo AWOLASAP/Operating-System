@@ -1,5 +1,5 @@
-# Operating-System <img src="https://github.com/AWOLASAP/Operating-System/blob/master/OSLogo.png?raw=true" width="48">
-![alt text](https://github.com/AWOLASAP/Operating-System/blob/master/OSLogo.png?raw=true)
+<img src="https://github.com/AWOLASAP/Operating-System/blob/master/OSLogo.png?raw=true" width="256">
+# Operating-System 
 
 ## What's This?
 This operating system is a project for the [North West Advanced Programming Workshop](http://nwapw.org/). It is a simple text-based operating system with some graphics as well. Written in Rust, this operating system takes from and builds on various projects that have been done before.
