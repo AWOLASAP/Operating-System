@@ -36,6 +36,7 @@ To run:
 ```
 cargo run
 ```
+This will build the rust project and automatically run the QEMU command to run the operating system. For this to work you do need QEMU installed and added to your PATH.
 
 ### TODO Features
 - File editing
