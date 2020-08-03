@@ -12,7 +12,6 @@ mod serial;
 // Use these for things like buffer access
 use os::vga_buffer::{MODE, ADVANCED_WRITER};
 use vga::colors::Color16;
-use os::print;
 use os::{println,allocator};
 use os::memory::{self, BootInfoFrameAllocator};
 use bootloader::{BootInfo, entry_point};
@@ -20,9 +19,6 @@ use x86_64::{VirtAddr};
 use core::panic::PanicInfo;
 use os::task::{Task,keyboard,executor::Executor};
 use x86_64::instructions::interrupts;
-use os::ata_block_driver;
-use alloc::vec::Vec;
-use os::ustar::Directory;
 use os::ustar::USTARFS;
 use os::commands::COMMANDRUNNER;
 use lazy_static::lazy_static;
@@ -89,69 +85,14 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         }
         ADVANCED_WRITER.lock().clear_buffer();
         //MODE.lock().text_init();
-        println!("");
+        println!();
     });
     USTARFS.lock().init();
     //USTARFS.lock().set_all_files_to_write();
     //USTARFS.lock().write();
     //USTARFS.lock().print_root();
     COMMANDRUNNER.lock().init();
-    /*
-    let driv = ata_block_driver::AtaPio::try_new();
-    let data = unsafe {driv.read_lba(0, 1)};
-    
-    for c in data.iter() {
-        print!("{}", *c as char);
-    }
 
-    let mut file = Directory::from_block(data, 0);
-
-    println!();
-
-    let data = file.to_block();
-
-    for c in data.iter() {
-        print!("{}", *c as char);
-    }
-    println!();
-
-    let mut dota = Vec::with_capacity(256);
-
-    for i in 0..256 {
-        dota.push(((data[2*i + 1] as u16) << 8) | data[2*i] as u16); 
-    }
-
-    unsafe {driv.write(0, 1, dota)};
-
-    let data = unsafe {driv.read_lba(0, 1)};
-    */
-    /*let mut file = File::from_block(data, 0);
-    let mut dota = Vec::with_capacity(256);
-    let data = file.to_block();
-
-    for i in 0..256 {
-        dota.push(((data[2*i + 1] as u16) << 8) | data[2*i] as u16); 
-    }
-
-    unsafe {driv.write(0, 1, dota)};
-    */
-    /*
-
-    let mut data = Vec::with_capacity(256);
-
-    for i in 0..256 {
-        data.push(0u16);
-    }
-
-    let data = unsafe {driv.write(0, 1, data)};
-
-    let dota = unsafe {driv.read_lba(0, 1)};
-
-    for c in dota.iter() {
-        print!("{}", *c as char);
-    }
-    
-*/
     //let mut executor = Executor::new();
     //executor.spawn(Task::new(example_task()));
     //executor.spawn(Task::new(keyboard::print_keypresses()));

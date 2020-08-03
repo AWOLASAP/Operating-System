@@ -23,6 +23,7 @@ impl TaskWaker {
         self.task_queue.push(self.task_id).expect("task_queue full");
     }
 
+    #[allow(clippy::all)]
     fn new(task_id: TaskId, task_queue: Arc<ArrayQueue<TaskId>>) -> Waker {
         Waker::from(Arc::new(TaskWaker {
             task_id,
@@ -47,6 +48,14 @@ pub struct Executor {
     task_queue: Arc<ArrayQueue<TaskId>>,
     waker_cache: BTreeMap<TaskId, Waker>,
 }
+
+
+impl Default for Executor {
+    fn default() -> Executor {
+        Executor::new()
+    }
+}
+
 
 impl Executor {
     pub fn new() -> Self {

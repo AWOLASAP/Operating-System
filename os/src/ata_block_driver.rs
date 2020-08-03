@@ -1,8 +1,7 @@
-use x86_64::instructions::port::Port;
-use alloc::boxed::Box;
+#![allow(dead_code)]
+
 use alloc::vec::Vec;
 use cpuio::UnsafePort;
-
 
 const SECTOR_SIZE: usize = 0x200;
 
@@ -63,7 +62,7 @@ impl AtaPio {
 
         let mut ctrl = UnsafePort::<u8>::new(PORT_DEV_CTRL);
 
-        // Disable interupts, run software reset
+        // Disable interrupts, run software reset
         ctrl.write(0);
 
         // Wait for BSY to be clear and RDY set
@@ -169,6 +168,8 @@ impl AtaPio {
         let mut data_port = UnsafePort::<u16>::new(PORT_DATA);
         let mut data: [u16; 256] = [0; 256];
 
+        // Lints are annoying
+        #[allow(clippy::all)]
         for i in 0..256 {
             data[i] = data_port.read();
             //for j in 0..10000 {
@@ -198,12 +199,14 @@ impl AtaPio {
             lba48_sectors,
         }
     }
-
+    /// # Safety
+    /// 
+    /// This function uses ports, which make it unsafe. Carry on.
     pub unsafe fn read_lba(&self, lba: u32, sectors: u8) -> Vec<u8> {
         // https://wiki.osdev.org/ATA_read/write_sectors#Read_in_LBA_mode
 
         assert!(sectors > 0);
-        let data: u8 = Self::read_status();
+        let _data: u8 = Self::read_status();
 
         // Send bits 24-27 of LBA, drive number and LBA mode
         let mut port = UnsafePort::<u8>::new(PORT_LBA3);
@@ -268,6 +271,9 @@ impl AtaPio {
     }
 
     // Make the fs driver do the hard job of converting Vec<u8> to Vec<u16>
+    /// # Safety
+    /// 
+    /// This function uses ports, which make it unsafe. Carry on.
     pub unsafe fn write(&self, lba: u32, sectors: u8, data: Vec<u16>) {
         // https://wiki.osdev.org/ATA_read/write_sectors#Read_in_LBA_mode
         Self::wait_ready();

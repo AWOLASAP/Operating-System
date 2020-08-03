@@ -10,6 +10,7 @@ use vga::drawing::Point;
 use core::convert::TryFrom;
 use core::cmp::{min, max};
 use x86_64::instructions::interrupts;
+use x86::io::outb;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -146,7 +147,7 @@ pub trait PrintWriter {
             if self.get_blinked() {
                 self.write_buffer(self.get_height() - 1,
                 self.get_column_position(),
-                ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(
+                ScreenChar {ascii_character, color_code: ColorCode::new(
                     front_color,
                     self.get_blink_color()
                 )});
@@ -154,7 +155,7 @@ pub trait PrintWriter {
             else {
                 self.write_buffer(self.get_height() - 1,
                 self.get_column_position(),
-                ScreenChar {ascii_character: ascii_character, color_code: ColorCode::new(
+                ScreenChar {ascii_character, color_code: ColorCode::new(
                     front_color,
                     front_color
                 )});
@@ -206,13 +207,13 @@ pub trait PrintWriter {
                 let color_code = self.get_color_code();
                 self.write_buffer(row, col, ScreenChar {
                     ascii_character: byte,
-                    color_code: color_code,
+                    color_code,
                 });
-                let null = ScreenChar{ascii_character: 0,color_code: color_code};
+                let null = ScreenChar{ascii_character: 0, color_code};
                 if col < self.get_width()-1 &&self.read_buffer(row,col+1)==null{
                     self.write_buffer(row, col+1, ScreenChar {
                         ascii_character: b' ',
-                        color_code: color_code,
+                        color_code,
                     });
                 }
                 self.move_cursor_right(1);
@@ -309,7 +310,7 @@ impl AdvancedWriter {
     fn new() -> AdvancedWriter {
         let mode = Graphics640x480x16::new();
         AdvancedWriter {
-            mode: mode,
+            mode,
             column_position: 0,
             color_code: ColorCode::new(Color16::Yellow, Color16::Black),
             buffer: AdvancedBuffer::new(),
@@ -394,9 +395,9 @@ impl AdvancedWriter {
             self.mode.draw_line((-x + center.0, y + center.1), (-x + center.0, -y + center.1), color);
             self.mode.draw_line((-y + center.0, x + center.1), (y + center.0, x + center.1), color);
             self.mode.draw_line((-y + center.0, -x + center.1), (y + center.0, -x + center.1), color);
-            x = x + 1;
+            x += 1;
             if d > 0 {
-                y = y - 1;
+                y -= 1;
                 d = d + 4 * (x - y) + 10;
             }
             else {
@@ -409,8 +410,8 @@ impl AdvancedWriter {
     pub fn draw_logo(&mut self, x: isize, y: isize, scale: isize) {
         // 25
         self.draw_circle((x, y), 8 * scale as isize, Color16::Pink);
-        self.draw_circle((x - 4*scale, y - 4*scale), 1 * scale as isize, Color16::LightCyan);
-        self.draw_circle((x + 4*scale, y - 4*scale), 1 * scale as isize, Color16::LightCyan);
+        self.draw_circle((x - 4*scale, y - 4*scale), scale as isize, Color16::LightCyan);
+        self.draw_circle((x + 4*scale, y - 4*scale), scale as isize, Color16::LightCyan);
         self.draw_circle((x, y), 2 * scale as isize, Color16::LightGreen);
 
         for i in 0..scale {
@@ -486,19 +487,19 @@ impl AdvancedWriter {
 impl PrintWriter for AdvancedWriter {
     fn get_height(&self) -> usize {
         if self.terminal_border {
-            return BUFFER_HEIGHT_ADVANCED - 2;
+            BUFFER_HEIGHT_ADVANCED - 2
         }
         else {
-            return BUFFER_HEIGHT_ADVANCED;
+            BUFFER_HEIGHT_ADVANCED
         }
     }
 
     fn get_width(&self) -> usize {
         if self.terminal_border {
-            return BUFFER_WIDTH_ADVANCED - 2;
+            BUFFER_WIDTH_ADVANCED - 2
         }
         else {
-            return BUFFER_WIDTH_ADVANCED;
+            BUFFER_WIDTH_ADVANCED
         }
     }
 
@@ -592,7 +593,7 @@ impl Writer {
             column_position: 0,
             color_code: ColorCode::new(Color16::Yellow, Color16::Black),
             buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
-            mode: mode,
+            mode,
             back_color: Color16::Black,
             front_color: Color16::Yellow,
             blinked_color: Color16::Black,
@@ -603,6 +604,10 @@ impl Writer {
 
     pub fn init(&mut self) {
         self.mode.set_mode();
+        unsafe {
+            outb(0x3D4, 0x0A);
+            outb(0x3D5, 0x20);
+        };
     }
 }
 

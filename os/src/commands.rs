@@ -439,7 +439,7 @@ impl CommandRunner {
     }
 
     pub fn ls(&self) {
-        println!("");
+        println!();
         for i in USTARFS.lock().list_files(self.dir_id) {
             println!("{}", i);
         }                
@@ -478,11 +478,11 @@ impl CommandRunner {
             Some(data) => data,
             None => Vec::new(),
         };
-        println!("");
+        println!();
         for i in data.iter() {
             print!("{}", *i as char);
         }
-        println!("");               
+        println!();               
 }
 
     pub fn write(&self) {
@@ -508,6 +508,7 @@ impl CommandRunner {
         // each with a corresponding argument
         let (commands, args_list) = self.split_buffer();
 
+        #[allow(clippy::all)]
         for command in commands {
             // Get the corresponding args for the current command
             let args = args_list[index];
@@ -556,15 +557,15 @@ impl CommandRunner {
         let mut args_list = Vec::new();
         let mut command_len: i32;
         
-        // Go through the seperate commands in the buffer, each seperated by a `;`
-        for command in self.command_buffer.split(";"){
+        // Go through the seperate commands in the buffer, each separated by a `;`
+        for command in self.command_buffer.split(';'){
 
             let mut found_args = false;
 
-            // Go through the indivual command to see if args were provided
+            // Go through the individual command to see if args were provided
             for index in 0..command.len() {
-                // ` ` indicates seperation of command and args.
-                // Add command to scommands and args to args_list.
+                // ` ` indicates separation of command and args.
+                // Add command to commands and args to args_list.
                 if &command[index..index+1] == String::from(' ').as_str() {
                     commands.push(&command[0..index]);
                     args_list.push(&command[index + 1..command.len()]);
@@ -576,13 +577,13 @@ impl CommandRunner {
             // If no arguments were found,
             // make sure the command still gets added,
             // and the argument added is blank
-            if found_args == false {
+            if !found_args {
                 commands.push(command);
                 args_list.push("");
             }
         }
 
-        // Return the list of commands and corresponding arguemnts
+        // Return the list of commands and corresponding arguments
         (commands, args_list)
     }
 }
