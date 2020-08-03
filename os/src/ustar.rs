@@ -1494,6 +1494,7 @@ impl USTARFileSystem {
         };
         for i in split.iter() {
             part1.push_str(i);
+            part1.push_str("/");
         }
         (part1, name)
     }
@@ -1566,25 +1567,12 @@ impl USTARFileSystem {
     }
     
     // If a file doesn't exist, returns None
-    pub fn read_file(&self, file: String, id: u64) -> Option<Vec<u8>> {
-        let current_dir = self.current_dirs[&id].lock();
-        for i in current_dir.contents.iter() {
-            if i.lock().get_short_name() == file {
-                return Some(i.lock().get_data());
-            }
-        }
-        None
-    }
-    
-    pub fn read_file_absolute_path(&mut self, path: String) -> Option<Vec<u8>> {
-        let id = self.get_id();
-        self.change_directory_absolute_path(path.to_string(), id);
-        let mut string = self.split_path(&path);
-        let name = match string.pop() {
-            Some(i) => i,
-            None => "".to_string(),
+    pub fn read_file(&mut self, file: String, id: Option<u64>) -> Option<Vec<u8>> {
+        let file = self.resolve_file(file, id);
+        let file_data = match file {
+            Some(file) => return Some(file.lock().get_data()),
+            None => return None,
         };
-        self.read_file(name, id)
     }
     /*
     // If a file doesn't exist, running this function will create it
@@ -1658,7 +1646,7 @@ impl USTARFileSystem {
         true
     }
     
-    pub fn create_directory_absolute_path(&mut self, path: String) -> bool {
+    /*pub fn create_directory_absolute_path(&mut self, path: String) -> bool {
         let id = self.get_id();
         self.change_directory_absolute_path(path.to_string(), id);
         let mut string = self.split_path(&path);
@@ -1667,7 +1655,7 @@ impl USTARFileSystem {
             None => "".to_string(),
         };
         self.create_directory(name, id)    
-    }
+    }*/
     
     fn remove_directory_recursive(&mut self, folder: Arc<Mutex<Directory>>) {
         let mut folder = folder.lock();
