@@ -12,6 +12,7 @@ use crate::ustar::USTARFS;
 use crate::alloc::string::ToString;
 use crate::play_beep;
 use crate::play_tet_ost;
+use x86::io::outw;
 
 // Init a CommandRunner class to run commands for the user
 lazy_static! {
@@ -177,6 +178,8 @@ impl CommandRunner {
             self.logo_help();
         } else if args == String::from("help").as_str() {
             self.help_help();
+        } else if args == String::from("exit").as_str() {
+            self.shut_down_help();
         }
     }
 
@@ -193,6 +196,7 @@ impl CommandRunner {
         println!("tet-ost");
         println!("clear");
         println!("logo");
+        println!("exit");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
     }
@@ -273,6 +277,13 @@ impl CommandRunner {
         println!("\nCommand: help");
         println!("Displays information about terminal commands.");
         println!("One defined argument: optional command.");
+    }
+
+    // Describes and displays options for the exit command
+    fn shut_down_help(&self) {
+        println!("\nCommand: exit");
+        println!("Shuts down the system.");
+        println!("No defined arguments, everything after exit will be ignored.");
     }
 
     // beep command
@@ -370,6 +381,12 @@ impl CommandRunner {
     pub fn touch(&self, args: &str) {
         USTARFS.lock().write_file(args.to_string(), Vec::new(), Some(self.dir_id));
     }
+    // shutdown command
+    // shuts down the operating system
+    // ONLY WORKS ON QEMU NOT ON REAL HARDWARE!
+    pub fn shut_down(&self) {
+        unsafe { outw(0x604, 0x2000); }
+    }
 
     // Evaluate the command(s) in the buffer 
     pub fn eval_buffer(&mut self) {
@@ -406,6 +423,7 @@ impl CommandRunner {
                 "rm" => self.rm(args),
                 "touchhello" => self.touchhello(args),
 
+                "exit" => self.shut_down(),
                 _ => println!("\nInvalid Command: {}", command),
             }
             
