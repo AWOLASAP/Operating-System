@@ -19,8 +19,6 @@ use x86_64::{VirtAddr};
 use core::panic::PanicInfo;
 use os::task::{Task,keyboard,executor::EXECUTOR};
 use x86_64::instructions::interrupts;
-use lazy_static::lazy_static;
-use spin::Mutex;
 
 // defines a panic function for when not testing
 #[cfg(not(test))]
@@ -86,7 +84,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //     println!("");
     // });
 
-    EXECUTOR.lock().spawn(Task::new(example_task()));
-    EXECUTOR.lock().spawn(Task::new(keyboard::print_keypresses()));
-    EXECUTOR.lock().run();
+    EXECUTOR.write().spawn(Task::new(example_task()));
+    EXECUTOR.write().spawn(Task::new(keyboard::print_keypresses()));
+    EXECUTOR.write().run();
 }

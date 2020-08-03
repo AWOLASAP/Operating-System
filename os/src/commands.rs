@@ -1,5 +1,4 @@
 #![allow(unused_variables)]
-#![feature(in_band_lifetimes)]
 use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
@@ -114,8 +113,7 @@ impl CommandRunner {
             println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
         } else {
             TETRIS.lock().init();
-            unsafe{EXECUTOR.force_unlock()}
-            EXECUTOR.lock().spawn(Task::new(run_tetris()));
+            EXECUTOR.write().spawn(Task::new(run_tetris()));
         }
     }
 
