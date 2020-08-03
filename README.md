@@ -1,4 +1,7 @@
-<img src="https://github.com/AWOLASAP/Operating-System/blob/master/OSLogo.png?raw=true" width="256">
+<div style="text-align:center">
+	<img src="https://github.com/AWOLASAP/Operating-System/blob/master/OSLogo.png?raw=true" width="256">
+</div>
+
 # Operating-System 
 
 ## What's This?
