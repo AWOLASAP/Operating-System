@@ -93,16 +93,8 @@ impl Executor {
     }
 
     fn run_ready_tasks(& mut self) {
-        // destructure `self` to avoid borrow checker errors
-        // let Self {
-        //     tasks,
-        //     task_queue,
-        //     waker_cache,
-        // } = self;
-
-        for _ in 0..self.tasks.len()-1{
+        for _ in 1..MAX_PROC_NUM{
             thread::spawn(||{
-                // let executor = Arc::new(EXECUTOR.lock());
                 if let Ok(task_id) = EXECUTOR.read().task_queue.pop(){
                     let task = match EXECUTOR.read().tasks.get(&task_id) {
                         Some(task) => Arc::clone(task),
@@ -112,8 +104,8 @@ impl Executor {
                     let waker = Arc::clone(EXECUTOR.write().waker_cache
                         .entry(task_id)
                         .or_insert_with(|| Arc::new(Mutex::new(TaskWaker::new(task_id, EXECUTOR.read().task_queue.clone())))));
-                    let wakerlock = &waker.lock();
-                    let mut context = Context::from_waker(wakerlock);
+                    let waker_lock = &waker.lock();
+                    let mut context = Context::from_waker(waker_lock);
                     // runs task and removes it if it's finished
                     match task.lock().poll(&mut context) {
                         Poll::Ready(()) => {
@@ -125,25 +117,33 @@ impl Executor {
                 }
             });
         }
+        processor().run();
+        // destructure `self` to avoid borrow checker errors
+        // let Self {
+        //     tasks,
+        //     task_queue,
+        //     waker_cache,
+        // } = self;
         // polls tasks in queue until queue is empty
         // while let Ok(task_id) = task_queue.pop() {
         //     let task = match tasks.get_mut(&task_id) {
-        //         Some(task) => task,
+        //         Some(task) => Arc::clone(task),
         //         None => continue, // task no longer exists
         //     };
         //     // gets waker from cache or creates waker if one doesn't exist
-        //     let waker = waker_cache
+        //     let waker = Arc::clone(waker_cache
         //         .entry(task_id)
-        //         .or_insert_with(|| TaskWaker::new(task_id, task_queue.clone()));
-        //     let mut context = Context::from_waker(waker);
+        //         .or_insert_with(|| Arc::new(Mutex::new(TaskWaker::new(task_id, task_queue.clone())))));
+        //     let waker_lock = &waker.lock();
+        //     let mut context = Context::from_waker(waker_lock);
         //     // runs task and removes it if it's finished
-        //     match task.poll(&mut context) {
+        //     match task.lock().poll(&mut context) {
         //         Poll::Ready(()) => {
         //             tasks.remove(&task_id);
         //             waker_cache.remove(&task_id);
         //         }
         //         Poll::Pending => {}
-        //     }
+        //     };
         // }
     }
 }
