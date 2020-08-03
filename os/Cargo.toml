@@ -12,6 +12,7 @@ bootloader = { version = "0.9.8", features = ["map_physical_memory"]}
 volatile = "0.2.6"
 spin = "0.5.2"
 x86_64 = "0.11.0"
+x86 = "0.34.0"
 uart_16550 = "0.2.0"
 pic8259_simple = "0.2.0"
 pc-keyboard = "0.5.0"
@@ -49,7 +50,7 @@ default-features = false
 small_rng = true
 
 [package.metadata.bootimage]
-run-args = [ "-drive", "if=ide,format=raw,index=1,file=os.tar"]
+run-args = [ "-drive", "if=ide,format=raw,index=1,file=os.tar", "-soundhw", "pcspk"]
 test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"]
 test-success-exit-code = 33  # (0x10 << 1) | 1
 test-timeout = 300          # (in seconds)

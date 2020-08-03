@@ -2,7 +2,6 @@ use core::{future::Future, pin::Pin};
 use alloc::boxed::Box;
 use core::task::{Context, Poll};
 use core::sync::atomic::{AtomicU64, Ordering};
-pub mod simple_executor;
 pub mod keyboard;
 pub mod executor;
 
@@ -16,19 +15,22 @@ impl TaskId {
     }
 }
 
+// a task is a wrapper for a async defined function.
 pub struct Task {
     id: TaskId,
-    future: Pin<Box<dyn Future<Output = ()>>>,
+    future: Pin<Box<dyn Future<Output = ()> + Send + 'static>>,
 }
 
 impl Task {
-    pub fn new(future: impl Future<Output = ()> + 'static) -> Task {
+    // creates a new task with a unique id and a new future
+    pub fn new(future: impl Future<Output = ()> + Send + 'static) -> Task {
         Task {
             id: TaskId::new(),
             future: Box::pin(future),
         }
     }
 
+    // when a task is polled it's future will get polled
     fn poll(&mut self, context: &mut Context) -> Poll<()> {
         self.future.as_mut().poll(context)
     }

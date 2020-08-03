@@ -1632,11 +1632,10 @@ impl USTARFileSystem {
     // Removes a file if it exists, does nothing if it doesn't
     pub fn remove_file(&mut self, file: String, id: Option<u64>) {
         if let Some(file) =  self.resolve_file(file, id) {
-            /*let (first, last) = self.split_last_and_first(file.lock().name.to_string());
+            let (first, last) = self.split_last_and_first(file.lock().name.to_string());
             if let Some(directory) = self.resolve_directory( first, id) {
                 file.lock().name = "defrag".to_string();
                 file.lock().should_write();
-                println!("{}", file.lock().size);
                 let contents =  &mut directory.lock().contents;
                 for (i, d) in contents.iter().enumerate() {
                     if d.lock().name == "defrag" {
@@ -1645,11 +1644,11 @@ impl USTARFileSystem {
                     }
                 }
                 self.write();
-            }*/
-            file.lock().name = "defrag".to_string();
+            }
+/*            file.lock().name = "defrag".to_string();
             file.lock().should_write();
             println!("{}", file.lock().get_writable_representation().len());
-            self.write();
+            self.write();*/
         }
     }
     /*

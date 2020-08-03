@@ -12,23 +12,23 @@ mod serial;
 // Use these for things like buffer access
 use os::vga_buffer::{MODE, ADVANCED_WRITER};
 use vga::colors::Color16;
-use os::println;
 use os::print;
+use os::{println,allocator};
 use os::memory::{self, BootInfoFrameAllocator};
-use os::allocator;
 use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr};
 use core::panic::PanicInfo;
-use os::task::{Task};
-use os::task::executor::Executor;
-use os::task::keyboard;
+use os::task::{Task,keyboard,executor::Executor};
 use x86_64::instructions::interrupts;
 use os::ata_block_driver;
 use alloc::vec::Vec;
 use os::ustar::Directory;
 use os::ustar::USTARFS;
 use os::commands::COMMANDRUNNER;
+use lazy_static::lazy_static;
+use spin::Mutex;
 
+// defines a panic function for when not testing
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -36,6 +36,7 @@ fn panic(info: &PanicInfo) -> ! {
     os::hlt_loop();
 }
 
+// defines a panic function for when testing
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -51,6 +52,7 @@ async fn example_task() {
     println!("async number: {}", number);
 }
 
+// creates the entry point for the application
 entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     MODE.lock().init();
@@ -72,8 +74,8 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     #[cfg(test)]
     test_main();
-    
-    
+
+
     interrupts::without_interrupts(|| {
 
         MODE.lock().graphics_init();
@@ -150,12 +152,14 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     }
     
 */
-    let mut executor = Executor::new();
+    //let mut executor = Executor::new();
     //executor.spawn(Task::new(example_task()));
-    executor.spawn(Task::new(keyboard::print_keypresses()));
-    executor.run();
-
-
+    //executor.spawn(Task::new(keyboard::print_keypresses()));
+    //executor.run();
+    EXECUTOR.lock().spawn(Task::new(example_task()));
+    EXECUTOR.lock().spawn(Task::new(keyboard::print_keypresses()));
+    EXECUTOR.lock().run();
+}
     //let mut executor = Executor::new();
     //executor.spawn(Task::new(example_task()));
     //executor.spawn(Task::new(keyboard::print_keypresses()));
@@ -170,4 +174,9 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     // MODE.lock().text_init();
     //WRITER.lock().set_back_color(Color16::White);
     //WRITER.lock().set_front_color(Color16::Black);
+
+lazy_static! {
+    pub static ref EXECUTOR: Mutex<Executor> = {
+        Mutex::new(Executor::new())
+    };
 }

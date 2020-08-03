@@ -54,15 +54,15 @@ impl ScreenChar {
     }
 }
 
-const BUFFER_HEIGHT: usize = 25;
-const BUFFER_WIDTH: usize = 80;
+pub const BUFFER_HEIGHT: usize = 25;
+pub const BUFFER_WIDTH: usize = 80;
 
 #[repr(transparent)]
 struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
-const BUFFER_HEIGHT_ADVANCED: usize = 60;
+pub const BUFFER_HEIGHT_ADVANCED: usize = 60;
 const BUFFER_WIDTH_ADVANCED: usize = 80;
 
 #[derive(Copy, Clone)]
@@ -183,8 +183,10 @@ pub trait PrintWriter {
         }
         if self.get_column_position() + dist > self.get_width() - 1 {
            self.new_line();
+           return
         }
-        else {
+        let null = ScreenChar{ascii_character: 0,color_code: self.get_color_code()};
+        if self.read_buffer(self.get_height()-1,self.get_column_position()+dist)!=null{
             self.set_column_position(self.get_column_position() + dist)
         }
     }
@@ -206,6 +208,13 @@ pub trait PrintWriter {
                     ascii_character: byte,
                     color_code: color_code,
                 });
+                let null = ScreenChar{ascii_character: 0,color_code: color_code};
+                if col < self.get_width()-1 &&self.read_buffer(row,col+1)==null{
+                    self.write_buffer(row, col+1, ScreenChar {
+                        ascii_character: b' ',
+                        color_code: color_code,
+                    });
+                }
                 self.move_cursor_right(1);
             }
         }
@@ -228,7 +237,7 @@ pub trait PrintWriter {
 
     fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
-            ascii_character: b' ',
+            ascii_character: 0,
             color_code: self.get_color_code(),
         };
         for col in 0..self.get_width() {
@@ -239,8 +248,6 @@ pub trait PrintWriter {
     fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
-                0x1B => self.move_cursor_left(1),
-                0x1A => self.move_cursor_right(1),
                 // Delete
                 0x7f => self.delete(),
                 // printable ASCII byte or newline
@@ -439,7 +446,7 @@ impl AdvancedWriter {
                 if index2 > self.get_width() {
                     continue;
                 }
-                if character_new.ascii_character != 0 && (character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code){
+                if character_new.ascii_character != character_old.ascii_character || character_new.color_code != character_old.color_code {
                     self.draw_character((index2 + offset) * 8, (index1 + offset) * 8, *character_new)
                 }
             }
