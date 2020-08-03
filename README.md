@@ -1,4 +1,4 @@
-# Operating-System
+# Operating-System <img src="https://github.com/AWOLASAP/Operating-System/blob/master/OSLogo.png?raw=true" width="48">
 ![alt text](https://github.com/AWOLASAP/Operating-System/blob/master/OSLogo.png?raw=true)
 
 ## What's This?
