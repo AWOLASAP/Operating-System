@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 use crate::tetris::TETRIS;
 use crate::play_beep;
 use crate::play_tet_ost;
+use x86::io::outw;
 
 
 // Init a CommandRunner class to run commands for the user
@@ -309,6 +310,13 @@ impl CommandRunner {
         }
     }
 
+    // shutdown command
+    // shuts down the operating system
+    // ONLY WORKS ON QEMU NOT ON REAL HARDWARE!
+    pub fn shut_down(&self) {
+        unsafe { outw(0x604, 0x2000); }
+    }
+
     // Evaluate the command(s) in the buffer 
     pub fn eval_buffer(&mut self) {
         // Index to keep track of the command number for the argument number
@@ -334,6 +342,7 @@ impl CommandRunner {
                 "clear" => self.clear(),
                 "logo" => self.logo(),
                 "yes" => self.yes(),
+                "exit" => self.shut_down(),
                 _ => println!("\nInvalid Command: {}", command),
             }
             
