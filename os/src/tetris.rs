@@ -182,51 +182,35 @@ impl Tetris {
                     self.move_timer = 5;
                     move_down = true;
                 }
-                if key == 1 {
-                    self.current_piece.x -= 1;
-                    moved_dir = -1;
-                }
-                else if key == 2 {
-                    self.current_piece.x += 1;
-                    moved_dir = 1;
-                }
-                else if key == 3 {
-                    self.current_piece.y += 1;
-                    if move_down {
+
+                match key{
+                    1 =>{self.current_piece.x -= 1;
+                        moved_dir = -1;},
+                    2 =>{self.current_piece.x += 1;
+                        moved_dir = 1;},
+                    3 =>{self.current_piece.y += 1;
                         move_down = false;
-                    }
-                    descended = true;
-                }
-                else if key == 4 {
-                    try_until_fall = true;
-                    descended = true;
-                }
-                else if key == 5 {
-                    self.current_piece.position += 3;
-                    rot_dir_inverse = 1;
-                    rotated = true;
-                }
-                else if key == 6 {
-                    self.current_piece.position += 1;
-                    rot_dir_inverse = 3;
-                    rotated = true;
-                }
-                else if key == 7 {
-                    self.current_piece.position += 2;
-                    rot_dir_inverse = 2;
-                    rotated = true;
-                }
-                else if key == 8 {
-                    self.hold().await;
-                }
-                else if key == 9 {
-                    // This turns tetris off
-                    unsafe {TIME_ROUTER.force_unlock()};
-                    KEYBOARD_ROUTER.lock().mode = 0;
-                    TIME_ROUTER.lock().mode = 0;
-                    ADVANCED_WRITER.lock().wipe_buffer();
-                    println!("");
-                    return;
+                        descended = true;},
+                    4=> {try_until_fall = true;
+                        descended = true;},
+                    5 =>{self.current_piece.position += 3;
+                        rot_dir_inverse = 1;
+                        rotated = true;},
+                    6=> {self.current_piece.position += 1;
+                        rot_dir_inverse = 3;
+                        rotated = true;},
+                    7 =>{self.current_piece.position += 2;
+                        rot_dir_inverse = 2;
+                        rotated = true;},
+                    8 =>self.hold().await,
+                    9 =>{// This turns tetris off
+                        unsafe {TIME_ROUTER.force_unlock()};
+                        KEYBOARD_ROUTER.lock().mode = 0;
+                        TIME_ROUTER.lock().mode = 0;
+                        ADVANCED_WRITER.lock().wipe_buffer();
+                        println!("");
+                        return;}
+                    _=>(),
                 }
 
                 if move_down {

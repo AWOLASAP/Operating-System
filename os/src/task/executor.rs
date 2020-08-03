@@ -117,14 +117,16 @@ impl Executor {
                 }
             });
         }
+        //this was used in the examples from the rcore-thread github so I assume it's need to start the threads
         processor().run();
+
         // destructure `self` to avoid borrow checker errors
         // let Self {
         //     tasks,
         //     task_queue,
         //     waker_cache,
         // } = self;
-        // polls tasks in queue until queue is empty
+        // // polls tasks in queue until queue is empty
         // while let Ok(task_id) = task_queue.pop() {
         //     let task = match tasks.get_mut(&task_id) {
         //         Some(task) => Arc::clone(task),
