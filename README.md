@@ -12,31 +12,8 @@ This operating system is a project for the [North West Advanced Programming Work
 - Filesystem
 - PC Speaker Audio
 
-### TODO Features
-- File editing
-- File manipulation commands
-- Help pages for commands
-- Zork port
-- Brainf support
-- ACPI implementation
-
 ### Core UX
 The UX is simple at its finest. It includes text output, text input, as well as PC speaker output and some 2D graphics.
-
-## Tools We Used
-- Rust
-- QEMU
-- Combination of Vim, Atom, and Visual Studio Code
-- Trello
-- Git/Github
-- https://os.phil-opp.com/
-- http://osblog.stephenmarz.com/index.html
-
-## People Involved
-- [otisdog8](https://github.com/otisdog8)
-- [AWOLASAP](https://github.com/AWOLASAP)
-- [Alex-x90](https://github.com/Alex-x90)
-- [Lolshoc](https://github.com/Lolshoc)
 
 ## How to run
 If you just want to run the operating system on actual hardware, you will need the .bin file which can be found via the release page (TODO)
@@ -59,4 +36,26 @@ To run:
 cargo run
 ```
 
+### TODO Features
+- File editing
+- File manipulation commands
+- Help pages for commands
+- Zork port
+- Brainf support
+- ACPI implementation
+
+## Tools We Used
+- Rust
+- QEMU
+- Combination of Vim, Atom, and Visual Studio Code
+- Trello
+- Git/Github
+- https://os.phil-opp.com/
+- http://osblog.stephenmarz.com/index.html
+
+## People Involved
+- [otisdog8](https://github.com/otisdog8)
+- [AWOLASAP](https://github.com/AWOLASAP)
+- [Alex-x90](https://github.com/Alex-x90)
+- [Lolshoc](https://github.com/Lolshoc)
 
