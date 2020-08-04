@@ -3,7 +3,7 @@ use crate::println;
 use lazy_static::lazy_static;
 use alloc::string::String;
 use spin::Mutex;
-use crate::vga_buffer::{MODE, BUFFER_HEIGHT, BUFFER_HEIGHT_ADVANCED, ADVANCED_WRITER};
+use crate::vga_buffer::{MODE, BUFFER_HEIGHT, BUFFER_HEIGHT_ADVANCED, ADVANCED_WRITER,WRITER,PrintWriter};
 use vga::colors::Color16;
 use x86_64::instructions::interrupts;
 use alloc::vec::Vec;
@@ -13,6 +13,29 @@ use crate::alloc::string::ToString;
 use crate::play_beep;
 use crate::play_tet_ost;
 use x86::io::outw;
+
+pub fn from_str(input: &str) -> Result<Color16, &str> {
+    match input {
+        "black"=>Ok(Color16::Black),
+        "blue"=>Ok(Color16::Blue),
+        "green"=>Ok(Color16::Green),
+        "cyan"=>Ok(Color16::Cyan),
+        "red"=>Ok(Color16::Red),
+        "magenta"=>Ok(Color16::Magenta),
+        "brown"=>Ok(Color16::Brown),
+        "lightgrey"=>Ok(Color16::LightGrey),
+        "darkgrey"=>Ok(Color16::DarkGrey),
+        "lightblue"=>Ok(Color16::LightBlue),
+        "lightgreen"=>Ok(Color16::LightGreen),
+        "lightcyan"=>Ok(Color16::LightCyan),
+        "lightred"=>Ok(Color16::LightRed),
+        "pink"=>Ok(Color16::Pink),
+        "yellow"=>Ok(Color16::Yellow),
+        "white"=>Ok(Color16::White),
+        _ => Err("Not a valid color."),
+    }
+}
+
 
 // Init a CommandRunner class to run commands for the user
 lazy_static! {
@@ -26,7 +49,7 @@ pub struct CommandRunner{
     index: usize,
 }
 
-// Implementation of CommandRunner. 
+// Implementation of CommandRunner.
 // Essentially it handles a command buffer, with
 // commands inside that it can be executed upon
 impl CommandRunner {
@@ -45,7 +68,7 @@ impl CommandRunner {
         self.dir_id = USTARFS.lock().get_id();
     }
 
-    // Add a character to the command buffer. 
+    // Add a character to the command buffer.
     // This was used instead of reading what was on the screen
     // due to it being easier and more reliable.
     pub fn add_to_buffer(&mut self, c: char) {
@@ -85,7 +108,7 @@ impl CommandRunner {
             self.index -= 1;
         }
     }
-    
+
     // print-buffer command.
     // Prints out the command buffer to the screen before it get cleared
     pub fn print_buffer(&self) {
@@ -128,7 +151,7 @@ impl CommandRunner {
             println!("\nGraphics mode is active");
         }
     }
-    
+
     // tetris command
     // Plays the game Tetris
     pub fn tetris(&self) {
@@ -152,56 +175,36 @@ impl CommandRunner {
     }
 
     // help command.
-    // Lists all available commands 
+    // Lists all available commands
     pub fn help(&self, args: &str) {
-        if args == "" {
-            self.basic_help();
-        } else if args == "print-buffer" {
-            self.print_buffer_help();
-        } else if args == "echo" {
-            self.echo_help();
-        } else if args == "gterm" {
-            self.gterm_help();
-        } else if args == "tterm" {
-            self.tterm_help()
-        } else if args == "mode" {
-            self.mode_help();
-        } else if args == "tetris" {
-            self.tetris_help();
-        } else if args == "beep" {
-            self.beep_help();
-        } else if args == "tet-ost" {
-            self.tet_ost_help();
-        } else if args == "clear" {
-            self.clear_help();
-        } else if args == "logo" {
-            self.logo_help();
-        } else if args == "ls" {
-            self.ls_help();
-        } else if args == "dir" {
-            self.dir_help();
-        } else if args == "cd" {
-            self.cd_help();
-        } else if args == "cat" {
-            self.cat_help();
-        } else if args == "mkdir" {
-            self.mkdir_help();
-        } else if args == "rmdir" {
-            self.rmdir_help();
-        } else if args == "defrag" {
-            self.defrag_help();
-        } else if args == "write" {
-            self.write_help();
-        } else if args == "touch" {
-            self.touch_help();
-        } else if args == "rm" {
-            self.rm_help();
-        } else if args == "touchhello" {
-            self.touchhello_help();
-        } else if args == "help" {
-            self.help_help();
-        } else if args == "exit" {
-            self.shut_down_help();
+        match args{
+            ""=>self.basic_help(),
+            "print-buffer"=>self.print_buffer_help(),
+            "echo"=>self.echo_help(),
+            "gterm"=>self.gterm_help(),
+            "tterm"=>self.tterm_help(),
+            "mode"=>self.mode_help(),
+            "tetris"=>self.tetris_help(),
+            "beep"=>self.beep_help(),
+            "tet-ost"=>self.tet_ost_help(),
+            "clear"=>self.clear_help(),
+            "logo"=>self.logo_help(),
+            "ls"=>self.ls_help(),
+            "dir"=>self.dir_help(),
+            "cd"=>self.cd_help(),
+            "cat"=>self.cat_help(),
+            "mkdir"=>self.mkdir_help(),
+            "rmdir"=>self.rmdir_help(),
+            "defrag"=>self.defrag_help(),
+            "write"=>self.write_help(),
+            "touch"=>self.touch_help(),
+            "rm"=>self.rm_help(),
+            "touchhello"=>self.touchhello_help(),
+            "help"=>self.help_help(),
+            "set_text_color"=>self.set_text_color_help(),
+            "set_background_color"=>self.set_background_color_help(),
+            "exit"=>self.shut_down_help(),
+            _=>print!("\nThat command doesn't exist."),
         }
     }
 
@@ -229,6 +232,8 @@ impl CommandRunner {
         print!("touch, ");
         println!("rm");
         print!("touchhello, ");
+        println!("set_text_color");
+        print!("set_background_color, ");
         println!("exit");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
@@ -398,6 +403,18 @@ impl CommandRunner {
         println!("ONLY WORKS FOR QEMU, NOT REAL HARDWARE");
     }
 
+    fn set_text_color_help(&self){
+        println!("\nCommand: set_text_color");
+        println!("Changes the text color.");
+        println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive).");
+    }
+
+    fn set_background_color_help(&self){
+        println!("\nCommand: set_background_color");
+        println!("Changes the background color.");
+        println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive).");
+    }
+
     // beep command
     // Calls the pcspeaker and plays a beep for 2 cycles
     pub fn beep(&self, args: &str) {
@@ -415,7 +432,7 @@ impl CommandRunner {
         let num: i32 = args.parse().unwrap_or(1);
         play_tet_ost!(num);
     }
-    
+
     // clear command
     // Clears the screen by writing a bunch on new lines
     pub fn clear(&self) {
@@ -429,9 +446,41 @@ impl CommandRunner {
             }
         }
     }
-   
+
+    pub fn set_text_color(&self, args: &str){
+        let args = args.to_lowercase();
+        let color = from_str(&args);
+        let color = match color {
+            Ok(color) => color,
+            Err(why) => {println!("\n{}",why);return},
+        };
+        if MODE.lock().text {
+            WRITER.lock().set_front_color(color);
+            WRITER.lock().rerender_screen();
+        } else {
+            ADVANCED_WRITER.lock().set_front_color(color);
+            ADVANCED_WRITER.lock().rerender_screen();
+        }
+    }
+
+    pub fn set_background_color(&self, args: &str){
+        let args = args.to_lowercase();
+        let color = from_str(&args);
+        let color = match color {
+            Ok(color) => color,
+            Err(why) => {println!("\n{}",why);return},
+        };
+        if MODE.lock().text {
+            WRITER.lock().set_back_color(color);
+            WRITER.lock().rerender_screen();
+        } else {
+            ADVANCED_WRITER.lock().set_back_color(color);
+            ADVANCED_WRITER.lock().rerender_screen();
+        }
+    }
+
     // yes command
-    // Continuously prints y to get rid of those pesky 
+    // Continuously prints y to get rid of those pesky
     // "Would you like to do X [y/N]" messages
     pub fn yes(&self) {
         loop {
@@ -443,7 +492,7 @@ impl CommandRunner {
         println!();
         for i in USTARFS.lock().list_files(self.dir_id) {
             println!("{}", i);
-        }                
+        }
         for i in USTARFS.lock().list_subdirectories(self.dir_id) {
             println!("{}", i);
         }
@@ -483,8 +532,8 @@ impl CommandRunner {
         for i in data.iter() {
             print!("{}", *i as char);
         }
-        println!();               
-}
+        println!();
+    }
 
     pub fn write(&self) {
         USTARFS.lock().write();
@@ -501,7 +550,7 @@ impl CommandRunner {
         unsafe { outw(0x604, 0x2000); }
     }
 
-    // Evaluate the command(s) in the buffer 
+    // Evaluate the command(s) in the buffer
     pub fn eval_buffer(&mut self) {
         // Index to keep track of the command number for the argument number
         let mut index = 0;
@@ -529,6 +578,7 @@ impl CommandRunner {
                 "ls" => self.ls(),
                 "dir" => self.ls(),
                 "cd" => self.cd(args),
+                "dir"=> self.cd(args),
                 "cat" => self.cat(args),
                 "mkdir" => self.mkdir(args),
                 "rmdir" => self.rmdir(args),
@@ -537,15 +587,16 @@ impl CommandRunner {
                 "touch" => self.touch(args),
                 "rm" => self.rm(args),
                 "touchhello" => self.touchhello(args),
-
+                "set_text_color"=>self.set_text_color(args),
+                "set_background_color"=>self.set_background_color(args),
                 "exit" => self.shut_down(),
                 _ => println!("\nInvalid Command: {}", command),
             }
-            
+
             // Index increases as we move onto the next command
             index += 1;
         }
-        
+
         // Clear the command buffer after an evaluation
         self.command_buffer = String::from("");
         self.index = 0;
@@ -557,7 +608,7 @@ impl CommandRunner {
         let mut commands = Vec::new();
         let mut args_list = Vec::new();
         let mut command_len: i32;
-        
+
         // Go through the seperate commands in the buffer, each separated by a `;`
         for command in self.command_buffer.split(';'){
 
@@ -573,7 +624,7 @@ impl CommandRunner {
                     found_args = true;
                     break;
                 }
-            }    
+            }
 
             // If no arguments were found,
             // make sure the command still gets added,

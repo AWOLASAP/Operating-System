@@ -53,6 +53,9 @@ impl ScreenChar {
             color_code: ColorCode::new(Color16::Black, Color16::Black),
         }
     }
+    fn set_color(&mut self,color:ColorCode){
+        self.color_code = color;
+    }
 }
 
 pub const BUFFER_HEIGHT: usize = 25;
@@ -134,6 +137,17 @@ pub trait PrintWriter {
 
     fn disable_blink(&mut self) {
         self.set_blink_on(false);
+    }
+
+    //rerenders all characters on screen
+    fn rerender_screen(&mut self){
+        for row in 0..self.get_height() {
+            for col in 0..self.get_width() {
+                let mut character = self.read_buffer(row, col);
+                character.set_color(ColorCode::new(self.get_front_color(), self.get_back_color()));
+                self.write_buffer(row, col, character);
+            }
+        }
     }
 
     // If cursor has blinked, then un-blink it, otherwise blink it
