@@ -11,6 +11,7 @@ use crate::timer_routing::TIME_ROUTER;
 use x86_64::instructions::interrupts;
 use crate::vga_buffer::PrintWriter;
 use crate::alloc::string::ToString;
+use crate::commands::COMMANDRUNNER;
 
 // This is probably not going to be "real" vi, but enough of a clone to do basic stuff.
 
@@ -95,6 +96,7 @@ impl FakeVim {
             for i in self.command_buffer.as_bytes() {
                 match *i as char {
                     'i' => {
+                        ADVANCED_WRITER.lock().wipe_buffer();
                         self.command_mode = false;
                         self.input_mode = true;
                     },
@@ -106,8 +108,16 @@ impl FakeVim {
                             KEYBOARD_ROUTER.lock().mode.terminal = true;
                             TIME_ROUTER.lock().mode.vim = false;
                             ADVANCED_WRITER.lock().enable_blink();
+                            println!();
+                            print!("[user@rust {}]# ", USTARFS.lock().cwd(COMMANDRUNNER.lock().dir_id));
                         });
+                        return
                     },
+                    'e' => {
+                        if let Some(data) = USTARFS.lock().read_file(self.filename.to_string(), self.id) {
+                            self.data = data;
+                        }
+                    }
                     'w' => {
                         USTARFS.lock().remove_file(self.filename.to_string(), self.id);
                         USTARFS.lock().write_file(self.filename.to_string(), self.data.clone(), self.id);
@@ -117,6 +127,7 @@ impl FakeVim {
                     },
                 }
             }
+            self.render_buffer();
             return;
         }
         else if command == 0x08 as char {
@@ -124,6 +135,9 @@ impl FakeVim {
         }
         else {
             self.command_buffer.push(command);
+        }
+        for i in 0..10 {
+            ADVANCED_WRITER.lock().draw_char(560 + i * 8, 472, ' ', Color16::Black, Color16::Black);
         }
         for (i, c) in self.command_buffer.as_bytes().iter().enumerate() {
             ADVANCED_WRITER.lock().draw_char(560 + i * 8, 472, *c as char, Color16::White, Color16::Black);
@@ -215,6 +229,8 @@ impl FakeVim {
     pub fn handle_esc(&mut self) {
         self.input_mode = false;
         self.command_mode = false;
+        ADVANCED_WRITER.lock().wipe_buffer();
+        self.render_buffer();
     }
 
     pub fn init(&mut self, file: String, id: Option<u64>) {
@@ -305,6 +321,10 @@ impl FakeVim {
                     break;
                 }
             }
+        }
+        if self.input_mode {
+            ADVANCED_WRITER.lock().clear_buffer();
+            println!("insert");
         }
         
 

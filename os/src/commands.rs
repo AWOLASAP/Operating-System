@@ -46,7 +46,7 @@ lazy_static! {
 // CommandRunner really only needs a place to store the commands
 pub struct CommandRunner{
     command_buffer: String,
-    dir_id: u64,
+    pub dir_id: u64,
     index: usize,
 }
 
@@ -77,6 +77,7 @@ impl CommandRunner {
         if c == '\n' {
             // If the char is a newline, evaluate the buffer
             self.eval_buffer();
+            print!("[user@rust {}]# ", USTARFS.lock().cwd(self.dir_id));
         } else if c == backspace_char {
             // If the char is a backspace, remove the last character from the buffer
             self.remove_from_buffer();
@@ -537,7 +538,8 @@ impl CommandRunner {
     pub fn touchhello(&self, args: &str) {
         let data = String::from("Hello World!");
         let data = data.into_bytes();
-        USTARFS.lock().write_file(args.to_string(), data, Some(self.dir_id));    }
+        USTARFS.lock().write_file(args.to_string(), data, Some(self.dir_id));    
+    }
 
     pub fn cat(&self, args: &str) {
         let data = match USTARFS.lock().read_file(args.to_string(), Some(self.dir_id)) {
@@ -566,7 +568,11 @@ impl CommandRunner {
     }
 
     pub fn vim(&self, args: &str) {
-        FAKE_VIM.lock().init(args.to_string(), Some(self.dir_id));
+        if MODE.lock().text {
+            println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
+        } else {
+            FAKE_VIM.lock().init(args.to_string(), Some(self.dir_id));
+        }
     }
 
     // shutdown command
@@ -618,7 +624,7 @@ impl CommandRunner {
                 "set_background_color"=>self.set_background_color(args),
                 "exit" => self.shut_down(),
                 "proot" => self.proot(),
-                _ => println!("\nInvalid Command: {}", command),
+                _ => println!("Invalid Command: {}", command),
             }
 
             // Index increases as we move onto the next command

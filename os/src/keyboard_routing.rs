@@ -68,8 +68,8 @@ impl KeyboardRouter {
 
     fn unicode(&self, character: char) {
         if self.mode.terminal {
-            add_command_buffer!(character);
             print!("{}", character);
+            add_command_buffer!(character);
         }
         else if self.mode.screenbuffer {
             print!("{}", character);

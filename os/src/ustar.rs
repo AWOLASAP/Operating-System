@@ -1398,6 +1398,11 @@ impl USTARFileSystem {
         result
     }
 
+    pub fn cwd(&self, id: u64) -> String {
+        let current_dir = self.current_dirs[&id].lock();
+        current_dir.name.to_string()
+    }
+
     // Checks if a file path is relative or absolute
     fn is_absolute(&self, path: &str) -> bool {
         (match path.split('/').next() {Some(val) => val.len(), None => 0} == 0)

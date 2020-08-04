@@ -12,7 +12,7 @@ mod serial;
 // Use these for things like buffer access
 use os::vga_buffer::{MODE, ADVANCED_WRITER};
 use vga::colors::Color16;
-use os::{println,allocator};
+use os::{println,allocator,print};
 use os::memory::{self, BootInfoFrameAllocator};
 use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr};
@@ -84,7 +84,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
             ADVANCED_WRITER.lock().draw_rect((0, 0), (75, 480), Color16::Blue);
         }
         ADVANCED_WRITER.lock().clear_buffer();
-        //MODE.lock().text_init();
+        MODE.lock().text_init();
         println!();
     });
     USTARFS.lock().init();
@@ -102,7 +102,8 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //executor.spawn(Task::new(example_task()));
     //executor.spawn(Task::new(keyboard::print_keypresses()));
     //executor.run();
-    EXECUTOR.lock().spawn(Task::new(example_task()));
+    print!("[user@rust /]# ");
+    //EXECUTOR.lock().spawn(Task::new(example_task()));
     EXECUTOR.lock().spawn(Task::new(keyboard::print_keypresses()));
     EXECUTOR.lock().run();
 }
