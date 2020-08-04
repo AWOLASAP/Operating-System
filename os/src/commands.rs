@@ -395,6 +395,7 @@ impl CommandRunner {
         println!("\nCommand: exit");
         println!("Shuts down the system.");
         println!("No defined arguments, everything after exit will be ignored.");
+        println!("ONLY WORKS FOR QEMU, NOT REAL HARDWARE");
     }
 
     // beep command
