@@ -16,7 +16,6 @@ use x86::io::outw;
 
 //TODO
 //have colors update when text or background colors change
-//add help commands
 
 pub fn from_str(input: &str) -> Result<Color16, &str> {
     match input {
@@ -27,12 +26,12 @@ pub fn from_str(input: &str) -> Result<Color16, &str> {
         "red"=>Ok(Color16::Red),
         "magenta"=>Ok(Color16::Magenta),
         "brown"=>Ok(Color16::Brown),
-        "lightGrey"=>Ok(Color16::LightGrey),
-        "darkGrey"=>Ok(Color16::DarkGrey),
-        "lightBlue"=>Ok(Color16::LightBlue),
-        "lightGreen"=>Ok(Color16::LightGreen),
-        "lightCyan"=>Ok(Color16::LightCyan),
-        "lightRed"=>Ok(Color16::LightRed),
+        "lightgrey"=>Ok(Color16::LightGrey),
+        "darkgrey"=>Ok(Color16::DarkGrey),
+        "lightblue"=>Ok(Color16::LightBlue),
+        "lightgreen"=>Ok(Color16::LightGreen),
+        "lightcyan"=>Ok(Color16::LightCyan),
+        "lightred"=>Ok(Color16::LightRed),
         "pink"=>Ok(Color16::Pink),
         "yellow"=>Ok(Color16::Yellow),
         "white"=>Ok(Color16::White),
@@ -181,32 +180,23 @@ impl CommandRunner {
     // help command.
     // Lists all available commands
     pub fn help(&self, args: &str) {
-        if args == String::from("").as_str() {
-            self.basic_help();
-        } else if args == String::from("print-buffer").as_str() {
-            self.print_buffer_help();
-        } else if args == String::from("echo").as_str() {
-            self.echo_help();
-        } else if args == String::from("gterm").as_str() {
-            self.gterm_help();
-        } else if args == String::from("tterm").as_str() {
-            self.tterm_help()
-        } else if args == String::from("mode").as_str() {
-            self.mode_help();
-        } else if args == String::from("tetris").as_str() {
-            self.tetris_help();
-        } else if args == String::from("beep").as_str() {
-            self.beep_help();
-        } else if args == String::from("tet-ost").as_str() {
-            self.tet_ost_help();
-        } else if args == String::from("clear").as_str() {
-            self.clear_help();
-        } else if args == String::from("logo").as_str() {
-            self.logo_help();
-        } else if args == String::from("help").as_str() {
-            self.help_help();
-        } else if args == String::from("exit").as_str() {
-            self.shut_down_help();
+        match args{
+            ""=>self.basic_help(),
+            "print-buffer"=>self.print_buffer_help(),
+            "echo"=>self.echo_help(),
+            "gterm"=>self.gterm_help(),
+            "tterm"=>self.tterm_help(),
+            "mode"=>self.mode_help(),
+            "tetris"=>self.tetris_help(),
+            "beep"=>self.beep_help(),
+            "tet-ost"=>self.tet_ost_help(),
+            "clear"=>self.clear_help(),
+            "logo"=>self.logo_help(),
+            "help"=>self.help_help(),
+            "exit"=>self.shut_down_help(),
+            "set_text_color"=>self.set_text_color_help(),
+            "set_background_color"=>self.set_background_color_help(),
+            _=>print!("\nThat command doesn't exist."),
         }
     }
 
@@ -224,6 +214,8 @@ impl CommandRunner {
         println!("clear");
         println!("logo");
         println!("exit");
+        println!("set_text_color");
+        println!("set_background_color");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
     }
@@ -313,6 +305,18 @@ impl CommandRunner {
         println!("No defined arguments, everything after exit will be ignored.");
     }
 
+    fn set_text_color_help(&self){
+        println!("\nCommand: set_text_color");
+        println!("Changes the text color.");
+        println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive)");
+    }
+
+    fn set_background_color_help(&self){
+        println!("\nCommand: set_background_color");
+        println!("Changes the background color.");
+        println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive)");
+    }
+
     // beep command
     // Calls the pcspeaker and plays a beep for 2 cycles
     pub fn beep(&self, args: &str) {
@@ -346,7 +350,8 @@ impl CommandRunner {
     }
 
     pub fn set_text_color(&self, args: &str){
-        let color = from_str(args);
+        let args = args.to_lowercase();
+        let color = from_str(&args);
         let color = match color {
             Ok(color) => color,
             Err(why) => {println!("\n{}",why);return},
@@ -359,7 +364,8 @@ impl CommandRunner {
     }
 
     pub fn set_background_color(&self, args: &str){
-        let color = from_str(args);
+        let args = args.to_lowercase();
+        let color = from_str(&args);
         let color = match color {
             Ok(color) => color,
             Err(why) => {println!("\n{}",why);return},
