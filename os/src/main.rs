@@ -93,6 +93,11 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //USTARFS.lock().print_root();
     COMMANDRUNNER.lock().init();
 
+    //for i in 0..16 {
+    //    let x: u8 = i * 4; //
+    //    println!(" \n{} {} {} {}: {}", x as char, (x + 1) as char, (x + 2) as char, (x + 3) as char, x);
+    //}
+
     //let mut executor = Executor::new();
     //executor.spawn(Task::new(example_task()));
     //executor.spawn(Task::new(keyboard::print_keypresses()));
