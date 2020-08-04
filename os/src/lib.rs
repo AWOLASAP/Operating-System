@@ -10,9 +10,6 @@
 extern crate rlibc;
 extern crate alloc;
 
-#[macro_use]
-extern crate bitflags;
-
 use core::panic::PanicInfo;
 
 // defines the modules in the project
@@ -34,7 +31,7 @@ pub mod speaker;
 
 // defines the Testable trait
 pub trait Testable {
-    fn run(&self) -> ();
+    fn run(&self);
 }
 
 // implementation of the Testable trait

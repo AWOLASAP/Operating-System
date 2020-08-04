@@ -3,7 +3,6 @@ use crate::{print,println};
 use lazy_static::lazy_static;
 use crate::gdt;
 use pic8259_simple::ChainedPics;
-use spin;
 use x86_64::structures::idt::PageFaultErrorCode;
 use crate::hlt_loop;
 use x86_64::instructions::interrupts;

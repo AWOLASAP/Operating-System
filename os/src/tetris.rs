@@ -228,7 +228,7 @@ impl Tetris {
                 TIME_ROUTER.lock().mode.terminal = true;
                 TIME_ROUTER.lock().mode.tetris = false;
                 ADVANCED_WRITER.lock().wipe_buffer();
-                println!("");
+                println!();
                 return;
             }
 
@@ -241,6 +241,7 @@ impl Tetris {
             }
             // Left and right bounds checking - makes it so that if a piece IS too far to one side, it won't be after this
             let deserialized_piece = self.deserialize_piece();
+            #[allow(clippy::all)]
             for row_1 in 0..4 {
                 for col_1 in 0..4 {
                     if deserialized_piece[row_1][col_1] {
@@ -260,8 +261,10 @@ impl Tetris {
                 if descended {
                     self.current_piece.y -= 1;
                 }
+                #[allow(clippy::all)]
                 'colcalc1: for row in 0..4 {
                     for col in 0..4 {
+                        #[allow(clippy::all)]
                         if deserialized_piece[row][col] {
                             if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
                                 self.current_piece.position += rot_dir_inverse as u8;
@@ -280,6 +283,7 @@ impl Tetris {
                 if descended {
                     self.current_piece.y -= 1;
                 }
+                #[allow(clippy::all)]
                 'colcalc: for row in 0..4 {
                     for col in 0..4 {
                         if deserialized_piece[row][col] {
@@ -301,6 +305,7 @@ impl Tetris {
                 'columncalc: loop {
                     for row in 0..4 {
                         for col in 0..4 {
+                            #[allow(clippy::all)]
                             if deserialized_piece[row][col] {
                                 if self.board[(self.current_piece.y + row as isize) as usize][(self.current_piece.x + col as isize) as usize] != Color16::Black {
                                     self.current_piece.y -= 1;
@@ -330,6 +335,7 @@ impl Tetris {
             let deserialized_piece = self.deserialize_piece();
             //Renders the moving piece (not th  stationary stuff)
             self.rendered_board = [[Color16::Black; 10]; 28];
+            #[allow(clippy::all)]
             for row_1 in 0..4 {
                 for col_1 in 0..4 {
                     if deserialized_piece[row_1][col_1] {
@@ -398,7 +404,7 @@ impl Tetris {
             }
             else {
                 self.current_piece = RenderPiece {
-                    piece: piece,
+                    piece,
                     held: true,
                     position: 0,
                     x: 3,
@@ -438,7 +444,7 @@ impl Tetris {
             if (rotation & bit) > 0 {
                 result[row][col] = true;
             }
-            bit = bit >> 1;
+            bit >>= 1;
             col += 1;
             if col == 4 {
                 row += 1;
@@ -459,7 +465,7 @@ impl Tetris {
             if (rotation & bit) > 0 {
                 result[row][col] = true;
             }
-            bit = bit >> 1;
+            bit >>= 1;
             col += 1;
             if col == 4 {
                 row += 1;
@@ -480,7 +486,7 @@ impl Tetris {
             if (rotation & bit) > 0 {
                 result[row][col] = true;
             }
-            bit = bit >> 1;
+            bit >>= 1;
             col += 1;
             if col == 4 {
                 row += 1;
@@ -526,6 +532,7 @@ impl Tetris {
             }
         }
         interrupts::without_interrupts(|| {
+            #[allow(clippy::all)]
             for i in 0..4 {
                 for j in 0..4 {
                     if self.old_held[i][j] != composited_held[i][i] {
@@ -544,6 +551,7 @@ impl Tetris {
             }
         }
         interrupts::without_interrupts(|| {
+            #[allow(clippy::all)]
             for i in 0..4 {
                 for j in 0..4 {
                     if self.old_next[i][j] != composited_next[i][i] {

@@ -200,16 +200,27 @@ impl CommandRunner {
     // Prints all the possible commands and prompts user how to learn more about each command
     fn basic_help(&self) {
         println!("\nList of available commands:");
-        println!("print-buffer");
-        println!("echo");
-        println!("gterm");
+        print!("print-buffer, ");
+        print!("echo, ");
+        print!("gterm, ");
         println!("tterm");
-        println!("mode");
-        println!("tetris");
-        println!("beep");
+        print!("mode, ");
+        print!("tetris, ");
+        print!("beep, ");
         println!("tet-ost");
-        println!("clear");
-        println!("logo");
+        print!("clear, ");
+        print!("logo, ");
+        print!("ls, ");
+        println!("dir");
+        print!("cd, ");
+        print!("cat, ");
+        print!("mkdir, ");
+        println!("rmdir");
+        print!("defrag, ");
+        print!("write, ");
+        print!("touch, ");
+        println!("rm");
+        print!("touchhello, ");
         println!("exit");
         println!("set_text_color");
         println!("set_background_color");
@@ -288,6 +299,84 @@ impl CommandRunner {
         println!("No defined arguments, everything after logo will be ignored.");
     }
 
+    // Describes and displays options for the ls command
+    fn ls_help(&self) {
+        println!("\nCommand: ls");
+        println!("Lists all of the files and directories in the current directory.");
+        println!("No defined arguments, everything after ls will be ignored.");
+    }
+
+    // Describes and displays options for the dir command
+    fn dir_help(&self) {
+        println!("\nCommand: dir");
+        println!("Lists all of the files and directories in the current directory.");
+        println!("No defined arguments, everything after dir will be ignored.");
+    }
+
+    // Describes and displays options for the cd command
+    fn cd_help(&self) {
+        println!("\nCommand: cd");
+        println!("Changes into the specified directory.");
+        println!("One defined argument, the path to the target directory.");
+        println!("To move up in the tree, use '..'");
+    }
+
+    // Describes and displays options for the mkdir command
+    fn mkdir_help(&self) {
+        println!("\nCommand: mkdir");
+        println!("Creates a directory of the given name.");
+        println!("One defined argument, the name of the new directory.");
+    }
+
+    // Describes and displays options for the rmdir command
+    fn rmdir_help(&self) {
+        println!("\nCommand: rmdir");
+        println!("Deletes the specified directory.");
+        println!("One defined argument, the name of the directory to be deleted.");
+    }
+
+    // Describes and displays options for the defrag command
+    fn defrag_help(&self) {
+        println!("\nCommand: defrag");
+        println!("Runs a defragmentation process on system memory, cleaning up memory.");
+        println!("No defined arguments, everything after defrag will be ignored.");
+    }
+
+    // Describes and displays options for the rm command
+    fn rm_help(&self) {
+        println!("\nCommand: rm");
+        println!("Deletes the specified file.");
+        println!("One defined argument, the name of the file to be deleted.");
+    }
+
+    // Describes and displays options for the touchhello command
+    fn touchhello_help(&self) {
+        println!("\nCommand: touchhello");
+        println!("Creates a file of the specified name containing 'Hello World!'");
+        println!("One defined argument, the name of the new file.");
+    }
+
+    // Describes and displays options for the cat command
+    fn cat_help(&self) {
+        println!("\nCommand: cat");
+        println!("Prints the contents of the specified file to the terminal.");
+        println!("One defined argument, the path to the target file.");
+    }
+
+    // Describes and displays options for the write command
+    fn write_help(&self) {
+        println!("\nCommand: write");
+        println!("Writes the current changes.");
+        println!("No defined arguments, everything after write will be ignored.");
+    }
+
+    // Describes and displays options for the write command
+    fn touch_help(&self) {
+        println!("\nCommand: touch");
+        println!("Creates an empty file of the given name.");
+        println!("One defined argument, the name of the target file.");
+    }
+
     // Describes and displays options for the help command
     fn help_help(&self) {
         println!("\nCommand: help");
@@ -300,6 +389,7 @@ impl CommandRunner {
         println!("\nCommand: exit");
         println!("Shuts down the system.");
         println!("No defined arguments, everything after exit will be ignored.");
+        println!("ONLY WORKS FOR QEMU, NOT REAL HARDWARE");
     }
 
     fn set_text_color_help(&self){
@@ -388,7 +478,7 @@ impl CommandRunner {
     }
 
     pub fn ls(&self) {
-        println!("");
+        println!();
         for i in USTARFS.lock().list_files(self.dir_id) {
             println!("{}", i);
         }
@@ -409,7 +499,7 @@ impl CommandRunner {
         USTARFS.lock().remove_directory(args.to_string(), Some(self.dir_id));
     }
 
-    pub fn defrag(&self, args: &str) {
+    pub fn defrag(&self) {
         USTARFS.lock().defragment();
     }
 
@@ -427,20 +517,21 @@ impl CommandRunner {
             Some(data) => data,
             None => Vec::new(),
         };
-        println!("");
+        println!();
         for i in data.iter() {
             print!("{}", *i as char);
         }
-        println!("");
-}
+        println!();   
+    }
 
-    pub fn write(&self, args: &str) {
+    pub fn write(&self) {
         USTARFS.lock().write();
     }
 
     pub fn touch(&self, args: &str) {
         USTARFS.lock().write_file(args.to_string(), Vec::new(), Some(self.dir_id));
     }
+
     // shutdown command
     // shuts down the operating system
     // ONLY WORKS ON QEMU NOT ON REAL HARDWARE!
@@ -456,6 +547,7 @@ impl CommandRunner {
         // each with a corresponding argument
         let (commands, args_list) = self.split_buffer();
 
+        #[allow(clippy::all)]
         for command in commands {
             // Get the corresponding args for the current command
             let args = args_list[index];
@@ -473,12 +565,13 @@ impl CommandRunner {
                 "logo" => self.logo(),
                 "yes" => self.yes(),
                 "ls" => self.ls(),
+                "dir" => self.ls(),
                 "cd" => self.cd(args),
                 "cat" => self.cat(args),
                 "mkdir" => self.mkdir(args),
                 "rmdir" => self.rmdir(args),
-                "defrag" => self.defrag(args),
-                "write" => self.write(args),
+                "defrag" => self.defrag(),
+                "write" => self.write(),
                 "touch" => self.touch(args),
                 "rm" => self.rm(args),
                 "touchhello" => self.touchhello(args),
@@ -503,16 +596,16 @@ impl CommandRunner {
         let mut commands = Vec::new();
         let mut args_list = Vec::new();
         let mut command_len: i32;
-
-        // Go through the seperate commands in the buffer, each seperated by a `;`
-        for command in self.command_buffer.split(";"){
+        
+        // Go through the seperate commands in the buffer, each separated by a `;`
+        for command in self.command_buffer.split(';'){
 
             let mut found_args = false;
 
-            // Go through the indivual command to see if args were provided
+            // Go through the individual command to see if args were provided
             for index in 0..command.len() {
-                // ` ` indicates seperation of command and args.
-                // Add command to scommands and args to args_list.
+                // ` ` indicates separation of command and args.
+                // Add command to commands and args to args_list.
                 if &command[index..index+1] == String::from(' ').as_str() {
                     commands.push(&command[0..index]);
                     args_list.push(&command[index + 1..command.len()]);
@@ -524,13 +617,13 @@ impl CommandRunner {
             // If no arguments were found,
             // make sure the command still gets added,
             // and the argument added is blank
-            if found_args == false {
+            if !found_args {
                 commands.push(command);
                 args_list.push("");
             }
         }
 
-        // Return the list of commands and corresponding arguemnts
+        // Return the list of commands and corresponding arguments
         (commands, args_list)
     }
 }
