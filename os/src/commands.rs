@@ -205,6 +205,8 @@ impl CommandRunner {
             "set_text_color"=>self.set_text_color_help(),
             "set_background_color"=>self.set_background_color_help(),
             "exit"=>self.shut_down_help(),
+            "vim"=>self.vim_help(),
+            "proot"=>self.proot_help(),
             _=>print!("\nThat command doesn't exist."),
         }
     }
@@ -235,6 +237,8 @@ impl CommandRunner {
         print!("touchhello, ");
         println!("set_text_color");
         print!("set_background_color, ");
+        print!("proot, ");
+        print!("vim, ");
         println!("exit");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
@@ -416,6 +420,17 @@ impl CommandRunner {
         println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive).");
     }
 
+    fn vim_help(&self){
+        println!("\nCommand: vim");
+        println!("Opens a text file for editng.");
+        println!("One defined argument: File to edit");
+    }
+
+    fn proot_help(&self){
+        println!("\nCommand: proot");
+        println!("Prints the directory tree");
+    }
+
     // beep command
     // Calls the pcspeaker and plays a beep for 2 cycles
     pub fn beep(&self, args: &str) {
@@ -546,6 +561,10 @@ impl CommandRunner {
         USTARFS.lock().write_file(args.to_string(), data, Some(self.dir_id));
     }
 
+    pub fn proot(&self) {
+        USTARFS.lock().print_root();
+    }
+
     pub fn vim(&self, args: &str) {
         FAKE_VIM.lock().init(args.to_string(), Some(self.dir_id));
     }
@@ -598,6 +617,7 @@ impl CommandRunner {
                 "set_text_color"=>self.set_text_color(args),
                 "set_background_color"=>self.set_background_color(args),
                 "exit" => self.shut_down(),
+                "proot" => self.proot(),
                 _ => println!("\nInvalid Command: {}", command),
             }
 
