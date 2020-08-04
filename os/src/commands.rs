@@ -189,10 +189,21 @@ impl CommandRunner {
             "tet-ost"=>self.tet_ost_help(),
             "clear"=>self.clear_help(),
             "logo"=>self.logo_help(),
+            "ls"=>self.ls_help(),
+            "dir"=>self.dir_help(),
+            "cd"=>self.cd_help(),
+            "cat"=>self.cat_help(),
+            "mkdir"=>self.mkdir_help(),
+            "rmdir"=>self.rmdir_help(),
+            "defrag"=>self.defrag_help(),
+            "write"=>self.write_help(),
+            "touch"=>self.touch_help(),
+            "rm"=>self.rm_help(),
+            "touchhello"=>self.touchhello_help(),
             "help"=>self.help_help(),
-            "exit"=>self.shut_down_help(),
             "set_text_color"=>self.set_text_color_help(),
             "set_background_color"=>self.set_background_color_help(),
+            "exit"=>self.shut_down_help(),
             _=>print!("\nThat command doesn't exist."),
         }
     }
@@ -221,9 +232,9 @@ impl CommandRunner {
         print!("touch, ");
         println!("rm");
         print!("touchhello, ");
-        println!("exit");
         println!("set_text_color");
-        println!("set_background_color");
+        print!("set_background_color, ");
+        println!("exit");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
     }
@@ -395,13 +406,13 @@ impl CommandRunner {
     fn set_text_color_help(&self){
         println!("\nCommand: set_text_color");
         println!("Changes the text color.");
-        println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive)");
+        println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive).");
     }
 
     fn set_background_color_help(&self){
         println!("\nCommand: set_background_color");
         println!("Changes the background color.");
-        println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive)");
+        println!("One defined argument: required color from list: Blue, Black, Green, Cyan, Red, Magenta, Brown, LightGrey, DarkGrey, LightBlue, LightGreen, LightCyan, LightRed, Pink, Yellow, or White (non-case sensitive).");
     }
 
     // beep command
@@ -521,7 +532,7 @@ impl CommandRunner {
         for i in data.iter() {
             print!("{}", *i as char);
         }
-        println!();   
+        println!();
     }
 
     pub fn write(&self) {
@@ -567,6 +578,7 @@ impl CommandRunner {
                 "ls" => self.ls(),
                 "dir" => self.ls(),
                 "cd" => self.cd(args),
+                "dir"=> self.cd(args),
                 "cat" => self.cat(args),
                 "mkdir" => self.mkdir(args),
                 "rmdir" => self.rmdir(args),
@@ -596,7 +608,7 @@ impl CommandRunner {
         let mut commands = Vec::new();
         let mut args_list = Vec::new();
         let mut command_len: i32;
-        
+
         // Go through the seperate commands in the buffer, each separated by a `;`
         for command in self.command_buffer.split(';'){
 
