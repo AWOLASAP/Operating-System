@@ -129,7 +129,7 @@ impl CommandRunner {
         interrupts::without_interrupts(|| {
             MODE.lock().graphics_init();
         });
-        println!("Graphical mode activated");
+        println!("\nGraphical mode activated");
     }
 
     // tterm command.
@@ -139,7 +139,7 @@ impl CommandRunner {
         interrupts::without_interrupts(|| {
             MODE.lock().text_init();
         });
-        println!("Text mode activated");
+        println!("\nText mode activated");
     }
 
     // mode command
@@ -585,7 +585,6 @@ impl CommandRunner {
                 "ls" => self.ls(),
                 "dir" => self.ls(),
                 "cd" => self.cd(args),
-                "dir"=> self.cd(args),
                 "cat" => self.cat(args),
                 "mkdir" => self.mkdir(args),
                 "rmdir" => self.rmdir(args),
