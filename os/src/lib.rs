@@ -28,6 +28,7 @@ pub mod tetris;
 pub mod ata_block_driver;
 pub mod ustar;
 pub mod speaker;
+pub mod vi;
 
 // defines the Testable trait
 pub trait Testable {

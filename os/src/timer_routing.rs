@@ -6,6 +6,7 @@ use crate::{
     vga_buffer::MODE,
     inc_speaker_timer,
     speaker::PCSPEAKER,
+    vi::FAKE_VIM,
 };
 
 
@@ -22,6 +23,7 @@ pub struct Modes {
     pub tetris: bool,
     pub beep: bool,
     pub song: bool,
+    pub vim: bool,
 }
 
 impl Modes {
@@ -31,6 +33,7 @@ impl Modes {
             tetris: false,
             beep: false,
             song: false,
+            vim: false,
         }
     }
 }
@@ -59,6 +62,9 @@ impl TimeRouter {
         }
         if self.mode.song {
             PCSPEAKER.lock().song_loop();
+        }
+        if self.mode.vim {
+            FAKE_VIM.lock().blink_cursor();
         }
     }
 }

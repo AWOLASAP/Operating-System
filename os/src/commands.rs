@@ -12,6 +12,7 @@ use crate::ustar::USTARFS;
 use crate::alloc::string::ToString;
 use crate::play_beep;
 use crate::play_tet_ost;
+use crate::vi::FAKE_VIM;
 use x86::io::outw;
 
 // Init a CommandRunner class to run commands for the user
@@ -483,14 +484,20 @@ impl CommandRunner {
             print!("{}", *i as char);
         }
         println!();               
-}
+    }
 
     pub fn write(&self) {
         USTARFS.lock().write();
     }
 
     pub fn touch(&self, args: &str) {
-        USTARFS.lock().write_file(args.to_string(), Vec::new(), Some(self.dir_id));
+        let data = String::from(" ");
+        let data = data.into_bytes();
+        USTARFS.lock().write_file(args.to_string(), data, Some(self.dir_id));
+    }
+
+    pub fn vim(&self, args: &str) {
+        FAKE_VIM.lock().init(args.to_string(), Some(self.dir_id));
     }
 
     // shutdown command
@@ -534,6 +541,7 @@ impl CommandRunner {
                 "defrag" => self.defrag(),
                 "write" => self.write(),
                 "touch" => self.touch(args),
+                "vim" => self.vim(args),
                 "rm" => self.rm(args),
                 "touchhello" => self.touchhello(args),
 

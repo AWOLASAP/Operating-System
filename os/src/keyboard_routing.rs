@@ -4,6 +4,7 @@ use pc_keyboard::{layouts, DecodedKey, Keyboard, ScancodeSet1, KeyCode};
 use spin::Mutex;
 use crate::{add_command_buffer, move_command_cursor, end_tet_ost};
 use crate::tetris::TETRIS;
+use crate::vi::FAKE_VIM;
 
 /* MODES
 0 - Terminal + sends weird stuff to screenbuffer
@@ -46,7 +47,9 @@ impl KeyboardRouter {
     pub fn handle_scancode(&mut self, scancode: u8, keyboard: &mut Keyboard<layouts::Us104Key,ScancodeSet1>) {
         match scancode{
             // We need to find the right scancode for this (escape)
-            27=>self.esc(),
+            129=>self.esc(),
+            // Do nothing here - this is escape key down
+            1=>(),
             // Arrow keys
             72=>self.up(),
             75=>self.move_cursor(-1),
@@ -92,6 +95,9 @@ impl KeyboardRouter {
         if self.mode.song && character == 'q' {
             end_tet_ost!();
         }
+        if self.mode.textedit {
+            FAKE_VIM.lock().handle_scancode(character);
+        }
     }
 
     fn raw_key(&self, code: KeyCode) {
@@ -118,11 +124,22 @@ impl KeyboardRouter {
                 TETRIS.lock().set(1)
             }
         }
+        if self.mode.textedit {
+            if dist > 0 {
+                FAKE_VIM.lock().right();
+            }
+            else {
+                FAKE_VIM.lock().left();
+            }
+        }
     }
 
     fn down(&self) {
         if self.mode.tetris {
             TETRIS.lock().set(3)
+        }
+        if self.mode.textedit {
+            FAKE_VIM.lock().down();
         }
     }
 
@@ -130,11 +147,18 @@ impl KeyboardRouter {
         if self.mode.tetris {
             TETRIS.lock().set(6)
         }
+        if self.mode.textedit {
+            FAKE_VIM.lock().up();
+        }
     }
 
     fn esc(&mut self) {
+        print!("Escaped");
         if self.mode.tetris {
             TETRIS.lock().set(9)
+        }
+        if self.mode.textedit {
+            FAKE_VIM.lock().handle_esc();
         }
     }
 }
