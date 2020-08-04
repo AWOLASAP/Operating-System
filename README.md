@@ -25,20 +25,20 @@ If you just want to run the operating system on actual hardware, you will need t
 However, there is the option of using [QEMU](https://www.qemu.org/), which is the platform we do the majority of developing/testing on. Just install QEMU on your system (if your on Windows you will need to add it to your PATH), and run the following command:
 
 ```bash
-qemu-system-x86_64 -drive format=raw,file=path/to/bootimage-os.bin -soundhw pcspk
+qemu-system-x86_64 -drive format=raw,file=PATH/TO/bootimage-os.bin -drive if=ide,format=raw,index=1,file=os.tar -soundhw pcspk
 ```
 
 If you would like to build this or add on to this project, you first will need [Rust](https://www.rust-lang.org/tools/install). There is also a .bat and .sh file located in the 'os' directory which you can run to install all the necessary rust components. As long as you are in the 'os' directory you can run the following commands:
 
 To build:
 ```
-cargo build
+cargo build --release
 ```
 This will build the rust project and create a bootimage-os.bin file located in `os/target/x86_64-os/debug/`
 
 To run:
 ```
-cargo run
+cargo run --release
 ```
 This will build the rust project and automatically run the QEMU command to run the operating system. For this to work you do need QEMU installed and added to your PATH.
 
