@@ -14,9 +14,6 @@ use crate::play_beep;
 use crate::play_tet_ost;
 use x86::io::outw;
 
-//TODO
-//have colors update when text or background colors change
-
 pub fn from_str(input: &str) -> Result<Color16, &str> {
     match input {
         "black"=>Ok(Color16::Black),
@@ -357,9 +354,11 @@ impl CommandRunner {
             Err(why) => {println!("\n{}",why);return},
         };
         if MODE.lock().text {
-            WRITER.lock().set_front_color(color)
+            WRITER.lock().set_front_color(color);
+            WRITER.lock().rerender_screen();
         } else {
-            ADVANCED_WRITER.lock().set_front_color(color)
+            ADVANCED_WRITER.lock().set_front_color(color);
+            ADVANCED_WRITER.lock().rerender_screen();
         }
     }
 
@@ -371,9 +370,11 @@ impl CommandRunner {
             Err(why) => {println!("\n{}",why);return},
         };
         if MODE.lock().text {
-            WRITER.lock().set_back_color(color)
+            WRITER.lock().set_back_color(color);
+            WRITER.lock().rerender_screen();
         } else {
-            ADVANCED_WRITER.lock().set_back_color(color)
+            ADVANCED_WRITER.lock().set_back_color(color);
+            ADVANCED_WRITER.lock().rerender_screen();
         }
     }
 
