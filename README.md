@@ -10,8 +10,10 @@ This operating system is a project for the [North West Advanced Programming Work
 - VGA text mode and simple 2D graphics
 - Keyboard support
 - Custom Shell
+- Help info for commands
 - Tetris!
 - Filesystem
+- File manipulation
 - PC Speaker Audio
 
 ### Core UX
@@ -42,8 +44,6 @@ This will build the rust project and automatically run the QEMU command to run t
 
 ### TODO Features
 - File editing
-- File manipulation commands
-- Help pages for commands
 - Zork port
 - Brainf support
 - ACPI implementation
