@@ -63,8 +63,8 @@ const UNPIECE: Piece = Piece {
 
 const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z];
 
-const LEVEL_TIMES: [usize; 28] = [5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2];
-const MAX_LEVEL_SPEED: usize = 1;
+const LEVEL_TIMES: [usize; 28] = [5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 1, 1, 1, 1];
+const MAX_LEVEL_SPEED: usize = 0;
 
 const SCORE_LINE_TABLE: [usize; 5] = [0, 40, 100, 300, 1200];
 const SCORE_MULTIPLIER: [usize; 28] = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4];
@@ -139,7 +139,7 @@ impl Tetris {
         self.run = true;
         self.score = 0;
         self.lines_cleared_in_level = 0;
-        self.level = 0;
+        self.level = 28;
         self.current_piece = RenderPiece {
             piece: UNPIECE,
             held: false,
@@ -204,13 +204,12 @@ impl Tetris {
             let mut descended = false;
 
             if self.move_timer == 0 {
-                if self.level > 28 {
+                if self.level > 27 {
                     self.move_timer = MAX_LEVEL_SPEED;
                 }
                 else {
                     self.move_timer = LEVEL_TIMES[self.level];
                 }
-                self.move_timer = 5;
                 move_down = true;
             }
             if key == 1 {
@@ -421,7 +420,7 @@ impl Tetris {
         else {
             self.lines_cleared_in_level += lines_cleared;
         }
-        if self.level > 28 {
+        if self.level >= 28 {
             self.score += SCORE_MAX_LEVEL * SCORE_LINE_TABLE[lines_cleared];
         }
         else {
