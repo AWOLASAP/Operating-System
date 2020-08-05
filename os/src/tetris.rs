@@ -409,6 +409,10 @@ impl Tetris {
         if self.lines_cleared_in_level + lines_cleared > LINES_PER_LEVEL {
             self.lines_cleared_in_level += lines_cleared;
             self.lines_cleared_in_level -= LINES_PER_LEVEL;
+            self.level += 1;
+        }
+        else {
+            self.lines_cleared_in_level += lines_cleared;
         }
         if self.level > 28 {
             self.score += SCORE_MAX_LEVEL * SCORE_LINE_TABLE[lines_cleared];
@@ -607,6 +611,12 @@ impl Tetris {
         }
         for (i, c) in self.score.to_string().as_bytes().iter().enumerate() {
             ADVANCED_WRITER.lock().draw_char_with_scaling(432 + i * 16, 140, 2, *c as char, Color16::White, Color16::Black);
+        }
+        for (i, c) in String::from("Level:").as_bytes().iter().enumerate() {
+            ADVANCED_WRITER.lock().draw_char_with_scaling(432 + i * 16, 156, 2, *c as char, Color16::White, Color16::Black);
+        }
+        for (i, c) in (self.level + 1).to_string().as_bytes().iter().enumerate() {
+            ADVANCED_WRITER.lock().draw_char_with_scaling(432 + i * 16, 172, 2, *c as char, Color16::White, Color16::Black);
         }
     }
 
