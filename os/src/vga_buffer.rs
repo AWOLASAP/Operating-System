@@ -11,6 +11,7 @@ use core::convert::TryFrom;
 use core::cmp::{min, max};
 use x86_64::instructions::interrupts;
 use x86::io::outb;
+use crate::commands::COMMANDRUNNER;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -187,7 +188,7 @@ pub trait PrintWriter {
         if self.get_column_position() < dist {
             self.set_column_position(0);
         }
-        else {
+        else if self.get_column_position() > COMMANDRUNNER.lock().prompt_length {
             self.set_column_position(self.get_column_position() - dist)
         }
     }
@@ -276,7 +277,7 @@ pub trait PrintWriter {
     }
 
     fn backspace(&mut self) {
-        if self.get_column_position() != 0 {
+        if self.get_column_position() != 0 && self.get_column_position() > COMMANDRUNNER.lock().prompt_length {
             self.move_cursor_left(1);
             self.write_byte(b' ');
             self.move_cursor_left(1);

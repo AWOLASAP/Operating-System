@@ -49,6 +49,7 @@ pub struct CommandRunner{
     command_buffer: String,
     pub dir_id: u64,
     index: usize,
+    pub prompt_length: usize,
 }
 
 // Implementation of CommandRunner.
@@ -62,6 +63,7 @@ impl CommandRunner {
             command_buffer: String::new(),
             dir_id: 0,
             index: 0,
+            prompt_length: 0,
         }
 
     }
@@ -79,6 +81,11 @@ impl CommandRunner {
             // If the char is a newline, evaluate the buffer
             self.eval_buffer();
             print!("[user@rust {}]# ", USTARFS.lock().cwd(self.dir_id));
+            if MODE.lock().text {
+                self.prompt_length = WRITER.lock().get_column_position();
+            } else {
+                self.prompt_length = ADVANCED_WRITER.lock().get_column_position();
+            }
         } else if c == backspace_char {
             // If the char is a backspace, remove the last character from the buffer
             self.remove_from_buffer();

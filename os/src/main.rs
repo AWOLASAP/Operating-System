@@ -103,6 +103,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //executor.spawn(Task::new(keyboard::print_keypresses()));
     //executor.run();
     print!("[user@rust /]# ");
+    COMMANDRUNNER.lock().prompt_length = 15;
     //EXECUTOR.lock().spawn(Task::new(example_task()));
     EXECUTOR.lock().spawn(Task::new(keyboard::print_keypresses()));
     EXECUTOR.lock().run();
