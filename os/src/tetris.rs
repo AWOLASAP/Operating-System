@@ -139,7 +139,7 @@ impl Tetris {
         self.run = true;
         self.score = 0;
         self.lines_cleared_in_level = 0;
-        self.level = 28;
+        self.level = 0;
         self.current_piece = RenderPiece {
             piece: UNPIECE,
             held: false,
