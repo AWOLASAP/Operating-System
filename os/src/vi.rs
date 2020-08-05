@@ -128,6 +128,8 @@ impl FakeVim {
                 }
             }
             self.render_buffer();
+            self.command_mode = false;
+            self.command_buffer = String::new();
             return;
         }
         else if command == 0x08 as char {
