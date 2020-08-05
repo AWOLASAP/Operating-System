@@ -20,12 +20,12 @@ This operating system is a project for the [North West Advanced Programming Work
 The UX is simple at its finest. It includes text output, text input, as well as PC speaker output and some 2D graphics.
 
 ## How to run
-If you just want to run the operating system on actual hardware, you will need the .bin file which can be found via the releases page. It can then be installed onto a usb drive with something like 'dd' or Balana Etcher, and booted to from a machine.
+If you just want to run the operating system on actual hardware, you will need the .bin file which can be found via the releases page. It can then be installed onto a usb drive with something like 'dd' or Balana Etcher, and booted to from a machine. (Currently not working)
 
-However, there is the option of using [QEMU](https://www.qemu.org/), which is the platform we do the majority of developing/testing on. Just install QEMU on your system (if your on Windows you will need to add it to your PATH), and run the following command:
+However, there is the option of using [QEMU](https://www.qemu.org/), which is the platform we do the majority of developing/testing on. You will need the bootimage-os.bin file as well as the os.tar file in the same directory. After you install QEMU on your system (if your on Windows you will need to add it to your PATH), you can run the following command:
 
 ```bash
-qemu-system-x86_64 -drive format=raw,file=PATH/TO/bootimage-os.bin -drive if=ide,format=raw,index=1,file=os.tar -soundhw pcspk
+qemu-system-x86_64 -drive format=raw,file=PATH/TO/bootimage-os.bin -drive if=ide,format=raw,index=1,file=PATH/TO/os.tar -soundhw pcspk
 ```
 
 If you would like to build this or add on to this project, you first will need [Rust](https://www.rust-lang.org/tools/install). There is also a .bat and .sh file located in the 'os' directory which you can run to install all the necessary rust components. As long as you are in the 'os' directory you can run the following commands:
