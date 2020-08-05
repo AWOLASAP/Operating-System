@@ -240,8 +240,9 @@ impl CommandRunner {
         println!("set_text_color");
         print!("set_background_color, ");
         print!("proot, ");
-        print!("vim, ");
         println!("exit");
+        print!("vim, ");
+        print!("brainf, ");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
     }
@@ -431,6 +432,12 @@ impl CommandRunner {
     fn proot_help(&self){
         println!("\nCommand: proot");
         println!("Prints the directory tree");
+    }
+
+    fn brainf_help(&self){
+        println!("\nCommand: brainf");
+        println!("Prints the directory tree");
+        println!("One defined argument: File to load brainf code from");
     }
 
     // beep command
