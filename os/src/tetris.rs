@@ -9,6 +9,8 @@ use crate::timer_routing::TIME_ROUTER;
 use x86_64::instructions::interrupts;
 use rand_pcg::Lcg128Xsl64;
 use rand_core::{SeedableRng,RngCore};
+use alloc::string::String;
+use alloc::string::ToString;
 
 //Generic game constant(s)
 const BLOCK_SIZE: usize = 20;
@@ -61,6 +63,15 @@ const UNPIECE: Piece = Piece {
 
 const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z];
 
+const LEVEL_TIMES: [usize; 28] = [5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2];
+const MAX_LEVEL_SPEED: usize = 1;
+
+const SCORE_LINE_TABLE: [usize; 5] = [0, 40, 100, 300, 1200];
+const SCORE_MULTIPLIER: [usize; 28] = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4];
+const SCORE_MAX_LEVEL: usize = 5;
+
+const LINES_PER_LEVEL: usize = 10;
+
 struct RenderPiece {
     piece: Piece,
     held: bool,
@@ -78,11 +89,13 @@ pub struct Tetris {
     bag: VecDeque<u8>,
     piece_falling: bool,
     run: bool,
-    score: u64,
+    score: usize,
     current_piece: RenderPiece,
     move_timer: usize,
     held_piece: Piece,
     next_piece: Piece,
+    lines_cleared_in_level: usize,
+    level: usize,
 }
 
 impl Tetris {
@@ -109,6 +122,8 @@ impl Tetris {
             move_timer: 6,
             held_piece: UNPIECE,
             next_piece: UNPIECE,
+            lines_cleared_in_level: 0,
+            level: 0,
          }
     }
 
@@ -123,6 +138,8 @@ impl Tetris {
         self.piece_falling = false;
         self.run = true;
         self.score = 0;
+        self.lines_cleared_in_level = 0;
+        self.level = 0;
         self.current_piece = RenderPiece {
             piece: UNPIECE,
             held: false,
@@ -180,6 +197,12 @@ impl Tetris {
             let mut descended = false;
 
             if self.move_timer == 0 {
+                if self.level > 28 {
+                    self.move_timer = MAX_LEVEL_SPEED;
+                }
+                else {
+                    self.move_timer = LEVEL_TIMES[self.level];
+                }
                 self.move_timer = 5;
                 move_down = true;
             }
@@ -363,6 +386,7 @@ impl Tetris {
 
             self.piece_falling = true;
         }
+        let mut lines_cleared = 0;
         for i in 4..24 {
             let mut line = true;
             for j in 0..10 {
@@ -371,6 +395,7 @@ impl Tetris {
                 }
             }
             if line {
+                lines_cleared += 1;
                 for x in (4..i).rev() {
                     for y in 0..10 {
                         self.board[x + 1][y] = self.board[x][y];
@@ -381,13 +406,27 @@ impl Tetris {
                 }
             }
         }
+        if self.lines_cleared_in_level + lines_cleared > LINES_PER_LEVEL {
+            self.lines_cleared_in_level += lines_cleared;
+            self.lines_cleared_in_level -= LINES_PER_LEVEL;
+        }
+        if self.level > 28 {
+            self.score += SCORE_MAX_LEVEL * SCORE_LINE_TABLE[lines_cleared];
+        }
+        else {
+            self.score += SCORE_MULTIPLIER[self.level] * SCORE_LINE_TABLE[lines_cleared];
+        }
         for i in 0..4 {
             for j in 0..10 {
                 if self.board[i][j] != Color16::Black {
-                    loop {
-                        //You lose, you lose the OS
-                        print!("DEAD");
-                    }
+                    unsafe {TIME_ROUTER.force_unlock()};
+                    KEYBOARD_ROUTER.lock().mode.terminal = true;
+                    KEYBOARD_ROUTER.lock().mode.tetris = false;
+                    TIME_ROUTER.lock().mode.terminal = true;
+                    TIME_ROUTER.lock().mode.tetris = false;
+                    ADVANCED_WRITER.lock().wipe_buffer();
+                    println!();
+                    return;
                 }
             }
         }
@@ -498,6 +537,8 @@ impl Tetris {
 
     // Renders the pieces - composits the rendered board and then the stationary board, and only renders pixels that have changed.
     fn render(&mut self) {
+        ADVANCED_WRITER.lock().clear_buffer();
+        ADVANCED_WRITER.lock().draw_buffer();
         let mut composited_board: [[Color16; 10]; 28] = [[Color16::Black; 10]; 28];
         let mut composited_held: [[Color16; 4]; 4] = [[Color16::Black; 4]; 4];
         let mut composited_next: [[Color16; 4]; 4] = [[Color16::Black; 4]; 4];
@@ -561,6 +602,12 @@ impl Tetris {
             }
         });
         self.old_next = composited_next;
+        for (i, c) in String::from("Score:").as_bytes().iter().enumerate() {
+            ADVANCED_WRITER.lock().draw_char_with_scaling(432 + i * 16, 124, 2, *c as char, Color16::White, Color16::Black);
+        }
+        for (i, c) in self.score.to_string().as_bytes().iter().enumerate() {
+            ADVANCED_WRITER.lock().draw_char_with_scaling(432 + i * 16, 140, 2, *c as char, Color16::White, Color16::Black);
+        }
     }
 
     pub fn set(&mut self, key: u8) {

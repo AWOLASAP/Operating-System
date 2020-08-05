@@ -374,6 +374,11 @@ impl AdvancedWriter {
         self.mode.draw_character(x, y, character, front_color, back_color);
     }
 
+    pub fn draw_char_with_scaling(&self, x: usize, y: usize, scale: usize, character: char, front_color: Color16, back_color: Color16) {
+        self.mode.set_write_mode_2();
+        self.mode.draw_character_with_scaling(x, y, scale, character, front_color, back_color);
+    }
+
     //Draws a character at specified coordinates - you need to specify foreground color - it will not overwrite any other pixels
     pub fn draw_char_fast(&self, x: usize, y: usize, character: char, front_color: Color16) {
         self.mode.set_write_mode_2();
