@@ -63,8 +63,8 @@ const UNPIECE: Piece = Piece {
 
 const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z];
 
-const LEVEL_TIMES: [usize; 28] = [5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1];
-const MAX_LEVEL_SPEED: usize = 0;
+const LEVEL_TIMES: [isize; 28] = [5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1];
+const MAX_LEVEL_SPEED: isize = 0;
 
 const SCORE_LINE_TABLE: [usize; 5] = [0, 40, 100, 300, 1200];
 const SCORE_MULTIPLIER: [usize; 28] = [1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5];
@@ -91,7 +91,7 @@ pub struct Tetris {
     run: bool,
     score: usize,
     current_piece: RenderPiece,
-    move_timer: usize,
+    move_timer: isize,
     held_piece: Piece,
     next_piece: Piece,
     lines_cleared_in_level: usize,
@@ -203,7 +203,7 @@ impl Tetris {
             // Probably an extraneous variable but who cares :shrug:
             let mut descended = false;
 
-            if self.move_timer == 0 {
+            if self.move_timer <= 0 {
                 if self.level > 27 {
                     self.move_timer = MAX_LEVEL_SPEED;
                 }
