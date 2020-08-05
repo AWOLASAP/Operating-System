@@ -29,6 +29,7 @@ pub mod ata_block_driver;
 pub mod ustar;
 pub mod speaker;
 pub mod vi;
+pub mod brainf;
 
 // defines the Testable trait
 pub trait Testable {

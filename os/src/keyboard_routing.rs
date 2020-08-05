@@ -5,6 +5,7 @@ use spin::Mutex;
 use crate::{add_command_buffer, move_command_cursor, end_tet_ost};
 use crate::tetris::TETRIS;
 use crate::vi::FAKE_VIM;
+use crate::brainf::BRAINF;
 
 /* MODES
 0 - Terminal + sends weird stuff to screenbuffer
@@ -20,6 +21,7 @@ pub struct Modes {
     pub song: bool,
     pub textedit: bool,
     pub brainf: bool,
+    pub bfesc: bool,
 }
 
 impl Modes {
@@ -31,6 +33,7 @@ impl Modes {
             song: false,
             textedit: false,
             brainf: false,
+            bfesc: false,
         }
     }
 }
@@ -97,6 +100,9 @@ impl KeyboardRouter {
         }
         if self.mode.textedit {
             FAKE_VIM.lock().handle_scancode(character);
+        }
+        if self.mode.brainf {
+
         }
     }
 
