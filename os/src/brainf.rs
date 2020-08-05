@@ -63,7 +63,9 @@ impl BrainF {
                     self.instruction_pointer += 1;
                 }
                 else if instruction == '<' {
-                    self.data_pointer -= 1;
+                    if self.data_pointer != 0 {
+                        self.data_pointer -= 1;
+                    }
                     self.instruction_pointer += 1;
                 }
                 else if instruction == '>' {
@@ -144,7 +146,10 @@ impl BrainF {
     #[inline]
     pub fn init_to_index(&mut self, index: usize) {
         if self.data.capacity() <= index {
+            println!("Reserved");
+            println!("{}", index);
             self.data.reserve(index - self.data.capacity() + 1);
+            println!("Successfully");
         }
         for i in self.data.len()..self.data.capacity() {
             self.data.push(0);
@@ -193,6 +198,10 @@ impl BrainF {
                 KEYBOARD_ROUTER.lock().mode.screenbuffer = false;
                 ADVANCED_WRITER.lock().disable_blink();
             });
+            self.instruction_pointer = 0;
+            self.data_pointer = 0;
+            self.jump_back_table = Vec::new();
+            self.data = vec![0; 30000];
             self.handle_bf_loop();
         }
         else {
