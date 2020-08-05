@@ -14,6 +14,7 @@ use crate::play_beep;
 use crate::play_tet_ost;
 use crate::vi::FAKE_VIM;
 use x86::io::outw;
+use crate::brainf::BRAINF;
 
 pub fn from_str(input: &str) -> Result<Color16, &str> {
     match input {
@@ -239,8 +240,9 @@ impl CommandRunner {
         println!("set_text_color");
         print!("set_background_color, ");
         print!("proot, ");
-        print!("vim, ");
         println!("exit");
+        print!("vim, ");
+        print!("brainf, ");
         println!("\nFor specific options try 'help <command name>'\n");
         println!("You can also run multiple commands at the same time by separating them with a semi-colon ';'\n");
     }
@@ -432,6 +434,12 @@ impl CommandRunner {
         println!("Prints the directory tree");
     }
 
+    fn brainf_help(&self){
+        println!("\nCommand: brainf");
+        println!("Prints the directory tree");
+        println!("One defined argument: File to load brainf code from");
+    }
+
     // beep command
     // Calls the pcspeaker and plays a beep for 2 cycles
     pub fn beep(&self, args: &str) {
@@ -575,6 +583,10 @@ impl CommandRunner {
         }
     }
 
+    pub fn brainf(&self, args: &str) {
+        BRAINF.lock().init_keyboard(args.to_string(), Some(self.dir_id));
+    }
+
     // shutdown command
     // shuts down the operating system
     // ONLY WORKS ON QEMU NOT ON REAL HARDWARE!
@@ -623,6 +635,7 @@ impl CommandRunner {
                 "set_background_color"=>self.set_background_color(args),
                 "exit" => self.shut_down(),
                 "proot" => self.proot(),
+                "brainf" => self.brainf(args),
                 _ => println!("Invalid Command: {}", command),
             }
 
