@@ -13,7 +13,7 @@ use alloc::string::String;
 use alloc::string::ToString;
 
 //Generic game constant(s)
-const BLOCK_SIZE: usize = 20;
+const BLOCK_SIZE: usize = 19;
 
 #[derive(Clone, Copy)]
 struct Piece {
@@ -167,6 +167,13 @@ impl Tetris {
             TIME_ROUTER.lock().mode.tetris = true;
             TIME_ROUTER.lock().mode.terminal = false;
             //ADVANCED_WRITER.lock().disable_blink();
+            for i in 0..24 {
+                ADVANCED_WRITER.lock().draw_rect((420 as isize, (i * BLOCK_SIZE + i) as isize), (220 as isize, ((i + 1) * BLOCK_SIZE - 1 + i) as isize), Color16::DarkGrey);
+            }
+            for j in 0..10 {
+                ADVANCED_WRITER.lock().draw_rect(((220 + j * BLOCK_SIZE + j - 1) as isize, 0 as isize), ((220 + (j + 1) * BLOCK_SIZE + j) as isize, 480 as isize), Color16::DarkGrey);
+            }
+
         });
 
 
@@ -562,10 +569,11 @@ impl Tetris {
             for i in 0..24 {
                 for j in 0..10 {
                     if composited_board[i + 4][j] != self.old_rendered_board[i + 4][j] {
-                        advanced_writer.draw_rect(((220 + j * BLOCK_SIZE) as isize, (i * BLOCK_SIZE) as isize), ((220 + (j + 1) * BLOCK_SIZE) as isize, ((i + 1) * BLOCK_SIZE - 1) as isize), composited_board[i + 4][j]);
+                        advanced_writer.draw_rect(((220 + j * BLOCK_SIZE + j) as isize, (i * BLOCK_SIZE + i) as isize), ((220 + (j + 1) * BLOCK_SIZE + j) as isize, ((i + 1) * BLOCK_SIZE - 1 + i) as isize), composited_board[i + 4][j]);
                     }
                 }
             }
+            
         });
         self.old_rendered_board = composited_board;
         let held_piece = self.deserialize_held_piece();
