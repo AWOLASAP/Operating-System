@@ -34,7 +34,7 @@ To build:
 ```
 cargo build --release
 ```
-This will build the rust project and create a bootimage-os.bin file located in `os/target/x86_64-os/debug/`
+This will build the rust project and create a bootimage-os.bin file located in `os/target/x86_64-os/release/`
 
 To run:
 ```
