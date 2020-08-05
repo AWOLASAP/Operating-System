@@ -190,7 +190,7 @@ impl BrainF {
             self.instructions = data;
             // Init the keyboard stuff
             interrupts::without_interrupts(|| {
-                //ADVANCED_WRITER.lock().wipe_buffer();
+                ADVANCED_WRITER.lock().wipe_buffer();
                 unsafe {KEYBOARD_ROUTER.force_unlock()};
                 KEYBOARD_ROUTER.lock().mode.brainf = true;
                 KEYBOARD_ROUTER.lock().mode.bfesc = true;
