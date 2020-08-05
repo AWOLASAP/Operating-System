@@ -209,7 +209,8 @@ impl CommandRunner {
             "exit"=>self.shut_down_help(),
             "vim"=>self.vim_help(),
             "proot"=>self.proot_help(),
-            _=>print!("\nThat command doesn't exist."),
+            "brainf"=>self.brainf_help(),
+            _=>print!("\nThat command doesn't exist.\n"),
         }
     }
 
