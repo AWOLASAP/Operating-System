@@ -39,15 +39,6 @@ fn panic(info: &PanicInfo) -> ! {
     os::test_panic_handler(info)
 }
 
-async fn async_number() -> u32 {
-    42
-}
-
-async fn example_task() {
-    let number = async_number().await;
-    println!("async number: {}", number);
-}
-
 // creates the entry point for the application
 entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
@@ -93,30 +84,12 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //USTARFS.lock().print_root();
     COMMANDRUNNER.lock().init();
 
-    //for i in 0..16 {
-    //    let x: u8 = i * 4; //
-    //    println!(" \n{} {} {} {}: {}", x as char, (x + 1) as char, (x + 2) as char, (x + 3) as char, x);
-    //}
-
-    //let mut executor = Executor::new();
-    //executor.spawn(Task::new(example_task()));
-    //executor.spawn(Task::new(keyboard::print_keypresses()));
-    //executor.run();
     print!("[user@rust /]# ");
     COMMANDRUNNER.lock().prompt_length = 15;
-    //EXECUTOR.lock().spawn(Task::new(example_task()));
     EXECUTOR.lock().spawn(Task::new(keyboard::print_keypresses()));
     EXECUTOR.lock().run();
 }
-    //let mut executor = Executor::new();
-    //executor.spawn(Task::new(example_task()));
-    //executor.spawn(Task::new(keyboard::print_keypresses()));
-    //executor.run();
-    //os::hlt_loop();
 
-    //for i in 0..60 {
-    //    println!("{}", i);
-    //};
     // This is an example on how to reactivate text mode and deactivate graphics mode.
     // This then changes the background and foreground color.
     // MODE.lock().text_init();

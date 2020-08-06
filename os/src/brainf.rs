@@ -1,25 +1,19 @@
 use lazy_static::lazy_static;
 use spin::{Mutex};
 use crate::vga_buffer::ADVANCED_WRITER;
-use vga::colors::Color16;
 use alloc::vec::Vec;
 use alloc::vec;
 use alloc::string::String;
 use crate::ustar::USTARFS;
 use crate::println;
 use crate::keyboard_routing::KEYBOARD_ROUTER;
-use crate::timer_routing::TIME_ROUTER;
 use x86_64::instructions::interrupts;
 use crate::vga_buffer::PrintWriter;
 use crate::alloc::string::ToString;
 use crate::commands::COMMANDRUNNER;
 use alloc::collections::vec_deque::VecDeque;
-// This is probably not going to be "real" vi, but enough of a clone to do basic stuff.
 
-const SCREEN_WIDTH: usize = 76;
-const SCREEN_HEIGHT: usize = 56;
-
-// 
+//
 
 pub struct BrainF {
     instructions: Vec<u8>,
@@ -48,7 +42,7 @@ impl BrainF {
         }
     }
 
-    // Exits on 
+    // Exits on
     pub fn bf_loop(&mut self) -> bool {
         loop {
             if let Some(instruction) = self.instructions.get(self.instruction_pointer) {
@@ -151,7 +145,7 @@ impl BrainF {
             self.data.reserve(index - self.data.capacity() + 1);
             println!("Successfully");
         }
-        for i in self.data.len()..self.data.capacity() {
+        for _ in self.data.len()..self.data.capacity() {
             self.data.push(0);
         }
     }
@@ -165,19 +159,19 @@ impl BrainF {
     #[inline]
     pub fn set_data_at(&mut self, index: usize, data: u8) {
         self.init_to_index(index);
-        self.data[index] = data;        
+        self.data[index] = data;
     }
 
     #[inline]
     pub fn inc_data_at(&mut self, index: usize) {
         self.init_to_index(index);
-        self.data[index] += 1;        
+        self.data[index] += 1;
     }
 
     #[inline]
     pub fn dec_data_at(&mut self, index: usize) {
         self.init_to_index(index);
-        self.data[index] -= 1;        
+        self.data[index] -= 1;
     }
 
     #[inline]
@@ -210,7 +204,7 @@ impl BrainF {
             println!("File doesn't exist");
 
         }
-        
+
     }
 
     pub fn init_file(&mut self, file: String, file2: String, id: Option<u64>) {
@@ -249,7 +243,7 @@ impl BrainF {
             //print!("[user@rust {}]# ", USTARFS.lock().cwd(COMMANDRUNNER.lock().dir_id));
         });
     }
-    
+
 }
 
 lazy_static! {

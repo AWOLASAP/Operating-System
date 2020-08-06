@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use crate::vga_buffer::{MODE, WRITER, ADVANCED_WRITER, PrintWriter};
 use pc_keyboard::{layouts, DecodedKey, Keyboard, ScancodeSet1, KeyCode};
 use spin::Mutex;
-use crate::{add_command_buffer, move_command_cursor, end_tet_ost};
+use crate::{move_command_cursor, end_tet_ost};
 use crate::tetris::TETRIS;
 use crate::vi::FAKE_VIM;
 use crate::brainf::BRAINF;
