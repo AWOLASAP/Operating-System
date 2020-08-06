@@ -44,7 +44,7 @@ impl Default for FakeVim {
 impl FakeVim {
     pub fn new() -> Self {
         FakeVim{
-            data: Vec::new(), 
+            data: Vec::new(),
             data_screen_index: 0,
             colon_pressed: false,
             is_active: false,
@@ -108,7 +108,7 @@ impl FakeVim {
                 },
             }
         }
-        //Delete 
+        //Delete
         // Arrow Keys + vim keys
         // Command mode
         // Keyboard input
@@ -117,9 +117,6 @@ impl FakeVim {
     pub fn handle_command(&mut self, command: char) {
         if command == '\n' {
             //Process command
-            unsafe {
-                
-            }
             for i in self.command_buffer.to_string().as_bytes() {
                 match *i as char {
                     'i' => {
@@ -200,7 +197,7 @@ impl FakeVim {
     }
 
     pub fn page_up_half(&mut self) {
-        for j in 0..(SCREEN_HEIGHT / 2) {
+        for _ in 0..(SCREEN_HEIGHT / 2) {
             if self.data_screen_index > SCREEN_WIDTH {
                 self.data_screen_index -= SCREEN_WIDTH;
                 for i in (0..(SCREEN_WIDTH - 1)).rev() {
@@ -220,7 +217,7 @@ impl FakeVim {
     }
 
     pub fn page_up(&mut self) {
-        for j in 0..SCREEN_HEIGHT {
+        for _ in 0..SCREEN_HEIGHT {
             if self.data_screen_index > SCREEN_WIDTH {
                 self.data_screen_index -= SCREEN_WIDTH;
                 for i in (0..(SCREEN_WIDTH - 1)).rev() {
@@ -265,7 +262,7 @@ impl FakeVim {
     }
 
     pub fn page_down_half(&mut self) {
-        for j in 0..(SCREEN_HEIGHT / 2) {
+        for _ in 0..(SCREEN_HEIGHT / 2) {
             let mut broke = false;
             for i in 0..SCREEN_WIDTH {
                 if let Some(chr) = self.data.get(self.data_screen_index + i) {
@@ -284,7 +281,7 @@ impl FakeVim {
     }
 
     pub fn page_down(&mut self) {
-        for j in 0..SCREEN_HEIGHT {
+        for _ in 0..SCREEN_HEIGHT {
             let mut broke = false;
             for i in 0..SCREEN_WIDTH {
                 if let Some(chr) = self.data.get(self.data_screen_index + i) {
@@ -374,9 +371,9 @@ impl FakeVim {
 
         }
     }
-    
+
     pub fn render_buffer(&mut self) {
-        // Use the buffer for diffs, and render directly off the vector 
+        // Use the buffer for diffs, and render directly off the vector
         let mut x = 0;
         let mut y = 0;
         //ADVANCED_WRITER.lock().clear_screen(Color16::Black);
@@ -386,19 +383,19 @@ impl FakeVim {
                 if *d == 10 {
                     self.char_buffer[y][x] = '\n';
                     ADVANCED_WRITER.lock().draw_char(
-                        (x + 2) * 8, 
-                        (y + 2) * 8, 
-                        0 as char, 
-                        Color16::Black, 
+                        (x + 2) * 8,
+                        (y + 2) * 8,
+                        0 as char,
+                        Color16::Black,
                         Color16::Black,
                     );
                     for j in (x + 1)..SCREEN_WIDTH {
                         if self.char_buffer[y][j] != 0 as char {
                             ADVANCED_WRITER.lock().draw_char(
-                                (j + 2) * 8, 
-                                (y + 2) * 8, 
-                                0 as char, 
-                                Color16::Black, 
+                                (j + 2) * 8,
+                                (y + 2) * 8,
+                                0 as char,
+                                Color16::Black,
                                 Color16::Black,
                             );
                             self.char_buffer[y][j] = 0 as char;
@@ -410,10 +407,10 @@ impl FakeVim {
                 // Conditional rendering is mostly bugged, we don't care though
                 else {
                     ADVANCED_WRITER.lock().draw_char(
-                        (x + 2) * 8, 
-                        (y + 2) * 8, 
-                        *d as char, 
-                        Color16::White, 
+                        (x + 2) * 8,
+                        (y + 2) * 8,
+                        *d as char,
+                        Color16::White,
                         Color16::Black,
                     );
                     self.char_buffer[y][x] = *d as char;
@@ -433,7 +430,7 @@ impl FakeVim {
             ADVANCED_WRITER.lock().clear_buffer();
             println!("insert");
         }
-        
+
 
 
     }
@@ -442,7 +439,7 @@ impl FakeVim {
         // Include things like line changing logic
         // Insert the character at the cursor (before)
 
-        // Use the buffer for diffs, and render directly off the vector 
+        // Use the buffer for diffs, and render directly off the vector
         let mut x = 0;
         let mut y = 0;
         //ADVANCED_WRITER.lock().clear_screen(Color16::Black);
@@ -492,10 +489,10 @@ impl FakeVim {
         interrupts::without_interrupts(|| {
             self.blink_on = false;
             ADVANCED_WRITER.lock().draw_char(
-                (self.cursor_x as usize + 2) * 8, 
-                (self.cursor_y as usize + 2) * 8, 
-                self.char_buffer[self.cursor_y as usize][self.cursor_x as usize], 
-                Color16::White, 
+                (self.cursor_x as usize + 2) * 8,
+                (self.cursor_y as usize + 2) * 8,
+                self.char_buffer[self.cursor_y as usize][self.cursor_x as usize],
+                Color16::White,
                 Color16::Black,
             );
         });
@@ -505,10 +502,10 @@ impl FakeVim {
         interrupts::without_interrupts(|| {
             self.blink_on = true;
             ADVANCED_WRITER.lock().draw_char(
-                (self.cursor_x as usize + 2) * 8, 
-                (self.cursor_y as usize + 2) * 8, 
-                self.char_buffer[self.cursor_y as usize][self.cursor_x as usize], 
-                Color16::White, 
+                (self.cursor_x as usize + 2) * 8,
+                (self.cursor_y as usize + 2) * 8,
+                self.char_buffer[self.cursor_y as usize][self.cursor_x as usize],
+                Color16::White,
                 Color16::White,
             );
         });

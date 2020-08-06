@@ -86,7 +86,7 @@ struct RenderPiece {
 
 #[derive(Serialize, Deserialize)]
 struct HighScoreItem {
-    scorer: String, 
+    scorer: String,
     score: usize,
 }
 
@@ -499,7 +499,7 @@ impl Tetris {
             },
 
         }
-        
+
     }
 
     fn read_highscores(&self) -> Vec<HighScoreItem> {
@@ -557,7 +557,7 @@ impl Tetris {
                     TIME_ROUTER.lock().mode.terminal = true;
                     TIME_ROUTER.lock().mode.tetris = false;
                     ADVANCED_WRITER.lock().wipe_buffer();
-                    println!();  
+                    println!();
                 }
             }
         }
@@ -700,7 +700,7 @@ impl Tetris {
                     }
                 }
             }
-            
+
         });
         self.old_rendered_board = composited_board;
         let held_piece = self.deserialize_held_piece();
