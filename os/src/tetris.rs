@@ -67,9 +67,11 @@ const UNPIECE: Piece = Piece {
 
 const PIECES: [Piece; 7] = [I, J, L, O, S, T, Z];
 
+// Controls how fast the pieces drop
 const LEVEL_TIMES: [isize; 28] = [5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1];
 const MAX_LEVEL_SPEED: isize = 0;
 
+// Controls the score - how many per line and the multiplier based on the level
 const SCORE_LINE_TABLE: [usize; 5] = [0, 40, 100, 300, 1200];
 const SCORE_MULTIPLIER: [usize; 28] = [1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5];
 const SCORE_MAX_LEVEL: usize = 6;
@@ -99,6 +101,7 @@ impl HighScoreItem {
     }
 }
 
+// Handles all the data for a tetris game instance
 pub struct Tetris {
     pub key: u8,
     board: [[Color16; 10]; 28],
@@ -156,6 +159,7 @@ impl Tetris {
     }
 
     //Not only sets/resets every relevant variable, but also
+    // Creates the initial piece bad (needed for next piece thing)
     pub fn init(&mut self) {
         self.board = [[Color16::Black; 10]; 28];
         self.rendered_board = [[Color16::Black; 10]; 28];
@@ -197,6 +201,7 @@ impl Tetris {
             TIME_ROUTER.lock().mode.tetris = true;
             TIME_ROUTER.lock().mode.terminal = false;
             //ADVANCED_WRITER.lock().disable_blink();
+            // Draws the grid lines
             for i in 0..24 {
                 ADVANCED_WRITER.lock().draw_rect((420 as isize, (i * BLOCK_SIZE + i) as isize), (220 as isize, ((i + 1) * BLOCK_SIZE - 1 + i) as isize), Color16::DarkGrey);
             }
@@ -217,6 +222,7 @@ impl Tetris {
 
     }
 
+    // This is the tetris game loop - handles transition to endgame
     fn run_tetris(&mut self) {
         if self.bag.is_empty() {
             self.gen_bag();
@@ -421,6 +427,7 @@ impl Tetris {
 
             self.piece_falling = true;
         }
+        // Checks for line clears
         let mut lines_cleared = 0;
         for i in 4..24 {
             let mut line = true;
@@ -466,6 +473,7 @@ impl Tetris {
         self.render();
     }
 
+    // Handles adding text to the scoreboard
     pub fn handle_scancode(&mut self, scancode: char) {
         match scancode {
             '\n' => {
@@ -502,6 +510,7 @@ impl Tetris {
         
     }
 
+    // Handles serde deseralization
     fn read_highscores(&self) -> Vec<HighScoreItem> {
         if let Some(saved_scores) = USTARFS.lock().read_file("/os/tetris.txt".to_string(), None) {
             let result: Vec<HighScoreItem> = from_bytes(saved_scores.deref()).unwrap();
@@ -512,12 +521,14 @@ impl Tetris {
         }
     }
 
+    // Handles serde serialization
     fn write_highscores(&self, highscores: &Vec<HighScoreItem>) {
         let output = to_allocvec(highscores).unwrap();
         USTARFS.lock().remove_file("/os/tetris.txt".to_string(),None);
         USTARFS.lock().write_file("/os/tetris.txt".to_string(), output, None);
     }
 
+    // Handles the endgame loop - game end animation and then scoreboard
     fn endgame_screen(&mut self) {
         match self.endscreen_animation {
             d if d < 24 => {
@@ -674,6 +685,7 @@ impl Tetris {
     }
 
     // Renders the pieces - composits the rendered board and then the stationary board, and only renders pixels that have changed.
+    // Also renders level and score
     fn render(&mut self) {
         ADVANCED_WRITER.lock().clear_buffer();
         ADVANCED_WRITER.lock().draw_buffer();
@@ -755,6 +767,7 @@ impl Tetris {
         }
     }
 
+    // Handles keyboard input
     pub fn set(&mut self, key: u8) {
         self.key = key;
     }

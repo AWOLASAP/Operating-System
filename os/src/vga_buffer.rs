@@ -83,6 +83,7 @@ impl AdvancedBuffer {
 }
 
 // If we had five weeks or something, this could be useful in rendering custom terminals
+// This is an abstraction for all the shared code between Writer and AdvancedWriter
 pub trait PrintWriter {
     // Getters
 
@@ -90,7 +91,7 @@ pub trait PrintWriter {
 
     fn get_height(&self) -> usize;
 
-    // Getters and setters
+    // Getters and setters - very sad that you can't define trait fields yet
 
     fn get_front_color(&self) -> Color16;
     fn set_front_color_attr(&mut self, color: Color16);
@@ -375,6 +376,7 @@ impl AdvancedWriter {
         self.mode.draw_character(x, y, character, front_color, back_color);
     }
 
+    // Draws with scaling
     pub fn draw_char_with_scaling(&self, x: usize, y: usize, scale: usize, character: char, front_color: Color16, back_color: Color16) {
         self.mode.set_write_mode_2();
         self.mode.draw_character_with_scaling(x, y, scale, character, front_color, back_color);
@@ -405,6 +407,7 @@ impl AdvancedWriter {
         }
     }
 
+    // Algorithms are hard, I stole this from someone (not code, but the algorithm)
     pub fn draw_circle(&mut self, center: Point<isize>, radius: isize, color: Color16) {
         let mut x: isize = 0;
         let mut y = radius;
@@ -712,6 +715,7 @@ lazy_static! {
     };
 }
 
+// Handles mode switching logic
 pub struct ModeController {
     pub text: bool,
     blink_timer: usize,
