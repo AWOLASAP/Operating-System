@@ -6,6 +6,7 @@ use crate::{add_command_buffer, move_command_cursor, end_tet_ost};
 use crate::tetris::TETRIS;
 use crate::vi::FAKE_VIM;
 use crate::brainf::BRAINF;
+use crate::commands::COMMANDRUNNER;
 
 /* MODES
 0 - Terminal + sends weird stuff to screenbuffer
@@ -74,7 +75,9 @@ impl KeyboardRouter {
     fn unicode(&self, character: char) {
         if self.mode.terminal {
             print!("{}", character);
-            add_command_buffer!(character);
+            if !COMMANDRUNNER.lock().add_to_buffer(character) {
+                return;
+            }
         }
         else if self.mode.screenbuffer {
             print!("{}", character);
@@ -164,12 +167,14 @@ impl KeyboardRouter {
     }
 
     fn esc(&mut self) {
-        print!("Escaped");
         if self.mode.tetris || self.mode.tetris_score {
             TETRIS.lock().set(9)
         }
         if self.mode.textedit {
             FAKE_VIM.lock().handle_esc();
+        }
+        if self.mode.bfesc {
+            BRAINF.lock().handle_esc();
         }
     }
 }

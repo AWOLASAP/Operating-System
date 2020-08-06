@@ -75,7 +75,8 @@ impl CommandRunner {
     // Add a character to the command buffer.
     // This was used instead of reading what was on the screen
     // due to it being easier and more reliable.
-    pub fn add_to_buffer(&mut self, c: char) {
+    // Returns if it should still print input/route it 
+    pub fn add_to_buffer(&mut self, c: char) -> bool {
         let backspace_char = char::from(8);
         if c == '\n' {
             // If the char is a newline, evaluate the buffer
@@ -86,6 +87,7 @@ impl CommandRunner {
             } else {
                 self.prompt_length = ADVANCED_WRITER.lock().get_column_position();
             }
+            return false;
         } else if c == backspace_char {
             // If the char is a backspace, remove the last character from the buffer
             self.remove_from_buffer();
@@ -99,6 +101,7 @@ impl CommandRunner {
             }
             self.index += 1;
         }
+        true
 
     }
 

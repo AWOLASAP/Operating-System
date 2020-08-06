@@ -81,11 +81,11 @@ impl BrainF {
                         if let Some(input) = self.input_buffer.pop_front() {
                             self.set_data_at(self.data_pointer, input);
                         }
+                        self.instruction_pointer += 1;
                     }
                     else {
                         return false;
                     }
-                    self.instruction_pointer += 1;
                 }
                 else if instruction == '[' {
                     if self.data_at(self.data_pointer) == 0 {
@@ -165,7 +165,7 @@ impl BrainF {
     #[inline]
     pub fn set_data_at(&mut self, index: usize, data: u8) {
         self.init_to_index(index);
-        self.data[index] -= data;        
+        self.data[index] = data;        
     }
 
     #[inline]
@@ -182,7 +182,9 @@ impl BrainF {
 
     #[inline]
     pub fn handle_scancode(&mut self, scancode: char) {
+        print!("{}", scancode);
         self.input_buffer.push_back(scancode as u8);
+        self.handle_bf_loop();
     }
 
     pub fn init_keyboard(&mut self, file: String, id: Option<u64>) {
@@ -241,6 +243,7 @@ impl BrainF {
             unsafe {KEYBOARD_ROUTER.force_unlock()};
             unsafe {COMMANDRUNNER.force_unlock()};
             KEYBOARD_ROUTER.lock().mode.brainf = false;
+            KEYBOARD_ROUTER.lock().mode.bfesc = false;
             KEYBOARD_ROUTER.lock().mode.terminal = true;
             ADVANCED_WRITER.lock().enable_blink();
             //print!("[user@rust {}]# ", USTARFS.lock().cwd(COMMANDRUNNER.lock().dir_id));
