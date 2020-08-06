@@ -11,7 +11,11 @@ use rand_pcg::Lcg128Xsl64;
 use rand_core::{SeedableRng,RngCore};
 use alloc::string::String;
 use alloc::string::ToString;
-
+use crate::ustar::USTARFS;
+use serde::{Serialize, Deserialize};
+use alloc::vec::Vec;
+use postcard::{from_bytes, to_allocvec};
+use core::ops::Deref;
 //Generic game constant(s)
 const BLOCK_SIZE: usize = 19;
 
@@ -79,6 +83,22 @@ struct RenderPiece {
     x: isize,
     y: isize,
 }
+
+#[derive(Serialize, Deserialize)]
+struct HighScoreItem {
+    scorer: String, 
+    score: usize,
+}
+
+impl HighScoreItem {
+    fn from(scorer: String, score: usize) -> Self {
+        HighScoreItem {
+            scorer,
+            score,
+        }
+    }
+}
+
 pub struct Tetris {
     pub key: u8,
     board: [[Color16; 10]; 28],
@@ -96,6 +116,10 @@ pub struct Tetris {
     next_piece: Piece,
     lines_cleared_in_level: usize,
     level: usize,
+    game_ended: bool,
+    endscreen_animation: usize,
+    highscore: String,
+    highscores: Vec<HighScoreItem>,
 }
 
 impl Tetris {
@@ -124,6 +148,10 @@ impl Tetris {
             next_piece: UNPIECE,
             lines_cleared_in_level: 0,
             level: 0,
+            game_ended: false,
+            endscreen_animation: 0,
+            highscore: String::new(),
+            highscores: Vec::new(),
          }
     }
 
@@ -150,7 +178,9 @@ impl Tetris {
         self.move_timer = 6;
         self.held_piece = UNPIECE;
         self.next_piece = UNPIECE;
-
+        self.game_ended = false;
+        self.endscreen_animation = 0;
+        self.highscore = String::new();
         for i in 0..4 {
             for j in 0..10 {
                 self.board[i + 24][j] = Color16::LightGrey;
@@ -187,7 +217,7 @@ impl Tetris {
 
     }
 
-    pub fn game_loop(&mut self) {
+    fn run_tetris(&mut self) {
         if self.bag.is_empty() {
             self.gen_bag();
 
@@ -260,7 +290,6 @@ impl Tetris {
                 println!();
                 return;
             }
-
             if move_down {
                 self.current_piece.y += 1;
                 descended = true;
@@ -429,19 +458,118 @@ impl Tetris {
         for i in 0..4 {
             for j in 0..10 {
                 if self.board[i][j] != Color16::Black {
-                    unsafe {TIME_ROUTER.force_unlock()};
-                    KEYBOARD_ROUTER.lock().mode.terminal = true;
-                    KEYBOARD_ROUTER.lock().mode.tetris = false;
-                    TIME_ROUTER.lock().mode.terminal = true;
-                    TIME_ROUTER.lock().mode.tetris = false;
-                    ADVANCED_WRITER.lock().wipe_buffer();
-                    println!();
+                    self.game_ended = true;
                     return;
                 }
             }
         }
         self.render();
+    }
 
+    pub fn handle_scancode(&mut self, scancode: char) {
+        match scancode {
+            '\n' => {
+                //Actually add the highscore to the scoreboard
+                let mut index = usize::MAX;
+                for (i, c) in self.highscores.iter().enumerate() {
+                    if self.score > c.score {
+                        let mut index = i;
+                    }
+                }
+                if index == usize::MAX {
+                    index = self.highscores.len();
+                }
+                self.highscores.insert(index, HighScoreItem::from(self.highscore.to_string(), self.score));
+
+                self.key = 9;
+            },
+            a => {
+                if a == 0x80 as char {
+                    self.highscore.pop();
+                }
+                else {
+                    self.highscore.push(a);
+                }
+                for i in 0..10 {
+                    ADVANCED_WRITER.lock().draw_char_with_scaling(80 + i * 16, 448, 2, ' ', Color16::White, Color16::Black);
+                }
+                for (i, c) in self.highscore.as_bytes().iter().enumerate() {
+                    ADVANCED_WRITER.lock().draw_char_with_scaling(80 + i * 16, 448, 2, *c as char, Color16::White, Color16::Black);
+                }
+            },
+
+        }
+        
+    }
+
+    fn read_highscores(&self) -> Vec<HighScoreItem> {
+        if let Some(saved_scores) = USTARFS.lock().read_file("/os/tetris.txt".to_string(), None) {
+            let result: Vec<HighScoreItem> = from_bytes(saved_scores.deref()).unwrap();
+            result
+        }
+        else {
+            panic!("Tetris score file not found");
+        }
+    }
+
+    fn write_highscores(&self, highscores: &Vec<HighScoreItem>) {
+        let output = to_allocvec(highscores).unwrap();
+        USTARFS.lock().remove_file("/os/tetris.txt".to_string(),None);
+        USTARFS.lock().write_file("/os/tetris.txt".to_string(), output, None);
+    }
+
+    fn endgame_screen(&mut self) {
+        match self.endscreen_animation {
+            d if d < 24 => {
+                for i in 0..10 {
+                    self.board[(23 - self.endscreen_animation as isize) as usize][i as usize] = Color16::LightGrey;
+                }
+                self.endscreen_animation += 1;
+                self.render();
+            },
+            24 => {
+                ADVANCED_WRITER.lock().clear_screen(Color16::Black);
+                KEYBOARD_ROUTER.lock().mode.tetris = false;
+                KEYBOARD_ROUTER.lock().mode.tetris_score = true;
+                // Render the scoreboard here, with an empty space for the player
+                self.highscores = self.read_highscores();
+                for y in 0..25 {
+                    if let Some(score) = self.highscores.get(y) {
+                        for (i, c) in score.scorer.as_bytes().iter().enumerate() {
+                            ADVANCED_WRITER.lock().draw_char_with_scaling(80 + i * 16, 32 + y * 16, 2, *c as char, Color16::White, Color16::Black);
+                        }
+                        for (i, c) in score.score.to_string().as_bytes().iter().rev().enumerate() {
+                            ADVANCED_WRITER.lock().draw_char_with_scaling(560 - i * 16, 32 + y * 16, 2, *c as char, Color16::White, Color16::Black);
+                        }
+                    }
+                }
+                for (i, c) in self.score.to_string().as_bytes().iter().rev().enumerate() {
+                    ADVANCED_WRITER.lock().draw_char_with_scaling(560 - i * 16, 448, 2, *c as char, Color16::White, Color16::Black);
+                }
+                self.endscreen_animation += 1;
+            },
+            _ => {
+                if self.get() == 9 {
+                    self.write_highscores(&self.highscores);
+                    unsafe {TIME_ROUTER.force_unlock()};
+                    KEYBOARD_ROUTER.lock().mode.terminal = true;
+                    KEYBOARD_ROUTER.lock().mode.tetris_score = false;
+                    TIME_ROUTER.lock().mode.terminal = true;
+                    TIME_ROUTER.lock().mode.tetris = false;
+                    ADVANCED_WRITER.lock().wipe_buffer();
+                    println!();  
+                }
+            }
+        }
+    }
+
+    pub fn game_loop(&mut self) {
+        if !self.game_ended {
+            self.run_tetris();
+        }
+        else {
+            self.endgame_screen();
+        }
     }
     // Holds the piece, and, if there is a piece held, replaces the current piece
     fn hold(&mut self) {

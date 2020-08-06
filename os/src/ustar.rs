@@ -1344,7 +1344,6 @@ impl USTARFileSystem {
                     unsafe { self.block_driver.write(id as u32, 1, data_to_write)};
                     id += 1;
                 }
-
             }
         }
         // Write two null 
@@ -1493,6 +1492,7 @@ impl USTARFileSystem {
 
     fn split_last_and_first(&self, path: String) -> (String, String) {
         let abs = self.is_absolute(&path);
+
         let mut split = self.split_path(&path);
         let mut part1 = String::new();
         let name = match split.pop() {
@@ -1636,13 +1636,15 @@ impl USTARFileSystem {
             if let Some(directory) = self.resolve_directory( first, id) {
                 file.lock().name = "defrag".to_string();
                 file.lock().should_write();
-                let contents =  &mut directory.lock().contents;
+                let mut dir_lock = directory.lock();
+                let contents =  &mut dir_lock.contents;
                 for (i, d) in contents.iter().enumerate() {
                     if d.lock().name == "defrag" {
                         contents.remove(i);
                         break;
                     }
                 }
+                drop(dir_lock);
                 self.write();
             }
 /*            file.lock().name = "defrag".to_string();
@@ -1729,7 +1731,6 @@ impl USTARFileSystem {
             i.lock().should_write();
         }
         for i in folder.subdirectories.iter() {
-            println!("{}", i.lock().name);
             self.remove_directory_recursive(Arc::clone(i));
         }
     }

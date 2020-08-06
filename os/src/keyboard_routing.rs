@@ -18,6 +18,7 @@ pub struct Modes {
     pub terminal: bool,
     pub screenbuffer: bool,
     pub tetris: bool,
+    pub tetris_score: bool,
     pub song: bool,
     pub textedit: bool,
     pub brainf: bool,
@@ -30,6 +31,7 @@ impl Modes {
             terminal: true,
             screenbuffer: false,
             tetris: false,
+            tetris_score: false,
             song: false,
             textedit: false,
             brainf: false,
@@ -102,7 +104,10 @@ impl KeyboardRouter {
             FAKE_VIM.lock().handle_scancode(character);
         }
         if self.mode.brainf {
-
+            BRAINF.lock().handle_scancode(character);
+        }
+        if self.mode.tetris_score {
+            TETRIS.lock().handle_scancode(character);
         }
     }
 
@@ -160,7 +165,7 @@ impl KeyboardRouter {
 
     fn esc(&mut self) {
         print!("Escaped");
-        if self.mode.tetris {
+        if self.mode.tetris || self.mode.tetris_score {
             TETRIS.lock().set(9)
         }
         if self.mode.textedit {
