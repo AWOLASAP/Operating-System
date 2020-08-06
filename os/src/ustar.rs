@@ -1600,7 +1600,15 @@ impl USTARFileSystem {
                 File::from_block(file.lock().to_block(), self.block_used_ptr)
             },
             None => {
-                File::new(self.block_used_ptr, file_string)
+                if let Some(id) = id {
+                    let mut cwd = self.cwd(id);
+                    cwd.push_str(&file_string);
+                    File::new(self.block_used_ptr, cwd)
+                }
+                else {
+                    File::new(self.block_used_ptr, file_string)
+                }
+
             },
         };
         let mut size = data.len();
