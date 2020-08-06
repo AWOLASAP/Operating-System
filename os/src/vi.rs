@@ -78,7 +78,31 @@ impl FakeVim {
                     self.command_mode = true;
                     self.command_buffer = String::new();
                     self.handle_command(scancode);
-                }
+                },
+                'b' => {
+                    self.page_up();
+                },
+                'f' => {
+                    self.page_down();
+                },
+                'd' => {
+                    self.page_down_half();
+                },
+                'u' => {
+                    self.page_up_half();
+                },
+                'h' => {
+                    self.left();
+                },
+                'j' => {
+                    self.down();
+                },
+                'k' => {
+                    self.up();
+                },
+                'l' => {
+                    self.right();
+                },
                 _ => {
 
                 },
@@ -93,7 +117,10 @@ impl FakeVim {
     pub fn handle_command(&mut self, command: char) {
         if command == '\n' {
             //Process command
-            for i in self.command_buffer.as_bytes() {
+            unsafe {
+                
+            }
+            for i in self.command_buffer.to_string().as_bytes() {
                 match *i as char {
                     'i' => {
                         ADVANCED_WRITER.lock().wipe_buffer();
@@ -172,6 +199,46 @@ impl FakeVim {
         self.render_buffer();
     }
 
+    pub fn page_up_half(&mut self) {
+        for j in 0..(SCREEN_HEIGHT / 2) {
+            if self.data_screen_index > SCREEN_WIDTH {
+                self.data_screen_index -= SCREEN_WIDTH;
+                for i in (0..(SCREEN_WIDTH - 1)).rev() {
+                    if let Some(chr) = self.data.get(self.data_screen_index + i) {
+                        if *chr as char == '\n' {
+                            self.data_screen_index += (i as isize - 1) as usize;
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                self.data_screen_index = 0;
+            }
+        }
+        self.render_buffer();
+    }
+
+    pub fn page_up(&mut self) {
+        for j in 0..SCREEN_HEIGHT {
+            if self.data_screen_index > SCREEN_WIDTH {
+                self.data_screen_index -= SCREEN_WIDTH;
+                for i in (0..(SCREEN_WIDTH - 1)).rev() {
+                    if let Some(chr) = self.data.get(self.data_screen_index + i) {
+                        if *chr as char == '\n' {
+                            self.data_screen_index += (i as isize - 1) as usize;
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                self.data_screen_index = 0;
+            }
+        }
+        self.render_buffer();
+    }
+
     pub fn down(&mut self) {
         self.un_blink();
         self.cursor_y += 1;
@@ -193,6 +260,44 @@ impl FakeVim {
         }
         while self.char_buffer[self.cursor_y as usize][self.cursor_x as usize] == '\0' {
             self.cursor_x -= 1;
+        }
+        self.render_buffer();
+    }
+
+    pub fn page_down_half(&mut self) {
+        for j in 0..(SCREEN_HEIGHT / 2) {
+            let mut broke = false;
+            for i in 0..SCREEN_WIDTH {
+                if let Some(chr) = self.data.get(self.data_screen_index + i) {
+                    if *chr as char == '\n' {
+                        self.data_screen_index += (i as isize + 1) as usize;
+                        broke = true;
+                        break;
+                    }
+                }
+            }
+            if !broke {
+                self.data_screen_index += SCREEN_WIDTH;
+            }
+        }
+        self.render_buffer();
+    }
+
+    pub fn page_down(&mut self) {
+        for j in 0..SCREEN_HEIGHT {
+            let mut broke = false;
+            for i in 0..SCREEN_WIDTH {
+                if let Some(chr) = self.data.get(self.data_screen_index + i) {
+                    if *chr as char == '\n' {
+                        self.data_screen_index += (i as isize + 1) as usize;
+                        broke = true;
+                        break;
+                    }
+                }
+            }
+            if !broke {
+                self.data_screen_index += SCREEN_WIDTH;
+            }
         }
         self.render_buffer();
     }
