@@ -562,10 +562,6 @@ impl USTARItem for Directory {
 
     fn set_name(&mut self, name: String) {
         self.name = name.clone();
-        self.name.reserve_exact(100 - self.name.len());
-        while self.name.len() < 100 {
-            self.name.push('\0');
-        }
     }
 
     fn get_name_and_prefix(&self) -> String {
@@ -963,10 +959,6 @@ impl USTARItem for File {
 
     fn set_name(&mut self, name: String) {
         self.name = name.clone();
-        self.name.reserve_exact(100 - self.name.len());
-        while self.name.len() < 100 {
-            self.name.push('\0');
-        }
     }
 
     fn get_name_and_prefix(&self) -> String {
@@ -1152,6 +1144,15 @@ impl USTARFileSystem {
             self.block_used_ptr = counter as u64;
             // Somehow sort the thing
         }
+        for f in self.files.iter() {
+            if !self.is_absolute(&f.lock().get_name()) {
+                let mut strng = String::from("/");
+                strng.push_str(&f.lock().get_name());
+                f.lock().set_name(strng);
+                f.lock().should_write();
+            }
+        }
+        self.write();
     }
 
     #[allow(clippy::all)]
@@ -1640,6 +1641,7 @@ impl USTARFileSystem {
     // Removes a file if it exists, does nothing if it doesn't
     pub fn remove_file(&mut self, file: String, id: Option<u64>) {
         if let Some(file) =  self.resolve_file(file, id) {
+            println!("{}",  file.lock().name);
             let (first, _) = self.split_last_and_first(file.lock().name.to_string());
             if let Some(directory) = self.resolve_directory( first, id) {
                 file.lock().name = "defrag".to_string();
