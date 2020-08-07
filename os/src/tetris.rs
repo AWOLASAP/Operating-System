@@ -481,7 +481,7 @@ impl Tetris {
                 let mut index = usize::MAX;
                 for (i, c) in self.highscores.iter().enumerate() {
                     if self.score > c.score {
-                        let mut index = i;
+                        index = i;
                     }
                 }
                 if index == usize::MAX {

@@ -248,11 +248,7 @@ impl AtaPio {
         let mut port = UnsafePort::<u8>::new(PORT_LBA0);
         port.write((lba & 0xFF) as u8);
 
-        // Send bits 8-15 of LBA
-        let mut port = UnsafePort::<u8>::new(PORT_LBA1);
-        port.write(((lba & 0xFF00) >> 0x8) as u8);
-
-        // Send bits 16-23 of LBA
+        // Send bits0xB016-23 of LBA
         let mut port = UnsafePort::<u8>::new(PORT_LBA2);
         port.write(((lba & 0xFF0000) >> 0x10) as u8);
 
