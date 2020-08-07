@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use spin::{Mutex};
-use crate::vga_buffer::ADVANCED_WRITER;
+use crate::vga_buffer::{ADVANCED_WRITER, WRITER, MODE};
 use alloc::vec::Vec;
 use alloc::vec;
 use alloc::string::String;
@@ -190,13 +190,21 @@ impl BrainF {
             self.instructions = data;
             // Init the keyboard stuff
             interrupts::without_interrupts(|| {
-                ADVANCED_WRITER.lock().wipe_buffer();
+                if MODE.lock().text {
+                    for _ in 0..25 {
+                        println!();
+                    }
+                    WRITER.lock().disable_blink();
+                }
+                else {
+                    ADVANCED_WRITER.lock().wipe_buffer();
+                    ADVANCED_WRITER.lock().disable_blink();
+                }
                 unsafe {KEYBOARD_ROUTER.force_unlock()};
                 KEYBOARD_ROUTER.lock().mode.brainf = true;
                 KEYBOARD_ROUTER.lock().mode.bfesc = true;
                 KEYBOARD_ROUTER.lock().mode.terminal = false;
                 KEYBOARD_ROUTER.lock().mode.screenbuffer = false;
-                ADVANCED_WRITER.lock().disable_blink();
             });
             self.instruction_pointer = 0;
             self.data_pointer = 0;
@@ -218,12 +226,17 @@ impl BrainF {
                 self.input_buffer = VecDeque::from(input);
                 // Init the keyboard stuff
                 interrupts::without_interrupts(|| {
-                    ADVANCED_WRITER.lock().wipe_buffer();
+                    if MODE.lock().text {
+                        WRITER.lock().disable_blink();
+                    }
+                    else {
+                        ADVANCED_WRITER.lock().wipe_buffer();
+                        ADVANCED_WRITER.lock().disable_blink();
+                    }
                     unsafe {KEYBOARD_ROUTER.force_unlock()};
                     KEYBOARD_ROUTER.lock().mode.bfesc = true;
                     KEYBOARD_ROUTER.lock().mode.terminal = false;
                     KEYBOARD_ROUTER.lock().mode.screenbuffer = false;
-                    ADVANCED_WRITER.lock().disable_blink();
                 });
             }
             else {
@@ -243,7 +256,12 @@ impl BrainF {
             KEYBOARD_ROUTER.lock().mode.brainf = false;
             KEYBOARD_ROUTER.lock().mode.bfesc = false;
             KEYBOARD_ROUTER.lock().mode.terminal = true;
-            ADVANCED_WRITER.lock().enable_blink();
+            if MODE.lock().text {
+                WRITER.lock().enable_blink();
+            }
+            else {
+                ADVANCED_WRITER.lock().enable_blink();
+            }
             //print!("[user@rust {}]# ", USTARFS.lock().cwd(COMMANDRUNNER.lock().dir_id));
         });
     }

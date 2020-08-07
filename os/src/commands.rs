@@ -594,12 +594,8 @@ impl CommandRunner {
         }
     }
 
-    pub fn brainf(&self, args: &str) {
-        if MODE.lock().text {
-            println!("\nYou need to be in graphical mode for that!  Try 'gterm'");
-        } else {
-            BRAINF.lock().init_keyboard(args.to_string(), Some(self.dir_id));
-        }
+    pub fn brainf(&self, args: &str) {    
+        BRAINF.lock().init_keyboard(args.to_string(), Some(self.dir_id));
     }
 
     // shutdown command
