@@ -181,6 +181,10 @@ impl BrainF {
         self.handle_bf_loop();
     }
 
+    pub fn eof(&mut self) {
+        self.input_buffer.push_back(0);
+    }
+
     pub fn init_keyboard(&mut self, file: String, id: Option<u64>) {
         if let Some(data) = USTARFS.lock().read_file(file.to_string(), id) {
             self.instructions = data;

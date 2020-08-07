@@ -164,6 +164,9 @@ impl KeyboardRouter {
         if self.mode.textedit {
             FAKE_VIM.lock().up();
         }
+        if self.mode.brainf {
+            BRAINF.lock().eof();
+        }
     }
 
     fn esc(&mut self) {

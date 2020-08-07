@@ -447,7 +447,7 @@ impl CommandRunner {
 
     fn brainf_help(&self){
         println!("\nCommand: brainf");
-        println!("Prints the directory tree");
+        println!("Runs a brainf program  - UP arrow indicates EOF");
         println!("One defined argument: File to load brainf code from");
     }
 
