@@ -49,8 +49,8 @@ This will build the rust project and automatically run the QEMU command to run t
 - ACPI implementation
 
 ## Tools We Used
-- [Rust] (https://www.rust-lang.org/)
-- [QEMU] (https://www.qemu.org/)
+- [Rust](https://www.rust-lang.org/)
+- [QEMU](https://www.qemu.org/)
 - Combination of Vim, Atom, and Visual Studio Code
 - Trello
 - Git/Github
